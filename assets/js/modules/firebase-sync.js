@@ -12,27 +12,25 @@
     init: async function() {
       if (!window.firebaseConfig || window.firebaseConfig.apiKey === "SUA_API_KEY_AQUI") {
         console.log("Firebase não configurado. Usando modo local apenas.");
+        this.isOnline = false;
         return;
       }
 
       try {
         // Importar Firebase SDK via CDN
         if (!window.firebase) {
+          console.log("Carregando Firebase SDK...");
           await this.loadFirebaseSDK();
         }
 
         // Inicializar Firebase
+        console.log("Inicializando Firebase com config:", window.firebaseConfig);
         firebase.initializeApp(window.firebaseConfig);
         this.db = firebase.firestore();
         this.auth = firebase.auth();
-        
-        // Configurar persistence offline
-        await this.db.enablePersistence({ synchronizeTabs: true }).catch(e => {
-          console.warn("Persistence não disponível:", e);
-        });
 
         this.isOnline = true;
-        console.log("✅ Firebase conectado!");
+        console.log("✅ Firebase conectado! isOnline =", this.isOnline);
         
         // Verificar autenticação
         this.auth.onAuthStateChanged(user => {
@@ -40,13 +38,15 @@
             console.log("Usuário logado:", user.email);
             this.startAutoSync();
           } else {
-            // Sem usuário logado - modo público ou-anónimo
-            console.log("Modo anónimo - sincronização desativada");
+            console.log("Modo anónimo - sem login requerido");
+            // Iniciar sincronização mesmo sem login
+            this.startAutoSync();
           }
         });
 
       } catch (e) {
         console.error("Erro ao inicializar Firebase:", e);
+        this.isOnline = false;
       }
     },
 
@@ -170,10 +170,24 @@
 
     // Forçar sincronização manual
     forceSync: async function() {
-      await this.syncToCloud();
-      await this.syncFromCloud();
-      alert("Sincronização concluída!");
-      if (typeof location.reload === 'function') location.reload();
+      const statusEl = document.getElementById('sync-status');
+      if(statusEl) statusEl.innerHTML = '⏳ Enviando dados para a nuvem...';
+      
+      try {
+        await this.syncToCloud();
+        if(statusEl) statusEl.innerHTML = '✅ Dados enviados! Baixando do Firebase...';
+        
+        await this.syncFromCloud();
+        
+        if(statusEl) {
+          statusEl.innerHTML = '✅ Sincronização completa!';
+          setTimeout(() => statusEl.innerHTML = '', 3000);
+        }
+        alert("Sincronização concluída!");
+      } catch(e) {
+        if(statusEl) statusEl.innerHTML = '❌ Erro: ' + e.message;
+        alert("Erro na sincronização: " + e.message);
+      }
     }
   };
 
