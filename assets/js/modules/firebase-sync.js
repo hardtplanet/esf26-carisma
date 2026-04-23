@@ -25,9 +25,14 @@
       try {
         log("📥 Carregando Firebase SDK...");
         
-        // Importar Firebase SDK via CDN
-        if (!window.firebase) {
+        // Importar Firebase SDK via CDN (versão compat que cria objeto firebase global)
+        if (!window.firebase || !window.firebase.initializeApp) {
           await this.loadFirebaseSDK();
+        }
+        
+        if (!window.firebase || !window.firebase.initializeApp) {
+          log("❌ Firebase SDK não carregou!");
+          return;
         }
         
         log("🔥 Inicializando Firebase...");
@@ -59,19 +64,38 @@
 
     loadFirebaseSDK: function() {
       return new Promise((resolve, reject) => {
-        if (window.firebase) { resolve(); return; }
+        if (window.firebase && window.firebase.initializeApp) { 
+          console.log("Firebase SDK já carregado");
+          resolve(); 
+          return;
+        }
         
-        const script = document.createElement('script');
-        script.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        script.onload = () => {
+        console.log("Carregando Firebase SDK v10.8.0...");
+        
+        // Carrega Firebase App
+        const script1 = document.createElement('script');
+        script1.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
+        script1.onload = () => {
+          console.log("Firebase App carregado, carregando Firestore...");
+          
+          // Carrega Firestore
           const script2 = document.createElement('script');
-          script2.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-          script2.onload = resolve;
-          script2.onerror = reject;
+          script2.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js';
+          script2.onload = () => {
+            console.log("Firestore carregado!");
+            resolve();
+          };
+          script2.onerror = (e) => {
+            console.error("Erro ao carregar Firestore:", e);
+            reject(e);
+          };
           document.head.appendChild(script2);
         };
-        script.onerror = reject;
-        document.head.appendChild(script);
+        script1.onerror = (e) => {
+          console.error("Erro ao carregar Firebase App:", e);
+          reject(e);
+        };
+        document.head.appendChild(script1);
       });
     },
 
