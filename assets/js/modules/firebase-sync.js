@@ -70,22 +70,38 @@
 
     // Sincronizar dados locais para Firebase
     syncToCloud: async function() {
-      if (!this.isOnline || !this.db) return;
+      if (!this.isOnline || !this.db) {
+        console.log("syncToCloud: Não conectado");
+        return;
+      }
       
       try {
         const user = this.auth.currentUser;
         const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
         
+        // Pega dados do LocalStorage
+        const mif = window.data.db.get('mif') || [];
+        const contracep = window.data.db.get('contracep') || [];
+        const pccu = window.data.db.get('pccu') || [];
+        const ist = window.data.db.get('ist') || [];
+        
+        console.log("Enviando para Firebase:", {
+          mif: mif.length,
+          contracep: contracep.length,
+          pccu: pccu.length,
+          ist: ist.length
+        });
+        
         const dados = {
-          mif: window.data.db.get('mif'),
-          contracep: window.data.db.get('contracep'),
-          pccu: window.data.db.get('pccu'),
-          ist: window.data.db.get('ist'),
-          fila_contracep: window.data.db.get('fila_contracep'),
-          soap_history: window.data.db.get('soap_history'),
-          soap_templates: window.data.db.get('soap_templates'),
-          config: window.data.db.get('config'),
-          atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+          mif,
+          contracep,
+          pccu,
+          ist,
+          fila_contracep: window.data.db.get('fila_contracep') || [],
+          soap_history: window.data.db.get('soap_history') || [],
+          soap_templates: window.data.db.get('soap_templates') || [],
+          config: window.data.db.get('config') || [],
+          atualizadoEm: new Date().toISOString()
         };
 
         await this.db.collection(collectionName).doc('backup').set(dados, { merge: true });
@@ -205,8 +221,31 @@
 
   // Inicializar quando o DOM estiver pronto
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => window.FirebaseSync.init());
+    document.addEventListener('DOMContentLoaded', () => initFirebaseSync());
   } else {
-    window.FirebaseSync.init();
+    initFirebaseSync();
+  }
+
+  async function initFirebaseSync() {
+    await window.FirebaseSync.init();
+    
+    // Se conectado e sincronização automática ativada, baixa dados
+    if (window.FirebaseSync.isOnline && window.syncConfig?.autoSync) {
+      console.log("Auto-sync ativado, baixando dados...");
+      setTimeout(async () => {
+        const sucesso = await window.FirebaseSync.syncFromCloud();
+        if (sucesso) {
+          console.log("Dados baixados com sucesso!");
+          // Dispara evento para o app.js renderizar
+          window.dispatchEvent(new Event('dadosSincronizados'));
+          // Recarrega a página para renderizar
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          console.log("Nenhum dado encontrado na nuvem para baixar");
+        }
+      }, 2000); // Espera 2 segundos para tudo carregar
+    }
   }
 })();

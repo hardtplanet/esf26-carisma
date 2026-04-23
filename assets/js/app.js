@@ -4,6 +4,17 @@
 // Functions now in assets/js/modules/auth.js
 // Access via auth.fazerLogin, auth.logout, auth.checarSessao, auth.iniciarApp
 
+// Evento disparado quando dados são sincronizados da nuvem
+window.addEventListener('dadosSincronizados', () => {
+  console.log("Dados sincronizados, atualizando visualização...");
+  if (typeof renderDashboard === 'function') renderDashboard();
+  if (typeof renderMIF === 'function') renderMIF();
+  if (typeof renderContracep === 'function') renderContracep();
+  if (typeof renderPCCU === 'function') renderPCCU();
+  if (typeof renderIST === 'function') renderIST();
+  if (typeof atualizarBadges === 'function') atualizarBadges();
+});
+
 // ── NAV ───────────────────────────────────────────────────
 function navTo(pg) {
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
