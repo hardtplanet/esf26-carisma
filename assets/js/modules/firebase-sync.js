@@ -134,45 +134,44 @@
         
         log(`📤 Enviando dados separados...`);
         
-        // Salva cada coleção como documento separado
         const promises = [];
         
-        if (mif.length > 0) {
-          log(`📤 Enviando mif (${mif.length} registros)...`);
+        // Divide mif em chunks de 500 para ficar abaixo de 1MB
+        const CHUNK_SIZE = 500;
+        const totalChunks = Math.ceil(mif.length / CHUNK_SIZE);
+        
+        for (let i = 0; i < mif.length; i += CHUNK_SIZE) {
+          const chunk = mif.slice(i, i + CHUNK_SIZE);
+          const chunkNum = Math.floor(i / CHUNK_SIZE) + 1;
+          log(`📤 Enviando mif_${chunkNum}/${totalChunks} (${chunk.length} registros)...`);
           promises.push(
-            this.db.collection(collectionName).doc('mif').set({ 
-              data: mif, atualizadoEm: new Date().toISOString() })
+            this.db.collection(collectionName).doc(`mif_${chunkNum}`).set({ 
+              data: chunk, 
+              chunkNum: chunkNum,
+              totalChunks: totalChunks,
+              atualizadoEm: new Date().toISOString() 
+            })
           );
         }
+        
         if (contracep.length > 0) {
-          log(`📤 Enviando contracep (${contracep.length} registros)...`);
           promises.push(
             this.db.collection(collectionName).doc('contracep').set({ 
               data: contracep, atualizadoEm: new Date().toISOString() })
           );
         }
         if (pccu.length > 0) {
-          log(`📤 Enviando pccu (${pccu.length} registros)...`);
           promises.push(
             this.db.collection(collectionName).doc('pccu').set({ 
               data: pccu, atualizadoEm: new Date().toISOString() })
           );
         }
         if (ist.length > 0) {
-          log(`📤 Enviando ist (${ist.length} registros)...`);
           promises.push(
             this.db.collection(collectionName).doc('ist').set({ 
               data: ist, atualizadoEm: new Date().toISOString() })
           );
         }
-        
-        // Salva config
-        const config = window.data.db.get('config') || [];
-        log(`📤 Enviando config (${config.length} registros)...`);
-        promises.push(
-          this.db.collection(collectionName).doc('config').set({ 
-            data: config, atualizadoEm: new Date().toISOString() })
-        );
         
         await Promise.all(promises);
         this.lastSync = new Date();
@@ -203,29 +202,48 @@
         
         log(`📥 Buscando documentos em: ${collectionName}`);
         
-        // Busca cada documento separadamente - mapeia nome Firebase -> chave LocalStorage
-        const docMapping = {
-          'mif': 'mif',
-          'contracep': 'contracep', 
-          'pccu': 'pccu',
-          'ist': 'ist',
-          'config': 'config'
-        };
+        // Primeiro, busca chunks do mif (mif_1, mif_2, etc)
+        let mifCompleto = [];
+        let chunkNum = 1;
+        while (true) {
+          try {
+            const doc = await this.db.collection(collectionName).doc(`mif_${chunkNum}`).get();
+            if (doc.exists && doc.data().data) {
+              const chunk = doc.data().data;
+              mifCompleto = mifCompleto.concat(chunk);
+              log(`✅ mif_${chunkNum}: ${chunk.length} registros`);
+              chunkNum++;
+            } else {
+              break;
+            }
+          } catch (e) {
+            break;
+          }
+        }
         
-        for (const [docName, localKey] of Object.entries(docMapping)) {
+        if (mifCompleto.length > 0) {
+          window.data.db.set('mif', mifCompleto);
+          log(`✅ mif completo: ${mifCompleto.length} pacientes`);
+          dadosBaixados = true;
+        }
+        
+        // Busca outros documentos
+        const outrosDocs = ['contracep', 'pccu', 'ist', 'config'];
+        
+        for (const docName of outrosDocs) {
           try {
             const doc = await this.db.collection(collectionName).doc(docName).get();
             
             if (doc.exists) {
               const dados = doc.data();
-              if (dados.data) {
+              if (dados.data && dados.data.length > 0) {
                 log(`✅ ${docName}: ${dados.data.length} registros`);
-                window.data.db.set(localKey, dados.data);
+                window.data.db.set(docName, dados.data);
                 dadosBaixados = true;
               }
             }
           } catch (e) {
-            log(`⚠️ Erro ao buscar ${docName}: ${e.message}`);
+            // Ignora erros de documentos que não existem
           }
         }
         
