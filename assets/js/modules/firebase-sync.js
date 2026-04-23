@@ -41,19 +41,27 @@
         // Inicializar Firebase
         firebase.initializeApp(window.firebaseConfig);
         this.db = firebase.firestore();
-        this.auth = firebase.auth();
+        
+        // Verifica se auth está disponível
+        if (firebase.auth) {
+          this.auth = firebase.auth();
+        }
 
         this.isOnline = true;
         log("✅ Firebase conectado! isOnline=true");
         
-        // Verificar autenticação
-        this.auth.onAuthStateChanged(user => {
-          if (user) {
-            log("👤 Usuário: " + (user.email || user.uid));
-          } else {
-            log("👤 Modo anónimo");
-          }
-        });
+        // Verificar autenticação se disponível
+        if (this.auth && this.auth.onAuthStateChanged) {
+          this.auth.onAuthStateChanged(user => {
+            if (user) {
+              log("👤 Usuário: " + (user.email || user.uid));
+            } else {
+              log("👤 Modo anónimo");
+            }
+          });
+        } else {
+          log("👤 Auth não disponível");
+        }
 
       } catch (e) {
         log("❌ ERRO: " + e.message);
@@ -72,29 +80,32 @@
         
         console.log("Carregando Firebase SDK v10.8.0...");
         
-        // Carrega Firebase App
+        // Carrega Firebase App (versão compat)
         const script1 = document.createElement('script');
         script1.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js';
         script1.onload = () => {
-          console.log("Firebase App carregado, carregando Firestore...");
+          console.log("Firebase App carregado, carregando módulos...");
           
-          // Carrega Firestore
+          // Carrega Auth
           const script2 = document.createElement('script');
-          script2.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js';
+          script2.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js';
           script2.onload = () => {
-            console.log("Firestore carregado!");
-            resolve();
+            console.log("Auth carregado, carregando Firestore...");
+            
+            // Carrega Firestore
+            const script3 = document.createElement('script');
+            script3.src = 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js';
+            script3.onload = () => {
+              console.log("Todos os módulos Firebase carregados!");
+              resolve();
+            };
+            script3.onerror = (e) => reject(e);
+            document.head.appendChild(script3);
           };
-          script2.onerror = (e) => {
-            console.error("Erro ao carregar Firestore:", e);
-            reject(e);
-          };
+          script2.onerror = (e) => reject(e);
           document.head.appendChild(script2);
         };
-        script1.onerror = (e) => {
-          console.error("Erro ao carregar Firebase App:", e);
-          reject(e);
-        };
+        script1.onerror = (e) => reject(e);
         document.head.appendChild(script1);
       });
     },
