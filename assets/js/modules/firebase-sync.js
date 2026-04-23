@@ -110,7 +110,7 @@
       });
     },
 
-    // Sincronizar dados locais para Firebase
+    // Sincronizar dados locais para Firebase (dividido em partes)
     syncToCloud: async function() {
       if (!this.isOnline || !this.db) {
         console.log("syncToCloud: Não conectado");
@@ -124,10 +124,7 @@
       }
       
       try {
-        const user = this.auth?.currentUser;
-        const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
-        
-        log(`📤 Enviando para: ${collectionName}`);
+        const collectionName = 'dados_publicos';
         
         // Pega dados do LocalStorage
         const mif = window.data.db.get('mif') || [];
@@ -135,23 +132,51 @@
         const pccu = window.data.db.get('pccu') || [];
         const ist = window.data.db.get('ist') || [];
         
-        log(`📊 Enviando: mif=${mif.length}, contracep=${contracep.length}, pccu=${pccu.length}, ist=${ist.length}`);
+        log(`📤 Enviando dados separados...`);
         
-        const dados = {
-          mif,
-          contracep,
-          pccu,
-          ist,
-          fila_contracep: window.data.db.get('fila_contracep') || [],
-          soap_history: window.data.db.get('soap_history') || [],
-          soap_templates: window.data.db.get('soap_templates') || [],
-          config: window.data.db.get('config') || [],
-          atualizadoEm: new Date().toISOString()
-        };
-
-        await this.db.collection(collectionName).doc('backup').set(dados, { merge: true });
+        // Salva cada coleção como documento separado
+        const promises = [];
+        
+        if (mif.length > 0) {
+          log(`📤 Enviando mif (${mif.length} registros)...`);
+          promises.push(
+            this.db.collection(collectionName).doc('mif').set({ 
+              data: mif, atualizadoEm: new Date().toISOString() })
+          );
+        }
+        if (contracep.length > 0) {
+          log(`📤 Enviando contracep (${contracep.length} registros)...`);
+          promises.push(
+            this.db.collection(collectionName).doc('contracep').set({ 
+              data: contracep, atualizadoEm: new Date().toISOString() })
+          );
+        }
+        if (pccu.length > 0) {
+          log(`📤 Enviando pccu (${pccu.length} registros)...`);
+          promises.push(
+            this.db.collection(collectionName).doc('pccu').set({ 
+              data: pccu, atualizadoEm: new Date().toISOString() })
+          );
+        }
+        if (ist.length > 0) {
+          log(`📤 Enviando ist (${ist.length} registros)...`);
+          promises.push(
+            this.db.collection(collectionName).doc('ist').set({ 
+              data: ist, atualizadoEm: new Date().toISOString() })
+          );
+        }
+        
+        // Salva config
+        const config = window.data.db.get('config') || [];
+        log(`📤 Enviando config (${config.length} registros)...`);
+        promises.push(
+          this.db.collection(collectionName).doc('config').set({ 
+            data: config, atualizadoEm: new Date().toISOString() })
+        );
+        
+        await Promise.all(promises);
         this.lastSync = new Date();
-        log("✅ Dados SALVOS no Firebase!");
+        log("✅ Dados SALVOS em documentos separados!");
         
       } catch (e) {
         log("❌ Erro ao enviar: " + e.message);
@@ -173,54 +198,42 @@
       }
       
       try {
-        const user = this.auth?.currentUser;
-        const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
+        const collectionName = 'dados_publicos';
+        let dadosBaixados = false;
         
-        log(`📥 Buscando em: ${collectionName}`);
+        log(`📥 Buscando documentos em: ${collectionName}`);
         
-        const doc = await this.db.collection(collectionName).doc('backup').get();
+        // Busca cada documento separadamente - mapeia nome Firebase -> chave LocalStorage
+        const docMapping = {
+          'mif': 'mif',
+          'contracep': 'contracep', 
+          'pccu': 'pccu',
+          'ist': 'ist',
+          'config': 'config'
+        };
         
-        if (doc.exists) {
-          const dados = doc.data();
-          log(`📊 Dados encontrados: ${Object.keys(dados).join(', ')}`);
-          
-          if (dados.mif) {
-            window.data.db.set('mif', dados.mif);
-            log(`✅ mif restaurado: ${dados.mif.length} pacientes`);
+        for (const [docName, localKey] of Object.entries(docMapping)) {
+          try {
+            const doc = await this.db.collection(collectionName).doc(docName).get();
+            
+            if (doc.exists) {
+              const dados = doc.data();
+              if (dados.data) {
+                log(`✅ ${docName}: ${dados.data.length} registros`);
+                window.data.db.set(localKey, dados.data);
+                dadosBaixados = true;
+              }
+            }
+          } catch (e) {
+            log(`⚠️ Erro ao buscar ${docName}: ${e.message}`);
           }
-          if (dados.contracep) {
-            window.data.db.set('contracep', dados.contracep);
-            log(`✅ contracep restaurado: ${dados.contracep.length} registros`);
-          }
-          if (dados.pccu) {
-            window.data.db.set('pccu', dados.pccu);
-            log(`✅ pccu restaurado: ${dados.pccu.length} registros`);
-          }
-          if (dados.ist) {
-            window.data.db.set('ist', dados.ist);
-            log(`✅ ist restaurado: ${dados.ist.length} registros`);
-          }
-          if (dados.fila_contracep) window.data.db.set('fila_contracep', dados.fila_contracep);
-          if (dados.soap_history) window.data.db.set('soap_history', dados.soap_history);
-          if (dados.soap_templates) window.data.db.set('soap_templates', dados.soap_templates);
-          if (dados.config) window.data.db.set('config', dados.config);
-          
-          log("✅ Dados baixados da nuvem!");
+        }
+        
+        if (dadosBaixados) {
+          log("✅ Todos os dados baixados!");
           return true;
         } else {
-          log("⚠️ Nenhum documento 'backup' encontrado no Firebase");
-          // Tenta buscar em dados_publicos como fallback
-          log("🔄 Tentando buscar em dados_publicos...");
-          const doc2 = await this.db.collection('dados_publicos').doc('backup').get();
-          if (doc2.exists) {
-            log("✅ Encontrou em dados_publicos!");
-            const dados = doc2.data();
-            if (dados.mif) window.data.db.set('mif', dados.mif);
-            if (dados.contracep) window.data.db.set('contracep', dados.contracep);
-            if (dados.pccu) window.data.db.set('pccu', dados.pccu);
-            if (dados.ist) window.data.db.set('ist', dados.ist);
-            return true;
-          }
+          log("⚠️ Nenhum dado encontrado na nuvem");
         }
       } catch (e) {
         log("❌ Erro ao baixar: " + e.message);
