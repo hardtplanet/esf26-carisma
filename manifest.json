@@ -1,0 +1,10 @@
+{
+  "name": "ESF 26 Carisma Manager",
+  "short_name": "Carisma",
+  "description": "Sistema de gestão UBS ESF 26",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "icons": []
+}
