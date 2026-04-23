@@ -10,42 +10,49 @@
     pendingChanges: [],
 
     init: async function() {
+      const debugStatus = document.getElementById('sync-debug-status');
+      function log(msg) {
+        console.log(msg);
+        if (debugStatus) debugStatus.innerHTML += msg + '<br>';
+      }
+      
       if (!window.firebaseConfig || window.firebaseConfig.apiKey === "SUA_API_KEY_AQUI") {
-        console.log("Firebase não configurado. Usando modo local apenas.");
+        log("❌ Firebase não configurado!");
         this.isOnline = false;
         return;
       }
 
       try {
+        log("📥 Carregando Firebase SDK...");
+        
         // Importar Firebase SDK via CDN
         if (!window.firebase) {
-          console.log("Carregando Firebase SDK...");
           await this.loadFirebaseSDK();
         }
-
+        
+        log("🔥 Inicializando Firebase...");
+        console.log("Config:", window.firebaseConfig);
+        
         // Inicializar Firebase
-        console.log("Inicializando Firebase com config:", window.firebaseConfig);
         firebase.initializeApp(window.firebaseConfig);
         this.db = firebase.firestore();
         this.auth = firebase.auth();
 
         this.isOnline = true;
-        console.log("✅ Firebase conectado! isOnline =", this.isOnline);
+        log("✅ Firebase conectado! isOnline=true");
         
         // Verificar autenticação
         this.auth.onAuthStateChanged(user => {
           if (user) {
-            console.log("Usuário logado:", user.email);
-            this.startAutoSync();
+            log("👤 Usuário: " + (user.email || user.uid));
           } else {
-            console.log("Modo anónimo - sem login requerido");
-            // Iniciar sincronização mesmo sem login
-            this.startAutoSync();
+            log("👤 Modo anónimo");
           }
         });
 
       } catch (e) {
-        console.error("Erro ao inicializar Firebase:", e);
+        log("❌ ERRO: " + e.message);
+        console.error("Firebase erro:", e);
         this.isOnline = false;
       }
     },
