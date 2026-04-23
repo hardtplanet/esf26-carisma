@@ -26,9 +26,25 @@ const db = {
     }
     try { return JSON.parse(valor || '[]') } catch { return [] }
   },
-  set: (k, v) => localStorage.setItem(KEYS[k], JSON.stringify(v)),
+  set: (k, v) => {
+    localStorage.setItem(KEYS[k], JSON.stringify(v));
+    
+    // Auto-sync com Firebase (mas não se estamos baixando dados)
+    if (window.syncConfig?.enabled && window.FirebaseSync?.isOnline && window.syncConfig?.autoSync && !window._syncEmProgresso) {
+      console.log(`📤 Dados "${k}" alterados, sincronizando...`);
+      window.FirebaseSync.syncToCloud();
+    }
+  },
   getObj: k => { try { return JSON.parse(localStorage.getItem(KEYS[k]) || '{}') } catch { return {} } },
-  setObj: (k, v) => localStorage.setItem(KEYS[k], JSON.stringify(v))
+  setObj: (k, v) => {
+    localStorage.setItem(KEYS[k], JSON.stringify(v));
+    
+    // Auto-sync com Firebase (mas não se estamos baixando dados)
+    if (window.syncConfig?.enabled && window.FirebaseSync?.isOnline && window.syncConfig?.autoSync && !window._syncEmProgresso) {
+      console.log(`📤 Dados "${k}" alterados, sincronizando...`);
+      window.FirebaseSync.syncToCloud();
+    }
+  }
 };
 
 const exportarSistemaCompleto = () => {

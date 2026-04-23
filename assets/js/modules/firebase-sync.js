@@ -117,6 +117,13 @@
         return;
       }
       
+      // Evita loop de sincronização
+      if (window._syncEmProgresso) {
+        console.log("⏭️ Sync já em andamento, pulando...");
+        return;
+      }
+      window._syncEmProgresso = true;
+      
       const debugStatus = document.getElementById('sync-debug-status');
       function log(msg) {
         console.log(msg);
@@ -180,6 +187,8 @@
       } catch (e) {
         log("❌ Erro ao enviar: " + e.message);
         console.error("Erro ao sincronizar:", e);
+      } finally {
+        window._syncEmProgresso = false;
       }
     },
 
@@ -189,6 +198,13 @@
         console.log("syncFromCloud: Não conectado ou sem db");
         return;
       }
+      
+      // Evita loop de sincronização
+      if (window._syncEmProgresso) {
+        console.log("⏭️ Sync já em andamento, pulando...");
+        return;
+      }
+      window._syncEmProgresso = true;
       
       const debugStatus = document.getElementById('sync-debug-status');
       function log(msg) {
@@ -256,6 +272,8 @@
       } catch (e) {
         log("❌ Erro ao baixar: " + e.message);
         console.error("Erro ao baixar dados:", e);
+      } finally {
+        window._syncEmProgresso = false;
       }
       return false;
     },
@@ -304,6 +322,9 @@
 
     // Forçar sincronização manual
     forceSync: async function() {
+      // Permite forçar sync mesmo se já em andamento
+      window._syncEmProgresso = false;
+      
       const statusEl = document.getElementById('sync-status');
       const debugStatus = document.getElementById('sync-debug-status');
       
