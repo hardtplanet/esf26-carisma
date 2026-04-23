@@ -1,0 +1,504 @@
+/* Smart Map Logic - ESF 26 Carisma Manager */
+
+let map;
+let markersLayer = L.layerGroup(); // Individual markers for filtering
+let markerClusterGroup = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 40
+});
+let microAreasLayer = L.featureGroup();
+let manualPoisLayer = L.layerGroup();
+let autoPoisLayer = L.layerGroup();
+let drawControl;
+let geocodingCache = JSON.parse(localStorage.getItem('carisma_map_geocache') || '{}');
+let microAreasData = JSON.parse(localStorage.getItem('carisma_map_microareas') || '[]');
+
+// Map Configuration
+const MAP_CENTER = [-22.1985, -54.7865];
+const MAP_ZOOM = 17; // Closer default zoom
+
+function initMap() {
+    if (map) return;
+
+    map = L.map('map-container', {
+        maxZoom: 22,
+        minZoom: 12,
+        zoomSnap: 0.5
+    }).setView(MAP_CENTER, MAP_ZOOM);
+
+    map.zoomControl.setPosition('topright');
+
+    // Base Layers
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 22,
+        maxNativeZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 22,
+        maxNativeZoom: 18,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
+    });
+
+    const baseMaps = {
+        "Mapa de Ruas": osm,
+        "Satélite (Alta Definição)": satellite
+    };
+
+    osm.addTo(map);
+
+    // Layer Control for switching backgrounds
+    L.control.layers(baseMaps, {
+        "Microáreas": microAreasLayer,
+        "Domicílios/Pacientes": markerClusterGroup,
+        "Pontos de Interesse": manualPoisLayer,
+        "Pontos Automáticos": autoPoisLayer
+    }, { position: 'topright', collapsed: true }).addTo(map);
+
+    markersLayer.addTo(map);
+    markerClusterGroup.addTo(map);
+    microAreasLayer.addTo(map);
+    manualPoisLayer.addTo(map);
+    autoPoisLayer.addTo(map);
+
+    // Initial layers
+    renderUBS();
+    renderSavedPOIs();
+    renderMicroAreas();
+    initDrawingTool();
+
+    // Load data
+    refreshMapData();
+    fetchOverpassPOIs();
+
+    // Listen for moves to load more POIs
+    map.on('moveend', () => {
+        fetchOverpassPOIs();
+    });
+}
+
+function centerMap() {
+    map.setView(MAP_CENTER, MAP_ZOOM);
+}
+
+// ── PATIENT DATA & MARKERS ───────────────────────────────────
+
+let isGeocoding = false;
+
+async function refreshMapData() {
+    if (isGeocoding) return;
+    const patients = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+    const totalPatients = patients.length;
+
+    // 1. Group patients by unique address string
+    const addressGroups = {};
+    const validPatients = patients.filter(p => p.rua);
+
+    validPatients.forEach(p => {
+        const addrKey = `${p.rua}, ${p.numero || 'SN'}, ${p.bairro || 'Jardim Carisma'}`.toLowerCase().trim();
+        if (!addressGroups[addrKey]) addressGroups[addrKey] = {
+            searchString: `${p.rua}, ${p.numero || ''}, ${p.bairro || 'Jardim Carisma'}, Dourados, MS, Brasil`,
+            patients: []
+        };
+        addressGroups[addrKey].patients.push(p);
+    });
+
+    const uniqueAddresses = Object.keys(addressGroups);
+    let geoCount = 0;
+
+    isGeocoding = true;
+    markersLayer.clearLayers();
+    markerClusterGroup.clearLayers();
+
+    // Update initial UI
+    document.getElementById('map-stat-geo').textContent = `Carregando...`;
+
+    // 2. Geocode and group by coordinate
+    const coordGroups = {};
+    for (const key of uniqueAddresses) {
+        const group = addressGroups[key];
+        const coords = await getCoordinates(group.searchString);
+
+        if (coords && coords !== 'NOT_FOUND') {
+            const cKey = `${coords[0].toFixed(6)},${coords[1].toFixed(6)}`;
+            if (!coordGroups[cKey]) {
+                coordGroups[cKey] = {
+                    coords: coords,
+                    patients: [],
+                    addresses: new Set()
+                };
+            }
+            coordGroups[cKey].patients.push(...group.patients);
+            coordGroups[cKey].addresses.add(`${group.patients[0].rua}, ${group.patients[0].numero || 'S/N'}`);
+
+            geoCount += group.patients.length;
+        }
+
+        // Update counter UI incrementally
+        document.getElementById('map-stat-geo').textContent = `${geoCount}/${validPatients.length}`;
+    }
+
+    // 3. Render markers from coordinate groups
+    Object.values(coordGroups).forEach(group => {
+        addGroupMarker(group.patients, group.coords, Array.from(group.addresses));
+    });
+
+    isGeocoding = false;
+    saveGeoCache();
+}
+
+async function getCoordinates(address) {
+    const normAddr = address.toLowerCase().trim();
+    if (geocodingCache[normAddr]) return geocodingCache[normAddr];
+
+    // Respect Nominatim policy (max 1 req/sec) + safety margin
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'ESF26-Carisma-Manager/1.1' }
+        });
+
+        if (response.status === 403 || response.status === 429) {
+            console.warn('Nominatim rate limit hit or blocked.');
+            return null;
+        }
+
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+            const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+            geocodingCache[normAddr] = coords;
+            saveGeoCache(); // Incremental save
+            return coords;
+        } else {
+            // Negative caching to avoid re-searching failed addresses
+            geocodingCache[normAddr] = 'NOT_FOUND';
+            saveGeoCache();
+            return 'NOT_FOUND';
+        }
+    } catch (e) {
+        console.error('Geocoding error for:', address, e);
+    }
+    return null;
+}
+
+function saveGeoCache() {
+    try {
+        localStorage.setItem('carisma_map_geocache', JSON.stringify(geocodingCache));
+    } catch (e) {
+        console.error('Failed to save geocache to localStorage (likely quota full):', e);
+        // If quota is full, we might need to purge old/less used entries, 
+        // but for now we just log it.
+    }
+}
+
+function addGroupMarker(groupPatients, coords, addresses = []) {
+    // Determine priority color based on the group
+    let color = '#8B5CF6'; // Default (Violet/Ruivo)
+    const hasAtrasado = groupPatients.some(p => p.proximaDose && new Date(p.proximaDose) < new Date());
+    const hasGestante = groupPatients.some(p => (p.tags || []).includes('Gestante'));
+    const hasCronico = groupPatients.some(p => (p.tags || []).includes('Diabético') || (p.tags || []).includes('Hipertenso'));
+
+    if (hasAtrasado) color = '#EF4444';
+    else if (hasGestante) color = '#EC4899';
+    else if (hasCronico) color = '#3B82F6';
+
+    const icon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="background-color:${color};" class="marker-pin"><i>${groupPatients.length}</i></div>`,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42]
+    });
+
+    const marker = L.marker(coords, { icon });
+
+    // Build popup with multiple patients
+    let patientsListHtml = groupPatients.map(p => {
+        const pTags = p.tags || [];
+        const isAtrasado = p.proximaDose && new Date(p.proximaDose) < new Date();
+        const tagsHtml = pTags.map(t => {
+            let cls = '';
+            if (t === 'Gestante') cls = 'tag-gestante';
+            else if (t === 'Diabético' || t === 'Hipertenso') cls = 'tag-cronico';
+            return `<span class="map-popup-tag ${cls}">${t}</span>`;
+        }).join(' ');
+
+        return `
+            <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                <div style="font-weight:700; color:var(--primary);">${p.nome}</div>
+                <div style="font-size:0.75rem;">MA: ${p.microArea || '—'} | ${p.rua}, ${p.numero || 'SN'} | ${tagsHtml}</div>
+                ${isAtrasado ? '<div class="map-popup-tag tag-atrasado" style="font-size:0.65rem;">⚠️ Atrasado</div>' : ''}
+                <a href="#" style="font-size:0.7rem; color:var(--primary); text-decoration:underline;" onclick="abrirPerfilCC_Map('${p.id}')">Ver Perfil</a>
+            </div>
+        `;
+    }).join('');
+
+    const addrStr = addresses.length > 0 ? addresses.join(' / ') : (groupPatients[0].rua + ', ' + (groupPatients[0].numero || 'S/N'));
+
+    marker.bindPopup(`
+        <div class="map-popup-card" style="max-height: 250px; overflow-y: auto;">
+            <div style="font-size:0.75rem; color:#666; margin-bottom:8px;">🏠 ${addrStr}</div>
+            ${patientsListHtml}
+        </div>
+    `);
+
+    marker.patientDataGroup = groupPatients;
+    markersLayer.addLayer(marker);
+    markerClusterGroup.addLayer(marker);
+}
+
+// Global function to open profile from map
+window.abrirPerfilCC_Map = (id) => {
+    if (typeof window.abrirPerfilCC === 'function') {
+        window.abrirPerfilCC(id);
+    } else {
+        alert('Perfil do paciente não disponível nesta tela.');
+    }
+};
+
+// ── LAYERS & FILTERS ──────────────────────────────────────────
+
+function toggleLayer() {
+    const checkGestantes = document.querySelector('input[onchange*="gestantes"]')?.checked;
+    const checkCronicos = document.querySelector('input[onchange*="cronicos"]')?.checked;
+    const checkRisco = document.querySelector('input[onchange*="risco"]')?.checked;
+    const checkBase = document.querySelector('input[onchange*="domicilios"]')?.checked;
+
+    markerClusterGroup.clearLayers();
+
+    markersLayer.eachLayer(marker => {
+        const group = marker.patientDataGroup;
+        let visible = false;
+
+        if (checkGestantes && group.some(p => (p.tags || []).includes('Gestante'))) visible = true;
+        if (checkCronicos && group.some(p => (p.tags || []).includes('Diabético') || (p.tags || []).includes('Hipertenso'))) visible = true;
+        if (checkRisco && group.some(p => p.risco === 'Alto')) visible = true;
+        if (checkBase && !visible) visible = true;
+
+        if (visible) {
+            markerClusterGroup.addLayer(marker);
+        }
+    });
+}
+
+// ── MICRO-AREAS & POIs ──────────────────────────────────────
+let manualPoiMarker = null;
+let savedPOIs = JSON.parse(localStorage.getItem('carisma_map_pois') || '[]');
+
+const POI_ICONS = {
+    school: '🏫',
+    church: '⛪',
+    market: '🏬',
+    unei: '🏛️',
+    other: '📍'
+};
+
+function initMapLayers() {
+    // Deprecated in favor of initMap logic
+}
+
+function renderUBS() {
+    // UBS ESF 26 Jardim Carisma approximate location
+    const UBS_COORDS = [-22.2015, -54.7875];
+    const ubsIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div style="background-color:#000; border:2px solid #FFD700;" class="marker-pin"><i>🏥</i></div>`,
+        iconSize: [36, 48],
+        iconAnchor: [18, 48]
+    });
+
+    L.marker(UBS_COORDS, { icon: ubsIcon, zIndexOffset: 1000 })
+        .bindPopup('<strong>🏥 UBS ESF 26 - Jardim Carisma</strong><br>Sede do nosso território.')
+        .addTo(map); // Add directly to map, not clustered
+}
+
+// ── MANUAL POIs ──────────────────────────────────────────
+
+function togglePOIEditor() {
+    const controls = document.getElementById('poi-controls');
+    if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        map.on('click', onMapClickForPOI);
+        map.getContainer().style.cursor = 'crosshair';
+        alert('Clique no mapa para marcar o novo ponto de interesse.');
+    } else {
+        controls.style.display = 'none';
+        map.off('click', onMapClickForPOI);
+        map.getContainer().style.cursor = '';
+        if (manualPoiMarker) map.removeLayer(manualPoiMarker);
+    }
+}
+
+function onMapClickForPOI(e) {
+    if (manualPoiMarker) map.removeLayer(manualPoiMarker);
+    manualPoiMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
+}
+
+function saveManualPOI() {
+    const name = document.getElementById('poi-name').value;
+    const type = document.getElementById('poi-type').value;
+
+    if (!name || !manualPoiMarker) {
+        alert('Por favor, dê um nome e clique no mapa.');
+        return;
+    }
+
+    const { lat, lng } = manualPoiMarker.getLatLng();
+    const newPoi = { id: Date.now(), name, type, coords: [lat, lng], manual: true };
+
+    savedPOIs.push(newPoi);
+    localStorage.setItem('carisma_map_pois', JSON.stringify(savedPOIs));
+
+    addPoiMarker(newPoi, true);
+    togglePOIEditor();
+
+    document.getElementById('poi-name').value = '';
+    alert('Ponto de interesse salvo com sucesso!');
+}
+
+function renderSavedPOIs() {
+    savedPOIs.forEach(poi => addPoiMarker(poi, true));
+}
+
+function addPoiMarker(poi, isManual = false) {
+    const icon = L.divIcon({
+        className: 'poi-marker',
+        html: `<div class="poi-icon-wrap" style="background:#fff; border:2px solid ${isManual ? '#EC4899' : '#8B5CF6'}; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.2); font-size:18px;">${POI_ICONS[poi.type] || '📍'}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+
+    const targetLayer = isManual ? manualPoisLayer : autoPoisLayer;
+
+    L.marker(poi.coords, { icon })
+        .bindPopup(`<strong>${poi.name}</strong><br>${poi.manual ? '(Identificado em campo)' : '(Base de Dados OpenStreetMap)'}`)
+        .addTo(targetLayer);
+}
+
+// ── AUTOMATIC POIs (OPENSTREETMAP/OVERPASS) ──────────────────
+
+async function fetchOverpassPOIs() {
+    try {
+        const bounds = map.getBounds();
+        const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
+
+        const query = `
+            [out:json][timeout:25];
+            (
+              node["amenity"~"school|place_of_worship|marketplace|public_building"](${bbox});
+              way["amenity"~"school|place_of_worship|marketplace|public_building"](${bbox});
+            );
+            out center;`;
+
+        const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        autoPoisLayer.clearLayers();
+        data.elements.forEach(el => {
+            const amen = el.tags.amenity;
+            const type = mapOsmTypeToPoi(amen);
+            const poi = {
+                name: el.tags.name || (type === 'school' ? 'Escola' : type === 'church' ? 'Igreja' : 'Local'),
+                type: type,
+                coords: [el.lat || el.center.lat, el.lon || el.center.lon],
+                manual: false
+            };
+            addPoiMarker(poi, false);
+        });
+    } catch (e) {
+        console.warn('Overpass API error:', e);
+    }
+}
+
+function mapOsmTypeToPoi(amenity) {
+    if (amenity === 'school' || amenity === 'kindergarten') return 'school';
+    if (amenity === 'place_of_worship') return 'church';
+    if (amenity === 'marketplace' || amenity === 'pharmacy' || amenity === 'supermarket') return 'market';
+    return 'other';
+}
+
+// ── MICRO-AREAS DRAWING ──────────────────────────────────────
+
+function initDrawingTool() {
+    drawControl = new L.Control.Draw({
+        draw: {
+            polygon: true,
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+            circlemarker: false
+        },
+        edit: {
+            featureGroup: microAreasLayer,
+            remove: true
+        }
+    });
+
+    map.on(L.Draw.Event.CREATED, function (e) {
+        const layer = e.layer;
+        microAreasLayer.addLayer(layer);
+    });
+}
+
+function toggleDrawingTool() {
+    const controls = document.getElementById('drawing-controls');
+    if (controls.style.display === 'none') {
+        controls.style.display = 'block';
+        map.addControl(drawControl);
+    } else {
+        controls.style.display = 'none';
+        map.removeControl(drawControl);
+    }
+}
+
+function saveMicroArea() {
+    const number = document.getElementById('ma-number').value;
+    if (!number) {
+        alert('Por favor, informe o número da microárea.');
+        return;
+    }
+
+    const layers = microAreasLayer.getLayers();
+    if (layers.length === 0) {
+        alert('Desenhe o polígono da microárea primeiro.');
+        return;
+    }
+
+    const lastLayer = layers[layers.length - 1];
+    const geojson = lastLayer.toGeoJSON();
+    geojson.properties = { microArea: number };
+
+    microAreasData.push(geojson);
+    localStorage.setItem('carisma_map_microareas', JSON.stringify(microAreasData));
+
+    alert(`Microárea ${number} salva com sucesso!`);
+}
+
+function renderMicroAreas() {
+    microAreasLayer.clearLayers();
+    microAreasData.forEach(data => {
+        L.geoJSON(data, {
+            style: { color: '#8B5CF6', weight: 2, fillOpacity: 0.1 },
+            onEachFeature: (feature, layer) => {
+                layer.bindPopup(`<strong>Microárea ${feature.properties.microArea}</strong>`);
+            }
+        }).addTo(microAreasLayer);
+    });
+}
+
+// Existing Micro-areas code adjusted for initialization
+// initMap merged at start of file
+
+// Integration with navigation
+const originalNavTo = window.navTo;
+window.navTo = function (pg) {
+    if (typeof originalNavTo === 'function') originalNavTo(pg);
+    if (pg === 'mapa') {
+        setTimeout(initMap, 100);
+    }
+};

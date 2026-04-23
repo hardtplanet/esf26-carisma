@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passaporte - Vasectomia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #555;
+            padding: 20px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .page {
+            background-color: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 20px auto;
+            padding: 12mm 15mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .logo {
+            height: 67px;
+            object-fit: contain;
+        }
+
+        .logo-container:nth-child(3) .logo {
+            height: 33px;
+        }
+
+        .logo-container {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 3px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 3px;
+            white-space: nowrap;
+            font-size: 10px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        .input-line {
+            border: none;
+            border-bottom: 1px solid #000;
+            border-radius: 0;
+            padding: 1px 3px;
+        }
+
+        .check-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 10px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3px;
+        }
+
+        td {
+            padding: 2px;
+            vertical-align: top;
+            font-size: 11px;
+        }
+
+        .signature-box {
+            margin-top: 20px;
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            text-align: center;
+            width: 48%;
+            display: inline-block;
+            font-size: 10px;
+        }
+
+        .signature-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        ul {
+            margin: 5px 0;
+            padding-left: 20px;
+            font-size: 10px;
+        }
+
+        li {
+            margin: 2px 0;
+        }
+
+        .warning-box {
+            background: #f9f9f9;
+            padding: 5px;
+            border: 1px solid #ccc;
+            margin: 5px 0;
+            font-size: 10px;
+        }
+
+        .actions {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background-color: #34495e;
+        }
+
+        .btn-clear {
+            background-color: #c0392b;
+        }
+
+        .btn-clear:hover {
+            background-color: #e74c3c;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: auto;
+                height: auto;
+                padding: 0;
+                page-break-after: always;
+                break-after: page;
+                border: none;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+
+            .actions {
+                display: none !important;
+            }
+
+            input,
+            textarea,
+            select {
+                border: none;
+                border-bottom: 1px solid #000;
+                padding: 0;
+                resize: none;
+            }
+
+            input[type="radio"],
+            input[type="checkbox"] {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .header-logos {
+                border-bottom: 2px solid #000;
+            }
+
+            .section,
+            .row,
+            .signature-container {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="actions">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+        <button class="btn btn-clear"
+            onclick="if(confirm('Limpar todos os campos?')) document.querySelector('form').reset()">🗑️ Limpar
+            Formulário</button>
+    </div>
+
+    <form>
+        <!-- PÁGINA 1 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container">
+                    <img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_sems.png" alt="SEMS" class="logo">
+                </div>
+            </div>
+
+            <h1>PASSAPORTE PARA REALIZAÇÃO DE ESTERILIZAÇÃO CIRÚRGICA - VASECTOMIA</h1>
+
+            <div class="section">
+                <h2>1. DADOS DO PACIENTE</h2>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        <label>Nome:</label>
+                        <input type="text" id="p-nome" class="input-line" placeholder="Nome completo">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        <label>Nome Social:</label>
+                        <input type="text" id="p-nome-social" class="input-line">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Nome da Mãe:</label><input type="text" id="p-mae" class="input-line"></div>
+                    <div class="col"><label>Data Nascimento:</label><input type="date" id="p-nasc" class="input-line">
+                    </div>
+                    <div class="col"><label>Idade:</label><input type="number" id="p-idade" class="input-line"
+                            style="width: 50px;">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Nº Filhos:</label><input type="number" id="p-filhos" class="input-line"
+                            style="width: 50px;"></div>
+                    <div class="col"><label>Idade dos filhos:</label><input type="text" id="p-idade-filhos"
+                            class="input-line"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>Estado Civil:</label>
+                        <div class="check-group">
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Solteiro">
+                                Solteiro</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Casado">
+                                Casado</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Viúvo">
+                                Viúvo</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Divorciado">
+                                Divorciado</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="União Estável">
+                                União Estável</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Convivente">
+                                Convivente</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>Raça/Cor Auto Declarada:</label>
+                        <div class="check-group">
+                            <label class="check-item"><input type="radio" name="raca" value="Branca"> Branco</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Preta"> Preto</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Parda"> Pardo</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Amarela"> Amarelo</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Indígena"> Indígena</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Nacionalidade:</label><input type="text" id="p-nacionalidade"
+                            class="input-line"></div>
+                    <div class="col">
+                        <label>Escolaridade:</label>
+                        <select id="p-escolaridade" class="input-line">
+                            <option value="">Selecione...</option>
+                            <option value="Não Alfabetizado">Não Alfabetizado</option>
+                            <option value="Fundamental">Ensino Fundamental</option>
+                            <option value="Médio">Ensino Médio</option>
+                            <option value="Superior">Ensino Superior</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>CNS:</label><input type="text" id="p-cns" class="input-line"></div>
+                    <div class="col"><label>CPF:</label><input type="text" id="p-cpf" class="input-line"></div>
+                    <div class="col"><label>RG:</label><input type="text" id="p-rg" class="input-line"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Endereço:</label><input type="text" id="p-end"
+                            class="input-line">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Bairro:</label><input type="text" id="p-bairro" class="input-line"></div>
+                    <div class="col"><label>Cidade/UF:</label><input type="text" id="p-cidade" class="input-line"></div>
+                    <div class="col"><label>CEP:</label><input type="text" id="p-cep" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Telefones:</label><input type="text" id="p-tel" class="input-line"></div>
+                    <div class="col"><label>Resp. Conferência CADWEB:</label><input type="text" class="input-line">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. CERTIFICADO DE PARTICIPAÇÃO EM AÇÃO EDUCATIVA</h2>
+                <p style="text-align: justify; margin-bottom: 5px; font-size: 10px;">
+                    Em cumprimento à Lei do Planejamento Familiar n°9.263, de 12/01/1996, alterada pela Lei n°14.443, de
+                    02/09/2022, e a Portaria SAS/MS n°48, de 11/02/1999, certificamos que:
+                </p>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Paciente:</label><input type="text" id="cert-nome"
+                            class="input-line">
+                    </div>
+                    <div class="col"><label>CNS:</label><input type="text" id="cert-cns" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        Participou de consulta em Planejamento Familiar/Ação educativa no dia:
+                        <input type="date" class="input-line" style="width: 120px; display:inline-block;">
+                        e foi orientado sobre ação, índice de falha e eficácia, método de uso, riscos, reações adversas
+                        e disponibilidade dos métodos contraceptivos naturais, de barreira, hormonais, reversíveis de
+                        longa duração (LARC's) e cirúrgicos, disponibilizados pela Secretaria Municipal de Saúde de:
+                        <input type="text" id="cert-cidade" class="input-line" placeholder="Cidade"
+                            style="width: 150px;">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        Foi também devidamente orientado sobre os ditames da Lei de Planejamento Familiar n°14.443/2022.
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        <label>Motivo da opção pela esterilização cirúrgica:</label>
+                        <textarea class="input-line" rows="2" style="width: 100%;"></textarea>
+                    </div>
+                </div>
+                <div class="signature-container">
+                    <div class="signature-box" style="width: 100%;">Carimbo e Assinatura dos Profissionais<br>(Enf / Med
+                        / Psic / Ass. Social)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 2 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container">
+                    <img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_sems.png" alt="SEMS" class="logo">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>3. MANIFESTAÇÃO DA VONTADE DE ESTERILIZAÇÃO CIRÚRGICA - VASECTOMIA</h2>
+                <h3>(preencher e assinar no dia da ação educativa)</h3>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        Eu, <input type="text" id="manifest-nome" class="input-line"
+                            style="width: 200px; display:inline-block;">, CPF:
+                        <input type="text" id="manifest-cpf" class="input-line"
+                            style="width: 120px; display:inline-block;">, residente na
+                        cidade de: <input type="text" id="manifest-cidade" class="input-line"
+                            style="width: 150px; display:inline-block;">,
+                        usuário da unidade: <input type="text" id="manifest-unidade" class="input-line"
+                            style="width: 150px; display:inline-block;">, CNS: <input type="text" id="manifest-cns"
+                            class="input-line" style="width: 150px; display:inline-block;">, desejo submeter-me
+                        voluntariamente ao
+                        procedimento de vasectomia. Estou ciente que o prazo mínimo entre esta manifestação da vontade e
+                        a realização da cirurgia é de, no mínimo, 60 (sessenta) dias.
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col"><label>Data:</label><input type="date" class="input-line"></div>
+                    <div class="col"><label>Assinatura Paciente:</label><input type="text" class="input-line"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>4. TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO - VASECTOMIA</h2>
+                <h3>(preencher e assinar no dia da ação educativa)</h3>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        Eu, <input type="text" id="tcle-nome" class="input-line"
+                            style="width: 200px; display:inline-block;">, CPF:
+                        <input type="text" id="tcle-cpf" class="input-line"
+                            style="width: 120px; display:inline-block;">, Declaro ter
+                        recebido informações sobre os riscos da esterilização cirúrgica e compreendido que:
+                    </div>
+                </div>
+                <ul style="text-align: justify;">
+                    <li>A vasectomia é um método cirúrgico de interrupção definitiva da fertilidade masculina, devido o
+                        corte de ambos os ductos deferentes, interrompendo assim, a passagem de espermatozoides dos
+                        testículos para o pênis;</li>
+                    <li>A vasectomia <strong>NÃO</strong> causa impotência sexual;</li>
+                    <li>A vasectomia é um método contraceptivo de reversão extremamente difícil e não coberto pelo SUS,
+                        portanto, assumo a responsabilidade pela decisão de não ter mais filhos;</li>
+                    <li>A cirurgia é feita em ambulatório, com anestesia local, e com um ou dois pequenos cortes na
+                        bolsa escrotal;</li>
+                    <li>A vasectomia é um ato cirúrgico simples, mas envolve risco de infecção no pós-operatório. Além
+                        disso, pode ocorrer hematomas/equimoses, inchaço e dor na região da bolsa escrotal;</li>
+                    <li>Embora rara, existe a possibilidade de risco de recanalização espontânea dos ductos deferentes,
+                        ou seja, sua efetividade contraceptiva não é de 100%;</li>
+                    <li>Para prevenção de gravidez, fui orientado a usar camisinha em todas relações sexuais, até a
+                        realização do exame de espermograma;</li>
+                    <li>A vasectomia não me protege contra as infecções sexualmente transmissíveis (IST), inclusive
+                        HIV/AIDS.</li>
+                </ul>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col"><label>Data:</label><input type="date" class="input-line"></div>
+                    <div class="col"><label>Assinatura Paciente:</label><input type="text" class="input-line"></div>
+                </div>
+                <div class="signature-container">
+                    <div class="signature-box" style="width: 100%;">Carimbo e Assinatura dos Profissionais<br>(Enf / Med
+                        / Psic / Ass. Social)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 3 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container">
+                    <img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo">
+                </div>
+                <div class="logo-container">
+                    <img src="assets/img/logo_sems.png" alt="SEMS" class="logo">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>5. ENCAMINHAMENTO E AGENDAMENTO</h2>
+                <div class="row">
+                    <div class="col" style="flex: 2;">
+                        <label>Data do encaminhamento do passaporte para o CAM:</label>
+                        <input type="date" class="input-line">
+                    </div>
+                </div>
+
+                <div class="warning-box" style="margin-top: 20px;">
+                    <strong>ORIENTAÇÕES IMPORTANTES:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px;">
+                        <li>Após a cirurgia, o paciente deve continuar usando método contraceptivo de barreira
+                            (camisinha)</li>
+                        <li>Retornar para espermograma após período determinado pelo médico (geralmente 3 meses)</li>
+                        <li>Só suspender outros métodos contraceptivos após liberação médica baseada no espermograma
+                        </li>
+                        <li>Levar para a cirurgia: RG, CPF, CNS e este passaporte</li>
+                    </ul>
+                </div>
+
+                <div class="signature-container" style="margin-top: 60px;">
+                    <div class="signature-box">Assinatura e Carimbo do Responsável<br>pelo Encaminhamento</div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        var tx = document.getElementsByTagName("textarea");
+        for (var i = 0; i < tx.length; i++) {
+            tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+            tx[i].addEventListener("input", OnInput, false);
+        }
+
+        function OnInput() {
+            this.style.height = "auto";
+            this.style.height = (this.scrollHeight) + "px";
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            const dados = JSON.parse(localStorage.getItem('dadosEsterilizacao'));
+            if (dados) {
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+
+                // Dados Pessoais
+                set('p-nome', dados.nome);
+                set('p-cns', dados.cns);
+                set('p-cpf', dados.cpf);
+                set('p-nasc', dados.nasc);
+                set('p-mae', dados.mae);
+                set('p-end', dados.end);
+                set('p-bairro', dados.bairro);
+                set('p-cidade', dados.cidade || 'Dourados/MS');
+                set('p-cep', dados.cep);
+                set('p-tel', dados.tel);
+
+                // Repetir em outros locais do formulário
+                set('cert-nome', dados.nome);
+                set('cert-cns', dados.cns);
+                set('cert-cidade', 'Dourados');
+                set('manifest-nome', dados.nome);
+                set('manifest-cpf', dados.cpf);
+                set('manifest-cns', dados.cns);
+                set('manifest-cidade', 'Dourados');
+                set('manifest-unidade', 'ESF 26 - Carisma');
+                set('tcle-nome', dados.nome);
+                set('tcle-cpf', dados.cpf);
+
+                // Calcular Idade
+                if (dados.nasc) {
+                    const h = new Date(), d = new Date(dados.nasc);
+                    let a = h.getFullYear() - d.getFullYear();
+                    if (h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) a--;
+                    set('p-idade', a);
+                }
+                console.log('✅ Dados preenchidos automaticamente!', dados);
+            }
+        });
+    </script>
+</body>
+
+</html>

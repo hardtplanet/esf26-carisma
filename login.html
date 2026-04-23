@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ESF 26 Carisma</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header img {
+            width: 100px;
+            margin-bottom: 15px;
+        }
+
+        .login-header h1 {
+            color: #8B5CF6;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #6B7280;
+            font-size: 0.95rem;
+        }
+
+        .login-form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #111827;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #8B5CF6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .login-footer {
+            margin-top: 25px;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .login-footer p {
+            color: #6B7280;
+            font-size: 0.85rem;
+        }
+
+        .error-message {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .error-message.show {
+            display: flex;
+        }
+
+        .info-box {
+            background: #F3F0FF;
+            border: 1px solid #DDD6FE;
+            color: #5B21B6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <img src="assets/img/logo_dourados.png" alt="Logo Dourados" onerror="this.style.display='none'">
+            <h1>ESF 26 - Carisma</h1>
+            <p>Sistema Unificado de Gestão</p>
+        </div>
+
+        <div class="error-message" id="error-message">
+            <span>⚠️</span>
+            <span id="error-text">Usuário ou senha incorretos</span>
+        </div>
+
+        <div class="info-box">
+            <strong>ℹ️ Acesso Restrito</strong>
+            Sistema exclusivo para profissionais da ESF 26
+        </div>
+
+        <form class="login-form" onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label>CNS ou CPF</label>
+                <input type="text" id="usuario" required placeholder="Digite seu CNS ou CPF">
+            </div>
+
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="senha" required placeholder="Digite sua senha">
+            </div>
+
+            <button type="submit" class="btn-login">🔐 Entrar</button>
+        </form>
+
+        <div class="login-footer">
+            <p>ESF 26 - Carisma | Dourados/MS</p>
+            <p style="margin-top: 5px; font-size: 0.75rem;">Sistema v3.4.0 - Uso Profissional</p>
+        </div>
+    </div>
+
+    <script>
+        function fazerLogin(event) {
+            event.preventDefault();
+            
+            const usuario = document.getElementById('usuario').value;
+            const senha = document.getElementById('senha').value;
+            const errorMessage = document.getElementById('error-message');
+
+            // Login profissional - senha padrão 123456
+            if (senha === '123456') {
+                localStorage.setItem('esf26_logged', 'true');
+                localStorage.setItem('carisma_session_v4', '{"logado":true}');
+                localStorage.setItem('esf26_user_type', 'profissional');
+                localStorage.setItem('esf26_user_cns', usuario);
+                localStorage.setItem('esf26_login_time', new Date().toISOString());
+                
+                // Redirecionar para o sistema unificado
+                window.location.href = 'index.html';
+            } else {
+                errorMessage.classList.add('show');
+                document.getElementById('error-text').textContent = 'Senha incorreta';
+                
+                // Esconder erro após 3 segundos
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Verificar se já está logado
+        window.addEventListener('load', () => {
+            const logged = localStorage.getItem('esf26_logged');
+            if (logged === 'true') {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

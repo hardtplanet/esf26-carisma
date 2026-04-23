@@ -1,0 +1,75 @@
+/* Accessibility Improvements for ESF 26 Carisma Manager */
+
+/* Focus improvements - ensure visible focus indicators */
+*:focus {
+    outline: 2px solid var(--primary) !important;
+    outline-offset: 2px !important;
+}
+
+/* Skip to content link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    z-index: 1000;
+    border-radius: 0 0 8px 8px;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* ARIA live regions for dynamic content */
+.aria-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --primary: #000000;
+        --primary-dark: #000000;
+        --mulher: #000000;
+        --border: #000000;
+        --text: #000000;
+    }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+/* Ensure touch targets are minimum 44x44px */
+.btn, .nav-link, .btn-login, .btn-sair {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Form validation states */
+input[aria-invalid="true"] {
+    border-color: var(--danger) !important;
+}
+
+input[aria-invalid="true"]:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}

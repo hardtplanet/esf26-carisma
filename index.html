@@ -1,0 +1,3036 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESF 26 - Carisma Manager</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Leaflet.js for Smart Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Marker Cluster for overlapping markers -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+  <!-- Leaflet Draw for Micro-area boundaries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <!-- JSZip for KMZ support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <link rel="stylesheet" href="assets/css/map-styles.css" />
+  <style>
+    :root {
+      --primary: #8B5CF6;
+      --primary-dark: #7C3AED;
+      --primary-light: #A78BFA;
+      --mulher: #EC4899;
+      --mulher-dark: #DB2777;
+      --mulher-light: #F9A8D4;
+      --bg: #F3F4F6;
+      --surface: #FFFFFF;
+      --surface2: #F9FAFB;
+      --text: #111827;
+      --text2: #6B7280;
+      --border: #E5E7EB;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --success: #10B981;
+      --info: #3B82F6;
+      --sidebar-w: 270px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, sans-serif
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
+
+    /* ===== LOGIN ===== */
+    #login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--mulher-dark) 100%)
+    }
+
+    .login-box {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, .3);
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 420px
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 28px
+    }
+
+    .login-logo img {
+      width: 80px;
+      margin-bottom: 12px
+    }
+
+    .login-logo h1 {
+      font-size: 1.6rem;
+      color: var(--primary);
+      font-weight: 700
+    }
+
+    .login-logo p {
+      color: var(--text2);
+      font-size: .9rem;
+      margin-top: 4px
+    }
+
+    .login-box .form-group {
+      margin-bottom: 18px
+    }
+
+    .login-box label {
+      display: block;
+      font-weight: 600;
+      font-size: .85rem;
+      margin-bottom: 6px;
+      color: var(--text)
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: .95rem;
+      transition: .2s
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: var(--primary)
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .2s
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, .4)
+    }
+
+    .login-info {
+      background: #F3F0FF;
+      border: 1px solid #DDD6FE;
+      color: #5B21B6;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: .82rem;
+      margin-bottom: 20px
+    }
+
+    .login-err {
+      display: none;
+      background: #FEE2E2;
+      color: #991B1B;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: .85rem
+    }
+
+    .login-err.show {
+      display: block
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--text2);
+      font-size: .8rem
+    }
+
+    /* ===== LAYOUT PRINCIPAL ===== */
+    #app {
+      display: none;
+      min-height: 100vh;
+      background-clip: padding-box;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: linear-gradient(180deg, #4C1D95 0%, #7C3AED 60%, #DB2777 100%);
+      color: #fff;
+      overflow-y: auto;
+      z-index: 200;
+      transition: transform .3s
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .3);
+      border-radius: 2px
+    }
+
+    .sb-header {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, .15)
+    }
+
+    .sb-header img {
+      width: 56px;
+      display: block;
+      margin: 0 auto 8px
+    }
+
+    .sb-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.3
+    }
+
+    .sb-header p {
+      font-size: .75rem;
+      opacity: .75;
+      text-align: center;
+      margin-top: 2px
+    }
+
+    .sb-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, .1);
+      margin: 12px;
+      border-radius: 10px;
+      font-size: .82rem
+    }
+
+    .sb-user .avatar {
+      width: 32px;
+      height: 32px;
+      background: var(--mulher);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0
+    }
+
+    .nav-section-label {
+      font-size: .68rem;
+      text-transform: uppercase;
+      opacity: .55;
+      letter-spacing: .08em;
+      padding: 16px 20px 6px
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, .85);
+      text-decoration: none;
+      border-radius: 0;
+      transition: .15s;
+      font-size: .88rem;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      position: relative;
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      background: var(--mulher);
+      border-radius: 0 2px 2px 0;
+      transition: height 0.2s ease;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: rgba(255, 255, 255, .18);
+      color: #fff
+    }
+
+    .nav-link:hover::before,
+    .nav-link.active::before {
+      height: 60%;
+    }
+
+    .nav-link .ni {
+      font-size: 1.1rem;
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0
+    }
+
+    .nav-link .badge-alert {
+      margin-left: auto;
+      background: var(--danger);
+      color: #fff;
+      font-size: .68rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+
+    .badge-alert:only-child {
+      animation: none;
+    }
+
+    /* ===== MAIN ===== */
+    .main {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column
+    }
+
+    .topbar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .06)
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: var(--primary)
+    }
+
+    #page-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary)
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .btn-sair {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600
+    }
+
+    .content {
+      padding: 24px 28px;
+      flex: 1
+    }
+
+    /* ===== CARDS DASHBOARD ===== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px
+    }
+
+    .dash-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+      border-left: 4px solid var(--primary);
+      transition: .2s;
+      cursor: pointer
+    }
+
+    .dash-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .1)
+    }
+
+    .dash-card.pink {
+      border-left-color: var(--mulher)
+    }
+
+    .dash-card.red {
+      border-left-color: var(--danger)
+    }
+
+    .dash-card.green {
+      border-left-color: var(--success)
+    }
+
+    .dash-card.yellow {
+      border-left-color: var(--warning)
+    }
+
+    .dash-card h3 {
+      font-size: .8rem;
+      color: var(--text2);
+      font-weight: 600;
+      margin-bottom: 8px
+    }
+
+    .dash-card .val {
+      font-size: 2.2rem;
+      font-weight: 700;
+      line-height: 1
+    }
+
+    .dash-card .sub {
+      font-size: .75rem;
+      color: var(--text2);
+      margin-top: 6px
+    }
+
+    .dash-card .icon-big {
+      font-size: 1.8rem;
+      margin-bottom: 8px
+    }
+
+    /* ===== SECTION TITLE ===== */
+    .sec-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px
+    }
+
+    .sec-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    /* ===== ABASE/TABS ===== */
+    .view-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .view-tab {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text2);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: 0.2s;
+    }
+
+    .view-tab:hover {
+      color: var(--primary);
+    }
+
+    .view-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .view-content {
+      display: none;
+    }
+
+    .view-content.active {
+      display: block;
+    }
+
+    /* ===== BOTÕES ===== */
+    .btn {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .85rem;
+      transition: .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .btn {
+      transition: all 0.2s ease;
+      transform: translateY(0);
+    }
+
+    .btn:hover {
+      filter: brightness(.92);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-mulher {
+      background: var(--mulher);
+      color: #fff
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-warning:hover {
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-outline {
+      background: #fff;
+      border: 2px solid var(--border);
+      color: var(--text)
+    }
+
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: #F5F3FF;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: .78rem
+    }
+
+    /* ===== SEARCH ===== */
+    .search-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px
+    }
+
+    .search-row input,
+    .search-row select {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .88rem;
+      background: #fff;
+      transition: all 0.2s ease;
+    }
+
+    .search-row input {
+      flex: 1;
+      min-width: 180px
+    }
+
+    .search-row input:focus,
+    .search-row select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .search-row input::placeholder {
+      color: #9CA3AF;
+    }
+
+    /* ===== TABLE ===== */
+    .table-wrap {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+      overflow: hidden;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    th,
+    td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+      transition: background-color 0.15s;
+    }
+
+    tr:hover td {
+      background-color: #F9FAFB;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    th {
+      background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
+      font-weight: 700;
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #4B5563;
+      color: var(--text2);
+      letter-spacing: .05em
+    }
+
+    tr:last-child td {
+      border-bottom: none
+    }
+
+    tr:hover td {
+      background: #F9F5FF
+    }
+
+    td .actions {
+      display: flex;
+      gap: 6px
+    }
+
+    /* ===== BADGES ===== */
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600
+    }
+
+    .b-green {
+      background: #D1FAE5;
+      color: #065F46
+    }
+
+    .b-red {
+      background: #FEE2E2;
+      color: #991B1B
+    }
+
+    .b-yellow {
+      background: #FEF3C7;
+      color: #92400E
+    }
+
+    .b-blue {
+      background: #DBEAFE;
+      color: #1E40AF
+    }
+
+    .b-pink {
+      background: #FCE7F3;
+      color: #9D174D
+    }
+
+    .b-gray {
+      background: #F3F4F6;
+      color: #374151
+    }
+
+    .b-purple {
+      background: #EDE9FE;
+      color: #5B21B6
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center
+    }
+
+    .modal-overlay.open {
+      display: flex
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 780px;
+      max-height: 92vh;
+      overflow-y: auto;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .3)
+    }
+
+    .modal-box::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .modal-box::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .modal-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text2);
+      line-height: 1
+    }
+
+    .modal-close:hover {
+      color: var(--danger)
+    }
+
+    /* ===== FORM ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px
+    }
+
+    .form-group label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text)
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .9rem;
+      transition: all 0.2s ease;
+      background: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .form-group input::placeholder {
+      color: #9CA3AF;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 70px
+    }
+
+    .form-section {
+      margin: 20px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text2);
+      letter-spacing: .08em
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border)
+    }
+
+    /* ===== ALERT BOX ===== */
+    .alert-box {
+      padding: 14px 16px;
+      border-radius: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: .88rem
+    }
+
+    .alert-box.danger {
+      background: #FEE2E2;
+      color: #991B1B;
+      border: 1px solid #FCA5A5
+    }
+
+    .alert-box.warning {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D
+    }
+
+    .alert-box.info {
+      background: #DBEAFE;
+      color: #1E40AF;
+      border: 1px solid #93C5FD
+    }
+
+    .alert-box.success {
+      background: #D1FAE5;
+      color: #065F46;
+      border: 1px solid #6EE7B7
+    }
+
+    .alert-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0
+    }
+
+    /* ===== PAGE SECTIONS ===== */
+    .page-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .page-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* ===== CADASTRO CENTRAL ===== */
+    .cc-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+      margin-bottom: 8px;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: .2s;
+      background-clip: padding-box;
+    }
+
+    .cc-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(139, 92, 246, .12);
+      transform: translateY(-1px)
+    }
+
+    .cc-grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px
+    }
+
+    .cc-stat {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+      border: 1px solid var(--border);
+      transition: all 0.25s ease;
+    }
+
+    .cc-stat:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border-color: var(--primary-light);
+    }
+
+    .cc-stat .num {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      transition: all 0.25s ease;
+    }
+
+    .cc-stat:hover .num {
+      background: linear-gradient(135deg, var(--mulher), var(--mulher-dark));
+      -webkit-background-clip: text;
+    }
+
+    .cc-stat .lbl {
+      font-size: .72rem;
+      color: var(--text2);
+      font-weight: 600;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .cc-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0
+    }
+
+    .cc-tab {
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: .85rem;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text2);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: .2s
+    }
+
+    .cc-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary)
+    }
+
+    /* ===== PAINEL DE SAÚDE ===== */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px
+    }
+
+    .chart-card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
+      border: 1px solid var(--border)
+    }
+
+    .chart-card h4 {
+      margin-bottom: 16px;
+      color: var(--text);
+      font-size: .95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .cc-search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px
+    }
+
+    .cc-search-row input,
+    .cc-search-row select {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .9rem;
+      flex: 1
+    }
+
+    .cc-search-row input:focus,
+    .cc-search-row select:focus {
+      outline: none;
+      border-color: var(--primary)
+    }
+
+    /* ===== IMPORT AREA ===== */
+    .import-area {
+      border: 2px dashed var(--primary-light);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      background: #F3F0FF;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: .2s
+    }
+
+    .import-area:hover {
+      border-color: var(--primary);
+      background: #EDE9FE
+    }
+
+    .import-area input[type=file] {
+      display: none
+    }
+
+    .import-steps {
+      background: #F3F0FF;
+      border: 1px solid #DDD6FE;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px
+    }
+
+    .import-steps h4 {
+      color: #5B21B6;
+      margin-bottom: 8px;
+      font-size: .9rem
+    }
+
+    .import-steps ol {
+      margin-left: 20px;
+      color: #4C1D95;
+      font-size: .83rem;
+      line-height: 1.7
+    }
+
+    .import-preview {
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 12px;
+      font-size: .8rem
+    }
+
+    /* ===== ALERTAS CARD ===== */
+    .alert-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+      border-left: 4px solid var(--danger);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+
+    .alert-card .ac-info {
+      flex: 1
+    }
+
+    .alert-card .ac-name {
+      font-weight: 700;
+      font-size: .9rem
+    }
+
+    .alert-card .ac-detail {
+      font-size: .8rem;
+      color: var(--text2);
+      margin-top: 2px
+    }
+
+    /* ===== CHARTS ===== */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .06)
+    }
+
+    .chart-card h3 {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 14px
+    }
+
+    .chart-card canvas {
+      max-height: 200px
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+      background: #F9FAFB;
+      border-radius: 12px;
+      border: 2px dashed var(--border);
+      margin: 20px 0;
+    }
+
+    .empty-state .es-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+
+    .empty-state h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .empty-state p {
+      font-size: .85rem;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:768px) {
+      .sidebar {
+        transform: translateX(-100%)
+      }
+
+      .sidebar.open {
+        transform: translateX(0)
+      }
+
+      .main {
+        margin-left: 0
+      }
+
+      .menu-toggle {
+        display: block
+      }
+
+      .content {
+        padding: 16px
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =================== LOGIN =================== -->
+  <div id="login-page">
+    <div class="login-box">
+      <div class="login-logo">
+        <img src="assets/img/logo_dourados.png" onerror="this.style.display='none'" alt="Logo">
+        <h1>ESF 26 - Carisma</h1>
+        <p>Sistema Unificado de Gestão</p>
+      </div>
+      <div class="login-info"><strong>🔐 Acesso Restrito</strong> Sistema exclusivo para profissionais da ESF 26 –
+        Carisma</div>
+      <div class="login-err" id="login-err">⚠️ CNS/CPF ou senha incorretos.</div>
+      <form onsubmit="fazerLogin(event)">
+        <div class="form-group"><label>CNS ou CPF</label><input type="text" id="l-user" required
+            placeholder="Digite seu CNS ou CPF"></div>
+        <div class="form-group" style="margin-top:14px"><label>Senha</label><input type="password" id="l-pass" required
+            placeholder="Digite sua senha"></div>
+        <button type="submit" class="btn-login" style="margin-top:20px">🔐 Entrar</button>
+      </form>
+      <div class="login-footer">
+        <p>ESF 26 – Carisma | Dourados / MS</p>
+        <p style="margin-top:4px;font-size:.72rem">v4.0.0 – Uso Profissional</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== APP =================== -->
+  <div id="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <header class="sb-header">
+        <img src="assets/img/logo_dourados.png" alt="Dourados">
+        <h2>ESF 26 – Carisma</h2>
+        <p>Sistema Unificado de Gestão</p>
+      </header>
+
+      <div class="sb-user">
+        <div class="avatar">J</div>
+        <div>
+          <div style="font-weight:700">Enf. Jackson Hardt</div>
+          <div style="opacity:.8;font-size:.7rem">Enfermeiro</div>
+        </div>
+      </div>
+
+      <!-- Pesquisa Global Sidebar -->
+      <div style="padding: 0 12px 10px; position: relative;">
+        <input type="text" id="sb-global-search" placeholder="🔍 Buscar Nome, CPF ou CNS..."
+          oninput="ccBuscarPaciente(this,'sb-search-results')"
+          style="width:100%; padding:9px 12px; border-radius:8px; border:none; background:rgba(255,255,255,0.15); color:#fff; font-size:0.78rem; outline:none; transition: .2s;"
+          onfocus="this.style.background='rgba(255,255,255,0.25)'"
+          onblur="setTimeout(()=>document.getElementById('sb-search-results').style.display='none', 200)">
+        <div id="sb-search-results"
+          style="display:none; position:absolute; left:12px; right:12px; background:#fff; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.3); z-index:1000; margin-top:5px; max-height:350px; overflow-y:auto; color:var(--text);">
+        </div>
+      </div>
+
+      <div class="nav-section-label">Principal</div>
+      <a class="nav-link active" data-page="dashboard" onclick="navTo('dashboard')"><span class="ni">📊</span>
+        Dashboard</a>
+      <a class="nav-link" data-page="mapa" onclick="navTo('mapa')"><span class="ni">🗺️</span> Mapa Inteligente</a>
+
+      <div class="nav-section-label">🌸 Saúde da Mulher</div>
+      <a class="nav-link" data-page="mif"><span class="ni">👩</span> Cadastro MIF</a>
+      <a class="nav-link" data-page="contraceptivos"><span class="ni">💊</span> Contraceptivos <span class="badge-alert"
+          id="badge-atrasados" style="display:none">0</span></a>
+      <a class="nav-link" data-page="pccu"><span class="ni">📋</span> Citopatológico</a>
+      <a class="nav-link" data-page="ists"><span class="ni">🦠</span> ISTs / Vaginoses</a>
+      <a class="nav-link" data-page="alertas"><span class="ni">🔔</span> Alertas <span class="badge-alert"
+          id="badge-alertas" style="display:none">0</span></a>
+
+      <div class="nav-section-label">🤰 Pré-Natal</div>
+      <a class="nav-link" href="Prenatal_ESF26.html" target="_blank"><span class="ni">🤰</span> Módulo Pré-Natal ↗</a>
+
+      <div class="nav-section-label">👥 Cadastro</div>
+      <a class="nav-link" data-page="cadastro-central"><span class="ni">👥</span> Cadastro Central <span
+          class="badge-alert" id="badge-cc" style="display:none">0</span></a>
+      <a class="nav-link" data-page="puericultura"><span class="ni">👶</span> Puericultura</a>
+      <a class="nav-link" data-page="painel-saude"><span class="ni">📊</span> Painel de Saúde</a>
+
+      <div class="nav-section-label">📄 Laudos e Fichas</div>
+      <a class="nav-link" onclick="window.location.href='laudos.html'"><span class="ni">🖨️</span> Gerador de Laudos</a>
+      <a class="nav-link" onclick="window.location.href='biblioteca_alyne.html'"><span class="ni">📚</span> Biblioteca Rede Alyne</a>
+
+      <div class="nav-section-label">Gestão</div>
+      <a class="nav-link" data-page="administrativo" onclick="navTo('administrativo')"><span class="ni">🚜</span> Administrativo</a>
+      <a class="nav-link" data-page="relatorios" onclick="navTo('relatorios')"><span class="ni">📄</span> Relatórios</a>
+
+      <a class="nav-link" data-page="importar"><span class="ni">📥</span> Importar e-SUS</a>
+      <a class="nav-link" data-page="configuracoes"><span class="ni">⚙️</span> Configurações</a>
+      <a class="nav-link" onclick="logout()" style="margin-top:20px;opacity:.8"><span class="ni">🚪</span> Sair</a>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <span id="page-title">Dashboard</span>
+        </div>
+        <div class="topbar-right">
+          <span style="font-size:.82rem;color:var(--text2)" id="topbar-date"></span>
+          <button class="btn-sair" onclick="logout()">Sair</button>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- ======== DASHBOARD ======== -->
+        <div id="pg-dashboard" class="page-section active">
+          <div class="cards-grid">
+            <!-- Novo cartão: Total Geral -->
+            <div class="dash-card" style="background-color: var(--primary); color: white;" onclick="navTo('cadastro-central')">
+              <div class="icon-big">👥</div>
+              <h3 style="color:white">Total Geral Cadastrado</h3>
+              <div class="val" id="d-total-geral" style="color:white">0</div>
+              <div class="sub" style="color:rgba(255,255,255,0.8)">Pacientes na UBS</div>
+            </div>
+
+            <div class="dash-card pink" onclick="navTo('mif')">
+              <div class="icon-big">👩</div>
+              <h3>Mulheres Cadastradas (MIF)</h3>
+              <div class="val" id="d-total">0</div>
+              <div class="sub">10 a 49 anos na área</div>
+            </div>
+            <div class="dash-card red" onclick="navTo('alertas')">
+              <div class="icon-big">⚠️</div>
+              <h3>Contraceptivo Atrasado</h3>
+              <div class="val" id="d-atrasados" style="color:var(--danger)">0</div>
+              <div class="sub">Busca ativa necessária</div>
+            </div>
+            <div class="dash-card yellow" onclick="navTo('pccu')">
+              <div class="icon-big">📋</div>
+              <h3>PCCU Pendente / Vencido</h3>
+              <div class="val" id="d-pccu">0</div>
+              <div class="sub">Exame em atraso (&gt;1 ano)</div>
+            </div>
+            <div class="dash-card" onclick="navTo('puericultura')">
+              <div class="icon-big">👶</div>
+              <h3>Puericultura</h3>
+              <div class="val" id="d-pueri">0</div>
+              <div class="sub">Crianças &le; 18 meses</div>
+            </div>
+            <div class="dash-card green" onclick="navTo('ists')">
+              <div class="icon-big">🦠</div>
+              <h3>IST em Acompanhamento</h3>
+              <div class="val" id="d-ist">0</div>
+              <div class="sub">Casos ativos</div>
+            </div>
+            <div class="dash-card" onclick="navTo('mif')">
+              <div class="icon-big">🎯</div>
+              <h3>Adolescentes s/ Método</h3>
+              <div class="val" id="d-adol" style="color:var(--mulher)">0</div>
+              <div class="sub">10 a 19 anos – alto risco</div>
+            </div>
+            <div class="dash-card blue" onclick="window.open('Prenatal_ESF26.html', '_blank')">
+              <div class="icon-big">🤰</div>
+              <h3>Gestantes em Acompanhamento</h3>
+              <div class="val" id="d-gestantes">0</div>
+              <div class="sub">Ver pré-natal completo ↗</div>
+            </div>
+          </div>
+
+          <div id="dash-alertas-box" style="display:none" class="alert-box danger">
+            <span class="alert-icon">🚨</span>
+            <div><strong>Atenção!</strong> Existem <span id="dash-alerta-n">0</span> mulheres com contraceptivo
+              atrasado. <a href="#" onclick="navTo('alertas')" style="color:inherit;font-weight:700">Ver lista →</a>
+            </div>
+          </div>
+
+          <div class="chart-grid">
+            <div class="chart-card">
+              <h3>📊 Métodos Contraceptivos</h3><canvas id="chart-metodos"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>📊 Faixa Etária MIF</h3><canvas id="chart-faixa"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>📊 Risco de Gravidez</h3><canvas id="chart-risco"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>📊 Status Contraceptivos</h3><canvas id="chart-status"></canvas>
+            </div>
+          </div>
+
+          <!-- IA BOARD AVISOS MÚLTIPLOS -->
+          <div id="dash-ia-board" style="margin-top:20px; background:#fff; border-radius:12px; padding:20px; border:1px solid var(--border); box-shadow:0 4px 6px -1px var(--shadow); margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+              <h3 style="margin:0; font-size:1.1rem; color:var(--text1); display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.5rem">🤖</span> Quadro de Avisos da IA
+              </h3>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <span id="ia-board-status" style="font-size:0.8rem; color:var(--text2);">Busca diária ativada</span>
+                <button class="btn btn-sm btn-outline-primary" id="btn-force-ia-sweep" onclick="if(window.AIManager && window.AIManager.runVarreduraIA) { window.AIManager.runVarreduraIA(true) } else { alert('O Assistente não está pronto ainda') }">🔄 Forçar Varredura Agora</button>
+              </div>
+            </div>
+            <div id="ia-board-container" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; min-height:100px;">
+              <div style="color:var(--text2); font-size:0.9rem; font-style:italic;">Nenhum aviso pendente.</div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <div
+              style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <strong>🚨 Prioridades do Dia</strong>
+              <button class="btn btn-danger btn-sm" onclick="exportarPrioridades()">📄 Exportar PDF</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Idade</th>
+                  <th>Motivo</th>
+                  <th>Dias Atraso</th>
+                  <th>Telefone</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tb-prioridades">
+                <tr>
+                  <td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Carregando...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ======== MIF ======== -->
+        <div id="pg-mif" class="page-section">
+          <div class="sec-header">
+            <h2>👩 Mulheres em Idade Fértil – Cadastro MIF</h2>
+            <div class="btn-group">
+              <button class="btn btn-mulher" onclick="abrirModalMIF()">+ Nova Mulher</button>
+              <button class="btn btn-outline" onclick="navTo('importar')">📥 Importar e-SUS</button>
+            </div>
+          </div>
+          <div class="search-row">
+            <input type="text" id="s-mif" placeholder="🔍 Buscar nome, CNS, CPF..." oninput="renderMIF()">
+            <select id="f-metodo" onchange="renderMIF()">
+              <option value="">Todos os métodos</option>
+              <option>Oral</option>
+              <option>Injetável Mensal</option>
+              <option>Injetável Trimestral</option>
+              <option>DIU</option>
+              <option>Implante</option>
+              <option>Preservativo</option>
+              <option>Nenhum</option>
+            </select>
+            <select id="f-risco" onchange="renderMIF()">
+              <option value="">Todos os riscos</option>
+              <option>Baixo</option>
+              <option>Moderado</option>
+              <option>Alto</option>
+            </select>
+            <select id="f-microarea" onchange="renderMIF()">
+              <option value="">Todas as microáreas</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Idade</th>
+                  <th>Microárea</th>
+                  <th>Método Atual</th>
+                  <th>Próx.Dose</th>
+                  <th>PCCU</th>
+                  <th>Risco</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tb-mif"></tbody>
+            </table>
+          </div>
+          <div id="mif-empty" class="empty-state" style="display:none">
+            <div class="es-icon">👩</div>
+            <h3>Nenhuma mulher cadastrada</h3>
+            <p>Clique em "+ Nova Mulher" ou importe via e-SUS</p>
+          </div>
+          <div style="color:var(--text2);font-size:.82rem" id="mif-count"></div>
+        </div>
+
+        <!-- ======== CONTRACEPTIVOS ======== -->
+        <div id="pg-contraceptivos" class="page-section">
+          <div class="sec-header">
+            <h2>
+              💊 Controle de Contraceptivos
+            </h2>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="abrirModalFilaEspera()" id="btn-nova-fila">+ Adicionar à Fila</button>
+              <button class="btn btn-mulher" onclick="abrirModalContracep()" id="btn-novo-contracep">+ Registrar Aplicação</button>
+            </div>
+          </div>
+
+          <div class="view-tabs">
+            <div class="view-tab active" onclick="switchContracepTab('uso')">Pacientes em Uso</div>
+            <div class="view-tab" onclick="switchContracepTab('fila')">Fila de Espera</div>
+          </div>
+
+          <div id="view-contracep-uso" class="view-content active">
+            <div id="alert-contracep-atraso" class="alert-box danger" style="display:none">
+            <span class="alert-icon">🚨</span>
+            <div><strong>ATENÇÃO:</strong> <span id="n-atrasados">0</span> mulheres com contraceptivo injetável
+              ATRASADO. <a href="#" onclick="navTo('alertas')" style="color:inherit;font-weight:700">Ver busca ativa
+                →</a></div>
+          </div>
+          <div class="search-row">
+            <input type="text" id="s-contracep" placeholder="🔍 Buscar por nome..." oninput="renderContracep()">
+            <select id="f-contracep-tipo" onchange="renderContracep()">
+              <option value="">Todos os tipos</option>
+              <option>Oral</option>
+              <option>Injetável Mensal</option>
+              <option>Injetável Trimestral</option>
+              <option>DIU</option>
+              <option>Implante</option>
+            </select>
+            <select id="f-contracep-status" onchange="renderContracep()">
+              <option value="">Todos os status</option>
+              <option>Em Dia</option>
+              <option>Atrasado</option>
+              <option>Suspenso</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Método</th>
+                  <th>Últ. Aplicação</th>
+                  <th>Próx. Dose</th>
+                  <th>Status</th>
+                  <th>Dias</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tb-contracep"></tbody>
+            </table>
+          </div>
+            <div id="contracep-empty" class="empty-state" style="display:none">
+              <div class="es-icon">💊</div>
+              <h3>Nenhum registro encontrado</h3>
+              <p>Registre aplicações de contraceptivos nas fichas das pacientes</p>
+            </div>
+          </div>
+
+          <div id="view-contracep-fila" class="view-content">
+            <div class="search-row">
+              <input type="text" id="s-fila-espera" placeholder="🔍 Buscar por nome..." oninput="renderFilaEspera()">
+              <select id="f-fila-metodo" onchange="renderFilaEspera()">
+                <option value="">Todos os métodos</option>
+                <option>DIU</option>
+                <option>Implante</option>
+                <option>Laqueadura</option>
+                <option>Vasectomia</option>
+              </select>
+              <button class="btn btn-outline" onclick="abrirModalExportFila()">🖨️ Imprimir/Exportar</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Prioridade</th>
+                    <th>Data de Inserção</th>
+                    <th>Nome da Paciente</th>
+                    <th>Método Desejado</th>
+                    <th>Critérios</th>
+                    <th>Observações</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tb-fila-espera"></tbody>
+              </table>
+            </div>
+            <div id="fila-espera-empty" class="empty-state" style="display:none">
+              <div class="es-icon">⏳</div>
+              <h3>Fila de Espera Vazia</h3>
+              <p>Nenhuma paciente cadastrada na fila de espera para métodos contraceptivos.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== PCCU ======== -->
+        <div id="pg-pccu" class="page-section">
+          <div class="sec-header">
+            <h2>📋 Citopatológicos (PCCU)</h2>
+            <button class="btn btn-mulher" onclick="abrirModalPCCU()">+ Nova Coleta</button>
+          </div>
+          <div class="search-row">
+            <input type="text" id="s-pccu" placeholder="🔍 Buscar por nome..." oninput="renderPCCU()">
+            <select id="f-pccu-status" onchange="renderPCCU()">
+              <option value="">Todos os status</option>
+              <option>Pendente</option>
+              <option>Coletado</option>
+              <option>Enviado</option>
+              <option>Recebido</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Data Coleta</th>
+                  <th>Resultado</th>
+                  <th>Status</th>
+                  <th>Próx. Coleta</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tb-pccu"></tbody>
+            </table>
+          </div>
+          <div id="pccu-empty" class="empty-state" style="display:none">
+            <div class="es-icon">📋</div>
+            <h3>Nenhum registro de PCCU</h3>
+            <p>Registre coletas de citopatológico</p>
+          </div>
+        </div>
+
+        <!-- ======== ISTs ======== -->
+        <div id="pg-ists" class="page-section">
+          <div class="sec-header">
+            <h2>🦠 ISTs e Vaginoses</h2>
+            <button class="btn btn-mulher" onclick="abrirModalIST()">+ Novo Registro</button>
+          </div>
+          <div class="search-row">
+            <input type="text" id="s-ist" placeholder="🔍 Buscar por nome..." oninput="renderIST()">
+            <select id="f-ist-diag" onchange="renderIST()">
+              <option value="">Todos os diagnósticos</option>
+              <option>Sífilis</option>
+              <option>HIV</option>
+              <option>HPV</option>
+              <option>Gonorreia</option>
+              <option>Clamídia</option>
+              <option>Vaginose Bacteriana</option>
+              <option>Candidíase</option>
+              <option>Tricomoníase</option>
+            </select>
+            <select id="f-ist-status" onchange="renderIST()">
+              <option value="">Todos os status</option>
+              <option>Em Tratamento</option>
+              <option>Curada</option>
+              <option>Acompanhamento</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Diagnóstico</th>
+                  <th>Data</th>
+                  <th>Tratamento</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tb-ist"></tbody>
+            </table>
+          </div>
+          <div id="ist-empty" class="empty-state" style="display:none">
+            <div class="es-icon">🦠</div>
+            <h3>Nenhum registro de IST</h3>
+            <p>Registre diagnósticos e tratamentos</p>
+          </div>
+        </div>
+
+
+        <!-- ======== ALERTAS ======== -->
+        <div id="pg-alertas" class="page-section">
+          <div class="sec-header">
+            <h2>🔔 Central de Alertas – Busca Ativa</h2>
+            <button class="btn btn-danger" onclick="exportarBuscaAtiva()">📄 Exportar PDF – Busca Ativa</button>
+          </div>
+          <div id="alertas-list"></div>
+        </div>
+
+        <!-- ======== ADMINISTRATIVO ======== -->
+        <div id="pg-administrativo" class="page-section">
+          <div class="sec-header">
+            <h2>🚜 Central Administrativa</h2>
+          </div>
+          <div class="view-tabs">
+            <div class="view-tab active" onclick="switchAdminTab('pedidos')">Pedidos de Medicamentos</div>
+            <div class="view-tab" onclick="switchAdminTab('escalas')">Escalas de Trabalho</div>
+            <div class="view-tab" onclick="switchAdminTab('folgas')">Equipe e Folgas</div>
+            <div class="view-tab" onclick="switchAdminTab('equipamentos')">Checklist Equipamentos</div>
+            <div class="view-tab" onclick="switchAdminTab('estoque')">Controle de Estoque</div>
+          </div>
+
+          <!-- PEDIDOS DE MEDICAMENTOS -->
+          <div id="view-admin-pedidos" class="view-content active">
+            <div class="sec-header" style="margin-bottom: 20px;">
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="adicionarLinhaPedido()">+ Adicionar Linha</button>
+                <button class="btn btn-warning" onclick="limparPedidoAtual()">🧹 Limpar Quantidades</button>
+                <button class="btn btn-outline" onclick="exportarPedidosMedicamentos()">📄 Exportar/Imprimir</button>
+              </div>
+            </div>
+            <div class="search-row">
+              <select id="f-pedido-categoria" onchange="renderPedidosMedicamentos()">
+                <option value="">Todas as Categorias</option>
+                <option>Geral</option>
+                <option>Carrinho de Emergência</option>
+                <option>Odontologia</option>
+                <option>LARCs</option>
+                <option>Cuidados com a Pele</option>
+              </select>
+              <input type="text" id="s-pedido-med" placeholder="🔍 Buscar medicamento..." oninput="renderPedidosMedicamentos()">
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hórus</th>
+                    <th>Betha</th>
+                    <th>Medicamento</th>
+                    <th>Descrição</th>
+                    <th style="width: 120px;">Pedido</th>
+                    <th>Observações</th>
+                    <th style="width: 60px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tb-pedidos-meds">
+                  <!-- JS Will Populate -->
+                </tbody>
+              </table>
+            </div>
+            <div id="pedidos-meds-empty" class="empty-state" style="display:none">
+              <div class="es-icon">💊</div>
+              <h3>Lista de Pedidos Vazia</h3>
+              <p>Nenhum item adicionado no pedido atual.</p>
+            </div>
+          </div>
+
+          <!-- ESCALAS -->
+          <div id="view-admin-escalas" class="view-content">
+            <div class="sec-header" style="margin-bottom: 20px;">
+              <h2>📅 Escala Semanal de Enfermagem</h2>
+              <button class="btn btn-primary" onclick="salvarEscala()">💾 Salvar Escala</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 200px;">Profissional</th>
+                    <th>Segunda</th>
+                    <th>Terça</th>
+                    <th>Quarta</th>
+                    <th>Quinta</th>
+                    <th>Sexta</th>
+                  </tr>
+                </thead>
+                <tbody id="tb-escala-semanal">
+                  <!-- Gerado via JS -->
+                </tbody>
+              </table>
+            </div>
+            <div id="escala-empty" class="empty-state" style="display:none">
+              <div class="es-icon">👥</div>
+              <h3>Equipe não cadastrada</h3>
+              <p>Cadastre os profissionais na aba "Gestão de Folgas" para montar a escala.</p>
+            </div>
+          </div>
+
+          <!-- FOLGAS E BANCO DE HORAS -->
+          <div id="view-admin-folgas" class="view-content">
+            <div class="sec-header" style="margin-bottom: 20px;">
+              <h2>🏖️ Gestão de Equipe e Banco de Horas</h2>
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="abrirModalEquipe()">+ Novo Membro</button>
+                <button class="btn btn-warning" onclick="abrirModalLancarHoras()">⏳ Lançar Horas</button>
+              </div>
+            </div>
+            
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Cargo</th>
+                    <th>COREN</th>
+                    <th>Saldo Atual (Horas)</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tb-equipe">
+                  <!-- JS Populate -->
+                </tbody>
+              </table>
+            </div>
+            
+            <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 1rem;">📜 Extrato Recente (Banco de Horas)</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Profissional</th>
+                    <th>Tipo</th>
+                    <th>Horas Base</th>
+                    <th>Fator</th>
+                    <th>Saldo Gerado</th>
+                    <th>Justificativa</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tb-extrato-horas">
+                  <!-- JS Populate -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- EQUIPAMENTOS -->
+          <div id="view-admin-equipamentos" class="view-content">
+            <div class="empty-state">
+              <div class="es-icon">🩺</div>
+              <h3>Checklist de Equipamentos</h3>
+              <p>Módulo em desenvolvimento. Formulário diário/semanal para checar DEA, O2, carrinho de emergência, etc.</p>
+            </div>
+          </div>
+
+          <!-- ESTOQUE -->
+          <div id="view-admin-estoque" class="view-content">
+            <div class="empty-state">
+              <div class="es-icon">📦</div>
+              <h3>Controle de Estoque</h3>
+              <p>Módulo em desenvolvimento. Controle de seringas, gazes, luvas e outros materiais do posto de enfermagem.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== RELATÓRIOS ======== -->
+        <div id="pg-relatorios" class="page-section">
+          <div class="sec-header">
+            <h2>📄 Relatórios e Exportações</h2>
+          </div>
+          <div class="cards-grid">
+            <div class="dash-card red">
+              <div class="icon-big">📋</div>
+              <h3>Contraceptivos Atrasados</h3>
+              <div class="sub">Lista nominal para busca ativa</div><button class="btn btn-danger btn-sm"
+                style="margin-top:14px" onclick="exportarRelatorio('atrasados')">📥 Exportar PDF</button>
+            </div>
+            <div class="dash-card yellow">
+              <div class="icon-big">🔬</div>
+              <h3>PCCU Pendentes</h3>
+              <div class="sub">Mulheres com exame vencido</div><button class="btn btn-warning btn-sm"
+                style="margin-top:14px" onclick="exportarRelatorio('pccu')">📥 Exportar PDF</button>
+            </div>
+            <div class="dash-card pink">
+              <div class="icon-big">👩</div>
+              <h3>Cadastro MIF Completo</h3>
+              <div class="sub">Todas as mulheres cadastradas</div><button class="btn btn-mulher btn-sm"
+                style="margin-top:14px" onclick="exportarRelatorio('mif')">📥 Exportar PDF</button>
+            </div>
+            <div class="dash-card">
+              <div class="icon-big">💾</div>
+              <h3>Backup JSON</h3>
+              <div class="sub">Exportar todos os dados</div><button class="btn btn-primary btn-sm"
+                style="margin-top:14px" onclick="exportarJSON()">💾 Exportar JSON</button>
+            </div>
+            <div class="dash-card">
+              <div class="icon-big">📂</div>
+              <h3>Restaurar Backup</h3>
+              <div class="sub">Importar arquivo JSON</div><label class="btn btn-outline btn-sm"
+                style="margin-top:14px;cursor:pointer">📂 Importar JSON<input type="file" accept=".json"
+                  onchange="importarJSON(event)" style="display:none"></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== IMPORTAR e-SUS ======== -->
+        <div id="pg-importar" class="page-section">
+          <div class="sec-header">
+            <h2>📥 Importar Lista do e-SUS</h2>
+          </div>
+          <div class="import-steps">
+            <h4>📋 Como obter o CSV do e-SUS PEC:</h4>
+            <ol>
+              <li>Acesse o e-SUS PEC → Relatórios → Cadastro de Cidadãos</li>
+              <li>Filtre por Sexo: Feminino, Faixa etária: 10 a 49 anos</li>
+              <li>Selecione sua microárea</li>
+              <li>Exporte no formato CSV e salve o arquivo</li>
+              <li>Carregue o arquivo abaixo</li>
+            </ol>
+          </div>
+
+          <!-- Filtros de Lote (MIF) -->
+          <div
+            style="margin: 20px 0; padding: 20px; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+              <div style="font-size: 1.5rem;">🏷️</div>
+              <div style="flex: 1; min-width: 250px;">
+                <label
+                  style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text1); margin-bottom: 6px;">Adicionar
+                  Etiqueta Extra ao Lote:</label>
+                <select id="mif-batch-tag" class="form-control"
+                  style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer;">
+                  <option value="">Sem etiqueta extra (Padrão)</option>
+                  <option value="MIF">👩 MIF (Mulher em Idade Fértil)</option>
+                  <option value="Gestante">🤰 Gestante</option>
+                  <option value="Hipertenso">🩺 Hipertenso</option>
+                  <option value="Diabético">🩸 Diabético</option>
+                  <option value="Tabagista">🚬 Tabagista</option>
+                  <option value="Acamado">🛌 Acamado</option>
+                  <option value="Saúde Mental">🧠 Saúde Mental</option>
+                  <option value="Puericultura">👶 Puericultura</option>
+                  <option value="Hanseníase">🩹 Hanseníase</option>
+                  <option value="Tuberculose">🫁 Tuberculose</option>
+                </select>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text2); margin-top: 10px; padding-left: 40px;">💡
+              <strong>Dica:</strong> Esta etiqueta será aplicada a todas as pessoas importadas deste arquivo CSV.
+            </p>
+          </div>
+
+          <label class="import-area" for="csv-input">
+            <input type="file" id="csv-input" accept=".csv,.txt" onchange="processarCSV(event)">
+            <div style="font-size:2rem;margin-bottom:10px">📄</div>
+            <div style="font-weight:600;color:var(--primary)">Clique para selecionar o CSV</div>
+            <div style="font-size:.82rem;color:var(--text2);margin-top:6px">Formato: e-SUS PEC – Relatório de Cadastro
+            </div>
+          </label>
+          <div id="import-preview"></div>
+          <div id="import-result" style="display:none" class="alert-box success">
+            <span class="alert-icon">✅</span>
+            <div><strong>Importação concluída!</strong> <span id="import-n">0</span> mulheres importadas.</div>
+          </div>
+        </div>
+
+        <!-- ======== MAPA INTELIGENTE ======== -->
+        <div id="pg-mapa" class="page-section">
+          <div class="sec-header">
+            <h2>🗺️ Mapa Inteligente ESF 26</h2>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="toggleDrawingTool()">✏️ Microáreas</button>
+              <button class="btn btn-mulher" onclick="togglePOIEditor()">📍 Adicionar Ponto</button>
+              <button class="btn btn-success" onclick="importKML()">📥 Importar KML</button>
+              <button class="btn btn-warning" onclick="toggleEditTool()" id="btn-edit-tool">🖌️ Editar Polígonos</button>
+              <button class="btn btn-primary" onclick="zoomToAllLayers()" title="Zoom em todas as camadas">🔍 Todas</button>
+              <button class="btn btn-outline" onclick="clearAllImportedLayers()" title="Limpar camadas importadas">🗑️ Limpar</button>
+              <button class="btn btn-outline" onclick="centerMap()">🏠 Centralizar</button>
+            </div>
+          </div>
+
+          <div class="map-layout">
+            <div id="map-container"></div>
+            <div class="map-sidebar">
+              <div class="map-filter-group">
+                <h4>Filtrar Camadas</h4>
+                <label><input type="checkbox" checked onchange="toggleLayer('domicilios')"> Domicílios (Geral)</label>
+                <label><input type="checkbox" onchange="toggleLayer('gestantes')"> Gestantes</label>
+                <label><input type="checkbox" onchange="toggleLayer('cronicos')"> Crônicos (HAS/DM)</label>
+                <label><input type="checkbox" onchange="toggleLayer('risco')"> Alto Risco Social</label>
+              </div>
+              <div class="map-filter-group" id="imported-layers-panel" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <h4>📥 Camadas do Mapa</h4>
+                <p style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Importe do Google My Maps ou crie novas camadas para desenhar suas microáreas.</p>
+                <button class="btn btn-sm btn-primary" onclick="createNewLayer()" style="margin-bottom:10px;">➕ Nova Camada</button>
+                <div id="imported-layers-list"></div>
+              </div>
+              <div class="map-stats-mini">
+                <div class="m-stat"
+                  style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                  <span class="m-lbl" style="display:block; font-size: 0.7rem; opacity: 0.8;">Geocodificados</span>
+                  <span class="m-val" id="map-stat-geo" style="font-size: 1.1rem; font-weight: 700;">--/--</span>
+                </div>
+              </div>
+              <div id="drawing-controls"
+                style="display:none; margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
+                <h4>Desenhar Microárea</h4>
+                <p style="font-size:0.7rem; color:#666;">Selecione o polígono e desenhe no mapa.</p>
+                <input type="number" id="ma-number" placeholder="Nº da Microárea"
+                  style="width:100%; margin-bottom:10px; padding:5px;">
+                <button class="btn btn-sm btn-success" onclick="saveMicroArea()">💾 Salvar Divisão</button>
+                <button class="btn btn-sm btn-primary" onclick="saveAsPolygonToLayer()" id="btn-save-polygon-layer" style="display:none;">📥 Salvar na Camada</button>
+              </div>
+
+              <div id="poi-controls"
+                style="display:none; margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
+                <h4>Novo Ponto de Interesse</h4>
+                <p style="font-size:0.7rem; color:#666;">Clique no mapa para marcar o local.</p>
+                <input type="text" id="poi-name" placeholder="Nome do Local"
+                  style="width:100%; margin-bottom:8px; padding:5px;">
+                <select id="poi-type" style="width:100%; margin-bottom:10px; padding:5px;">
+                  <option value="school">Escola / Creche</option>
+                  <option value="church">Igreja</option>
+                  <option value="market">Comércio</option>
+                  <option value="unei">UNEI / Órgão Público</option>
+                  <option value="other">Outros</option>
+                </select>
+                <button class="btn btn-sm btn-mulher" onclick="saveManualPOI()">📍 Salvar Ponto</button>
+              </div>
+
+              <div id="edit-controls" style="display:none; margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
+                <h4>🖌️ Editar Polígonos</h4>
+                <p style="font-size:0.7rem; color:#666;">Ferramentas de edição. Clique em um polígono no mapa para ativar.</p>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  <button class="btn btn-sm btn-primary" onclick="saveEditedPolygon()">💾 Salvar</button>
+                  <button class="btn btn-sm btn-outline" onclick="cancelEditPolygon()">❌ Cancelar</button>
+                </div>
+              </div>
+
+              <div class="map-legend" id="map-legend">
+                <h4>Legenda</h4>
+                <div class="legend-items">
+                  <div class="leg-item"><span class="leg-dot color-ubs"></span> UBS Carisma</div>
+                  <div class="leg-item"><span class="leg-dot color-ruivo"></span> Domicílio (Geral)</div>
+                  <div class="leg-item"><span class="leg-dot color-pink"></span> Gestante</div>
+                  <div class="leg-item"><span class="leg-dot color-danger"></span> Atendimento Pendente</div>
+                  <div class="leg-item"><span class="leg-dot color-blue"></span> Crônico (HAS/DM)</div>
+                  <div class="leg-item"><span>🏫</span> Escola / Creche</div>
+                  <div class="leg-item"><span>⛪</span> Igreja</div>
+                  <div class="leg-item"><span>🏬</span> Comércio</div>
+                </div>
+              </div>
+
+              <div
+                style="margin-top:20px; padding:12px; background:rgba(0,0,0,0.15); border-radius:10px; border:1px dashed rgba(255,255,255,0.2);">
+                <h4 style="color:#fff; font-size:0.8rem; margin-bottom:8px;">Transporte de Dados</h4>
+                <button class="btn btn-sm btn-primary" style="width:100%; margin-bottom:8px; justify-content:center;"
+                  onclick="exportarSistemaCompleto()">📦 Exportar Tudo</button>
+                <label class="btn btn-sm btn-outline"
+                  style="width:100%; border-color:rgba(255,255,255,0.4); color:#fff; cursor:pointer; display:inline-flex; justify-content:center; align-items:center; background:rgba(255,255,255,0.05)">
+                  📥 Importar Tudo <input type="file" accept=".carisma"
+                    onchange="importarSistemaCompleto(this.files[0])" style="display:none">
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== CONFIGURAÇÕES ======== -->
+        <div id="pg-configuracoes" class="page-section">
+          <div class="sec-header">
+            <h2>⚙️ Configurações do Sistema</h2>
+          </div>
+          <div class="table-wrap" style="padding:24px;max-width:500px">
+            <h3 style="margin-bottom:16px;font-size:.95rem">Dados da Unidade</h3>
+            <div class="form-group" style="margin-bottom:14px"><label>Nome da UBS</label><input id="cfg-ubs" type="text"
+                value="ESF 26 – Carisma"></div>
+            <div class="form-group" style="margin-bottom:14px"><label>Município</label><input id="cfg-mun" type="text"
+                value="Dourados / MS"></div>
+            <div class="form-group" style="margin-bottom:14px"><label>CNES</label><input id="cfg-cnes" type="text">
+            </div>
+            <div class="form-group" style="margin-bottom:14px"><label>Responsável</label><input id="cfg-resp"
+                type="text" value="Enf. Jackson Hardt"></div>
+            <div class="form-group" style="margin-bottom:20px"><label>Senha de Acesso</label><input id="cfg-senha"
+                type="password" placeholder="Alterar senha..."></div>
+            <button class="btn btn-primary" onclick="salvarConfig()">💾 Salvar Configurações</button>
+            <div>Configurações salvas!</div>
+          </div>
+
+          <hr style="margin:24px 0;border-color:var(--border)">
+          <h3 style="margin-bottom:16px;font-size:.95rem">Mover para Outro Computador</h3>
+          <p style="font-size:0.8rem; color:var(--text2); margin-bottom:15px;">Use estas ferramentas para levar todo o
+            seu trabalho (pacientes, mapas, microáreas) para o computador da UBS ou vice-versa.</p>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <button class="btn btn-primary" onclick="exportarSistemaCompleto()" style="justify-content:center">📦 Fazer
+              Backup Total</button>
+            <label class="btn btn-outline"
+              style="cursor:pointer; display:inline-flex; justify-content:center; align-items:center;">
+              📥 Restaurar Backup <input type="file" accept=".carisma" onchange="importarSistemaCompleto(this.files[0])"
+                style="display:none">
+            </label>
+          </div>
+
+          <hr style="margin:24px 0;border-color:var(--border)">
+          <h3 style="margin-bottom:12px;font-size:.95rem;color:var(--danger)">⚠️ Zona de Perigo</h3>
+          <button class="btn btn-danger" onclick="confirmarLimpar()">🗑️ Limpar Todos os Dados</button>
+        </div>
+      </div>
+
+      <!-- ======== CADASTRO CENTRAL ======== -->
+      <div id="pg-cadastro-central" class="page-section">
+        <div
+          style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div>
+            <p style="font-size:.82rem;color:var(--text2)">Toda a população da área cadastrada com perfil e busca
+              ativa</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-success" onclick="abrirModalNovoPaciente()" style="font-weight:600">
+              ➕ Novo Paciente
+            </button>
+            <select id="cc-batch-tag" class="btn btn-outline" style="font-size:.8rem;padding:8px;background:#fff">
+              <option value="">Sem etiqueta extra</option>
+              <option value="MIF">➕ Adicionar "MIF"</option>
+              <option value="Diabético">➕ Adicionar "Diabético"</option>
+              <option value="Hipertenso">➕ Adicionar "Hipertenso"</option>
+              <option value="Tabagista">➕ Adicionar "Tabagista"</option>
+              <option value="Gestante">➕ Adicionar "Gestante"</option>
+              <option value="Acamado">➕ Adicionar "Acamado"</option>
+              <option value="Saúde Mental">➕ Adicionar "Saúde Mental"</option>
+              <option value="Puericultura">➕ Adicionar "Puericultura"</option>
+              <option value="Hanseníase">➕ Adicionar "Hanseníase"</option>
+              <option value="Tuberculose">➕ Adicionar "Tuberculose"</option>
+            </select>
+            <label class="btn btn-primary" style="cursor:pointer">
+              📥 Importar CSV e-SUS
+              <input type="file" accept=".csv" onchange="importarCSVCadastral(event)" style="display:none">
+            </label>
+          </div>
+        </div>
+
+        <div id="cc-preview"></div>
+
+        <!-- Stats -->
+        <div class="cc-grid-stats">
+          <div class="cc-stat">
+            <div class="num" id="cc-total">0</div>
+            <div class="lbl">👥 Total cadastros</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-mif">0</div>
+            <div class="lbl">👩 MIF (10-49a)</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-pccu-pend"
+              style="background:linear-gradient(135deg,var(--danger),#B91C1C);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+              0</div>
+            <div class="lbl">🔬 PCCU Pendente</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-idosos">0</div>
+            <div class="lbl">👴 Idosos (≥60a)</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-pa-elev"
+              style="background:linear-gradient(135deg,var(--danger),#B91C1C);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+              0</div>
+            <div class="lbl">🩺 PA Elevada</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-sem-visita">0</div>
+            <div class="lbl">🏠 S/visita >6m</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-gestantes"
+              style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+              0</div>
+            <div class="lbl">🤰 Gestantes</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-diab">0</div>
+            <div class="lbl">🍬 Diabéticos</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-hiper">0</div>
+            <div class="lbl">🩺 Hipertensos</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-pueri">0</div>
+            <div class="lbl">👶 Puericultura</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-hans">0</div>
+            <div class="lbl">🩹 Hanseníase</div>
+          </div>
+          <div class="cc-stat">
+            <div class="num" id="cc-tuberc">0</div>
+            <div class="lbl">💊 Tuberculose</div>
+          </div>
+        </div>
+
+        <!-- Abas -->
+        <div class="cc-tabs">
+          <button class="cc-tab active" onclick="ccMudarAba('lista',this)">📋 Lista Geral</button>
+          <button class="cc-tab" onclick="ccMudarAba('busca-ativa',this)">🎯 Busca Ativa</button>
+        </div>
+
+        <!-- ABA: Lista -->
+        <div id="cc-aba-lista">
+          <div class="cc-search-row">
+            <input type="text" id="cc-search" placeholder="🔍 Buscar por nome, CNS ou CPF..." oninput="renderCCLista()">
+            <select id="cc-tag-filter" onchange="renderCCLista()">
+              <option value="">Todas as condições</option>
+              <option value="MIF">MIF</option>
+              <option value="Criança">Criança</option>
+              <option value="Adolescente">Adolescente</option>
+              <option value="Idoso">Idoso</option>
+              <option value="PCCU Pendente">PCCU Pendente</option>
+              <option value="PCCU OK">PCCU OK</option>
+              <option value="PA Elevada">PA Elevada</option>
+              <option value="Bolsa Família">Bolsa Família</option>
+              <option value="Obesidade">Obesidade</option>
+              <option value="Sobrepeso">Sobrepeso</option>
+              <option value="HIV s/avaliação">HIV s/avaliação</option>
+              <option value="Sífilis s/avaliação">Sífilis s/avaliação</option>
+              <option value="S/visita >6m">S/visita >6m</option>
+              <option value="Jamais visitado">Jamais visitado</option>
+              <option value="Mama Pendente">Mama Pendente</option>
+              <option value="Gestante">Gestante</option>
+              <option value="Diabético">Diabético</option>
+              <option value="Hipertenso">Hipertenso</option>
+              <option value="Tabagista">Tabagista</option>
+              <option value="Acamado">Acamado</option>
+              <option value="Saúde Mental">Saúde Mental</option>
+              <option value="Puericultura">Puericultura</option>
+              <option value="Hanseníase">Hanseníase</option>
+              <option value="Tuberculose">Tuberculose</option>
+            </select>
+          </div>
+          <div style="font-size:.78rem;color:var(--text2);margin-bottom:8px" id="cc-count-label"></div>
+          <div id="cc-lista"></div>
+          <div id="cc-paginacao"></div>
+        </div>
+
+        <!-- ABA: Busca Ativa -->
+        <div id="cc-aba-busca-ativa" style="display:none">
+          <p style="font-size:.85rem;color:var(--text2);margin-bottom:12px">Selecione uma condição para gerar a
+            lista
+            de pessoas que precisam de atenção:</p>
+          <div
+            style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('pccu-pend')"
+              style="text-align:left;justify-content:flex-start">🔬 PCCU Pendente (&gt;3 anos)</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('pa-elev')"
+              style="text-align:left;justify-content:flex-start">🩺 PA Elevada</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('sem-visita')"
+              style="text-align:left;justify-content:flex-start">🏠 S/visita &gt;6 meses</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('jamais')"
+              style="text-align:left;justify-content:flex-start">🏠 Nunca visitados</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('hiv-sem')"
+              style="text-align:left;justify-content:flex-start">🔴 HIV sem avaliação</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('sif-sem')"
+              style="text-align:left;justify-content:flex-start">💊 Sífilis sem avaliação</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('mama-pend')"
+              style="text-align:left;justify-content:flex-start">🎀 Mama Pendente</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('adolescente')"
+              style="text-align:left;justify-content:flex-start">👧 Adolescentes</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('obeso')"
+              style="text-align:left;justify-content:flex-start">⚖️ Obesos</button>
+            <button class="btn btn-outline" onclick="renderBuscaAtiva('bolsa')"
+              style="text-align:left;justify-content:flex-start">💚 Bolsa Família</button>
+          </div>
+          <div style="text-align:right;margin-bottom:10px">
+            <button class="btn btn-sm btn-primary" onclick="exportarBuscaAtiva()">📄 Exportar PDF</button>
+          </div>
+          <div id="cc-ba-resultado"></div>
+        </div>
+      </div>
+
+      <!-- ======== PUERICULTURA ======== -->
+      <div id="pg-puericultura" class="page-section">
+        <div class="sec-header">
+          <h2>👶 Acompanhamento de Puericultura</h2>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="window.open('puericultura.html')">🚀 Abrir Módulo
+              Completo</button>
+          </div>
+        </div>
+        <div class="card" style="padding:24px;text-align:center">
+          <div style="font-size:3rem;margin-bottom:15px">🧸</div>
+          <h3>Módulo de Puericultura Carisma</h3>
+          <p style="color:var(--text2);margin-bottom:20px">Clique no botão acima para abrir a interface dedicada de
+            acompanhamento infantil, seguindo as normas do Ministério da Saúde para marcos do desenvolvimento,
+            crescimento e vacinação.</p>
+        </div><!-- /card -->
+      </div><!-- /pg-puericultura -->
+
+      <!-- ======== PAINEL DE SAÚDE GLOBAL ======== -->
+      <div id="pg-painel-saude" class="page-section">
+        <div class="sec-header">
+          <h2>📊 Painel de Saúde Global (Epidemiológico)</h2>
+        </div>
+
+        <div class="dash-grid" style="margin-bottom:24px">
+          <div class="dash-card">
+            <h3>Diabéticos</h3>
+            <div class="val" id="h-diab">0</div>
+            <div class="sub">Total cadastrado</div>
+          </div>
+          <div class="dash-card">
+            <h3>Hipertensos</h3>
+            <div class="val" id="h-hiper">0</div>
+            <div class="sub">Total cadastrado</div>
+          </div>
+          <div class="dash-card">
+            <h3>Gestantes</h3>
+            <div class="val" id="h-gest">0</div>
+            <div class="sub">Totais no sistema</div>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-card">
+            <h4>🏷️ Prevalência por Condição</h4>
+            <canvas id="chart-saude-condicoes"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>🏠 Distribuição por Microárea</h4>
+            <canvas id="chart-saude-microareas"></canvas>
+          </div>
+          <div class="chart-card col-span-2">
+            <h4>📅 Perfil Etário das Condições Crônicas</h4>
+            <canvas id="chart-saude-idade"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+  </div><!-- /app -->
+
+  <!-- =================== MODAIS =================== -->
+
+  <!-- Modal MIF -->
+  <div class="modal-overlay" id="modal-mif">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>👩 <span id="mif-modal-title">Nova Mulher – MIF</span></h3>
+        <button class="modal-close" onclick="fecharModal('modal-mif')">✕</button>
+      </div>
+      <form id="form-mif" onsubmit="salvarMIF(event)">
+        <input type="hidden" id="mif-id">
+        <div class="form-section">Identificação</div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1"><label>Nome Completo *</label><input type="text"
+              id="mif-nome" required></div>
+          <div class="form-group"><label>Nome Social</label><input type="text" id="mif-nomesocial"></div>
+          <div class="form-group"><label>Data de Nascimento *</label><input type="date" id="mif-nasc" required
+              oninput="calcIdade()"></div>
+          <div class="form-group"><label>Idade (calculada)</label><input type="text" id="mif-idade" readonly
+              style="background:#f3f4f6"></div>
+          <div class="form-group"><label>CNS</label><input type="text" id="mif-cns" maxlength="15"></div>
+          <div class="form-group"><label>CPF</label><input type="text" id="mif-cpf" maxlength="14"></div>
+          <div class="form-group"><label>Telefone</label><input type="tel" id="mif-tel"></div>
+          <div class="form-group"><label>Microárea</label>
+            <select id="mif-micro">
+              <option value="">Selecionar...</option>
+              <option>Microárea 1</option>
+              <option>Microárea 2</option>
+              <option>Microárea 3</option>
+              <option>Microárea 4</option>
+              <option>Microárea 5</option>
+              <option>Microárea 6</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1"><label>Endereço</label><input type="text" id="mif-end">
+          </div>
+        </div>
+        <div class="form-section">Saúde Reprodutiva</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Gestações</label><input type="number" id="mif-gest" min="0" value="0">
+          </div>
+          <div class="form-group"><label>Partos</label><input type="number" id="mif-partos" min="0" value="0"></div>
+          <div class="form-group"><label>Cesáreas</label><input type="number" id="mif-ces" min="0" value="0"></div>
+          <div class="form-group"><label>Abortamentos</label><input type="number" id="mif-abort" min="0" value="0">
+          </div>
+          <div class="form-group"><label>Filhos Vivos</label><input type="number" id="mif-fvivos" min="0" value="0">
+          </div>
+          <div class="form-group"><label>DUM (Última Menstruação)</label><input type="date" id="mif-dum"></div>
+        </div>
+        <div class="form-section">Método Contraceptivo</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Método Atual</label>
+            <select id="mif-metodo" onchange="toggleDose()">
+              <option value="">Nenhum</option>
+              <option>Oral</option>
+              <option>Injetável Mensal</option>
+              <option>Injetável Trimestral</option>
+              <option>DIU</option>
+              <option>Implante</option>
+              <option>Preservativo</option>
+              <option>Laqueadura</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Início do Método</label><input type="date" id="mif-inicio-metodo"></div>
+          <div class="form-group" id="div-proxima-dose"><label>Próxima Dose / Retorno</label><input type="date"
+              id="mif-proxima-dose"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Observações</label><textarea id="mif-obs-metodo"
+              rows="2"></textarea></div>
+        </div>
+        <div class="form-section">Citopatológico</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Data Último PCCU</label><input type="date" id="mif-pccu-data"></div>
+          <div class="form-group"><label>Resultado</label>
+            <select id="mif-pccu-result">
+              <option value="">Não realizado</option>
+              <option>Negativo</option>
+              <option>ASC-US</option>
+              <option>ASC-H</option>
+              <option>LSIL</option>
+              <option>HSIL</option>
+              <option>Câncer</option>
+              <option>Insatisfatório</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status PCCU</label>
+            <select id="mif-pccu-status">
+              <option>Pendente</option>
+              <option>Coletado</option>
+              <option>Enviado</option>
+              <option>Recebido</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Próxima Coleta</label><input type="date" id="mif-pccu-prox"></div>
+        </div>
+        <div class="form-section">Vacinas</div>
+        <div class="form-grid">
+          <div class="form-group"><label>HPV</label>
+            <select id="mif-hpv">
+              <option>Não</option>
+              <option>Incompleta</option>
+              <option>Completa</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Hepatite B</label>
+            <select id="mif-hepb">
+              <option>Não</option>
+              <option>Incompleta</option>
+              <option>Completa</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-section">Classificação</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Risco de Gravidez</label>
+            <select id="mif-risco">
+              <option>Baixo</option>
+              <option>Moderado</option>
+              <option>Alto</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Prioridade</label>
+            <select id="mif-prioridade">
+              <option>Rotina</option>
+              <option>Atenção</option>
+              <option>Prioritária</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Situação</label>
+            <select id="mif-situacao">
+              <option>Ativa</option>
+              <option>Inativa</option>
+              <option>Mudou-se</option>
+              <option>Óbito</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-mif')">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="background:#8B5CF6">💾 Salvar Ficha MIF</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Contraceptivo -->
+  <div class="modal-overlay" id="modal-contracep">
+    <div class="modal-box" style="max-width:550px">
+      <div class="modal-header">
+        <h3>💊 Registrar Aplicação de Contraceptivo</h3>
+        <button class="modal-close" onclick="fecharModal('modal-contracep')">✕</button>
+      </div>
+      <form id="form-contracep" onsubmit="salvarContracep(event)">
+        <input type="hidden" id="contracep-id">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Paciente *</label>
+            <select id="contracep-mulher" required onchange="preencherMetodoPaciente()">
+              <option value="">Selecionar paciente...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Método *</label>
+            <select id="contracep-tipo" required onchange="calcProxDoseAuto()">
+              <option value="">Selecionar...</option>
+              <option>Oral</option>
+              <option>Injetável Mensal</option>
+              <option>Injetável Trimestral</option>
+              <option>DIU</option>
+              <option>Implante</option>
+              <option>Preservativo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Data Aplicação *</label>
+            <input type="date" id="contracep-data" required oninput="calcProxDoseAuto()">
+          </div>
+          <div class="form-group">
+            <label>Próxima Dose</label>
+            <input type="date" id="contracep-prox">
+          </div>
+          <div class="form-group">
+            <label>Dose / Apresentação</label>
+            <input type="text" id="contracep-dose" placeholder="Ex: 150mg Depo-Provera">
+          </div>
+          <div class="form-group">
+            <label>Lote</label>
+            <input type="text" id="contracep-lote">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Observações</label>
+            <textarea id="contracep-obs" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-contracep')">Cancelar</button>
+          <button type="submit" class="btn btn-mulher">💾 Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Fila de Espera -->
+  <div class="modal-overlay" id="modal-fila-espera">
+    <div class="modal-box" style="max-width:550px">
+      <div class="modal-header">
+        <h3>⏳ Adicionar à Fila de Espera</h3>
+        <button class="modal-close" onclick="fecharModal('modal-fila-espera')">✕</button>
+      </div>
+      <form id="form-fila-espera" onsubmit="salvarFilaEspera(event)">
+        <input type="hidden" id="fila-id">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>
+              <input type="checkbox" id="fila-nova-paciente" onchange="toggleFilaNovaPaciente()" style="margin-right:8px">
+              <strong>Nova paciente (não cadastrada)</strong>
+            </label>
+          </div>
+          <div class="form-group" style="grid-column:1/-1" id="fila-select-paciente">
+            <label>Paciente *</label>
+            <select id="fila-mulher">
+              <option value="">Selecionar paciente...</option>
+            </select>
+          </div>
+          <div class="form-group" id="fila-novo-nome-group" style="display:none; grid-column:1/-1">
+            <label>Nome da Paciente *</label>
+            <input type="text" id="fila-novo-nome" placeholder="Nome completo">
+          </div>
+          <div class="form-group" id="fila-novo-telefone-group" style="display:none">
+            <label>Telefone</label>
+            <input type="text" id="fila-novo-telefone" placeholder="(67) 99999-9999">
+          </div>
+          <div class="form-group" id="fila-novo-cns-group" style="display:none">
+            <label>CNS (opcional)</label>
+            <input type="text" id="fila-novo-cns" placeholder="Número do CNS">
+          </div>
+          <div class="form-group">
+            <label>Método Desejado *</label>
+            <select id="fila-metodo" required>
+              <option value="">Selecionar...</option>
+              <option>DIU</option>
+              <option>Implante</option>
+              <option>Laqueadura</option>
+              <option>Vasectomia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Data de Inserção na Fila *</label>
+            <input type="date" id="fila-data" required>
+          </div>
+          <div class="form-group">
+            <label>Data do Parto/Aborto (se puérpera)</label>
+            <input type="date" id="fila-data-parto" onchange="atualizarEscorePreview()">
+          </div>
+          <div class="form-section" style="margin-top:12px">Critérios de Priorização (conforme CI-27)</div>
+          <div class="form-grid" style="margin-top:8px">
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-puerpera" onchange="atualizarEscorePreview()"> Puérpera (&le;45 dias)</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-puerpera-risco" onchange="atualizarEscorePreview()"> Puérpera ≥35 anos ou comorbidade</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-lactante" onchange="atualizarEscorePreview()"> Lactante (até 6 meses pó</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-adolescente" onchange="atualizarEscorePreview()"> Adolescente (10-19 anos)</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-violencia" onchange="atualizarEscorePreview()"> Vítima de violência sexual</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-falha-metodo" onchange="atualizarEscorePreview()"> Falha de método anterior</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-pos-parto" onchange="atualizarEscorePreview()"> Solicitação Pós-parto (></label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-comorbidade" onchange="atualizarEscorePreview()"> Comorbidade (DM, HAS, Epil)</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="fila-criterio-uso-atual" onchange="atualizarEscorePreview()"> Troca de método (já usa)</label>
+            </div>
+          </div>
+          <div style="margin-top:12px; padding:12px; background:#F3F0FF; border-radius:8px; text-align:center">
+            <strong>Escore Total: <span id="fila-escore-preview" style="font-size:1.2rem; color:#7C3AED">0</span> pontos</small>
+          </div>
+          <div class="form-group" style="grid-column:1/-1; margin-top:8px">
+            <label>Observações (ex: DUM, Exames)</label>
+            <textarea id="fila-obs" rows="2" placeholder="Critérios clínicos, telefone recado, etc."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-fila-espera')">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="background:#8B5CF6">💾 Salvar na Fila</button>
+        </div>
+      </form>
+    </div>
+  </div>/ Apresentação</label>
+            <input type="text" id="contracep-dose" placeholder="Ex: 150mg Depo-Provera">
+          </div>
+          <div class="form-group">
+            <label>Lote</label>
+            <input type="text" id="contracep-lote">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Observações</label>
+            <textarea id="contracep-obs" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-contracep')">Cancelar</button>
+          <button type="submit" class="btn btn-mulher">💾 Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Exportar Fila de Espera -->
+  <div class="modal-overlay" id="modal-export-fila">
+    <div class="modal-box" style="max-width:450px">
+      <div class="modal-header">
+        <h3>🖨️ Exportar/Imprimir Fila de Espera</h3>
+        <button class="modal-close" onclick="fecharModal('modal-export-fila')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Filtrar por Método (opcional)</label>
+          <select id="export-fila-metodo">
+            <option value="">Todos os métodos</option>
+            <option>DIU</option>
+            <option>Implante</option>
+            <option>Laqueadura</option>
+            <option>Vasectomia</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Tipo de Saída</label>
+          <select id="export-fila-tipo">
+            <option value="pdf">Gerar PDF</option>
+            <option value="imprimir">Abrir para Impressão</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="fecharModal('modal-export-fila')">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="executarExportFila()">📄 Gerar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal PCCU -->
+  <div class="modal-overlay" id="modal-pccu">
+    <div class="modal-box" style="max-width:520px">
+      <div class="modal-header">
+        <h3>📋 Registro de Citopatológico</h3>
+        <button class="modal-close" onclick="fecharModal('modal-pccu')">✕</button>
+      </div>
+      <form id="form-pccu" onsubmit="salvarPCCU(event)">
+        <input type="hidden" id="pccu-id">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1"><label>Paciente *</label>
+            <select id="pccu-mulher" required>
+              <option value="">Selecionar paciente...</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Data Coleta *</label><input type="date" id="pccu-coleta" required></div>
+          <div class="form-group"><label>Data Envio</label><input type="date" id="pccu-envio"></div>
+          <div class="form-group"><label>Data Recebimento</label><input type="date" id="pccu-recebido"></div>
+          <div class="form-group"><label>Resultado</label>
+            <select id="pccu-resultado">
+              <option value="">Aguardando...</option>
+              <option>Negativo</option>
+              <option>ASC-US</option>
+              <option>ASC-H</option>
+              <option>LSIL</option>
+              <option>HSIL</option>
+              <option>Câncer</option>
+              <option>Insatisfatório</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="pccu-status">
+              <option>Coletado</option>
+              <option>Enviado</option>
+              <option>Recebido</option>
+              <option>Aguardando Conduta</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Próxima Coleta</label><input type="date" id="pccu-prox"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Conduta</label><textarea id="pccu-conduta"
+              rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-pccu')">Cancelar</button>
+          <button type="submit" class="btn btn-mulher">💾 Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal IST -->
+  <div class="modal-overlay" id="modal-ist">
+    <div class="modal-box" style="max-width:520px">
+      <div class="modal-header">
+        <h3>🦠 Registro de IST / Vaginose</h3>
+        <button class="modal-close" onclick="fecharModal('modal-ist')">✕</button>
+      </div>
+      <form id="form-ist" onsubmit="salvarIST(event)">
+        <input type="hidden" id="ist-id">
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1"><label>Paciente *</label>
+            <select id="ist-mulher" required>
+              <option value="">Selecionar paciente...</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Diagnóstico *</label>
+            <select id="ist-diag" required>
+              <option value="">Selecionar...</option>
+              <option>Sífilis</option>
+              <option>HIV</option>
+              <option>HPV</option>
+              <option>Gonorreia</option>
+              <option>Clamídia</option>
+              <option>Vaginose Bacteriana</option>
+              <option>Candidíase</option>
+              <option>Tricomoníase</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Data Diagnóstico *</label><input type="date" id="ist-data" required></div>
+          <div class="form-group" style="grid-column:1/-1"><label>Tratamento</label><input type="text" id="ist-trat"
+              placeholder="Ex: Benzilpenicilina 2,4M UI IM dose única"></div>
+          <div class="form-group"><label>Início Tratamento</label><input type="date" id="ist-inicio-trat"></div>
+          <div class="form-group"><label>Fim Tratamento</label><input type="date" id="ist-fim-trat"></div>
+          <div class="form-group"><label>Parceiro(a) Tratado?</label>
+            <select id="ist-parceiro">
+              <option value="">Não informado</option>
+              <option value="sim">Sim</option>
+              <option value="nao">Não</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="ist-status">
+              <option>Em Tratamento</option>
+              <option>Curada</option>
+              <option>Acompanhamento</option>
+              <option>Perda de Seguimento</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1"><label>Observações</label><textarea id="ist-obs"
+              rows="2"></textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-ist')">Cancelar</button>
+          <button type="submit" class="btn btn-mulher">💾 Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div id="cc-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="cc-modal-title">👤 Perfil do Paciente</h3>
+        <button class="modal-close" onclick="fecharModal('cc-modal')">×</button>
+      </div>
+      <div id="cc-modal-body"></div>
+    </div>
+  </div>
+
+
+
+  <!-- MODAL REGISTRO SOAP (ATENDIMENTO) -->
+  <div id="modal-soap-registro" class="modal-overlay">
+    <div class="modal-box" style="max-width:850px">
+      <div class="modal-header">
+        <h3>📓 Registro de Atendimento SOAP</h3>
+        <button class="modal-close" onclick="fecharModal('modal-soap-registro')">×</button>
+      </div>
+      <form id="form-soap-registro" onsubmit="salvarRegistroSOAP(event)">
+        <input type="hidden" id="soap-reg-paciente-id">
+        <input type="hidden" id="soap-reg-id">
+
+        <div
+          style="background:var(--surface2); padding:15px; border-radius:10px; margin-bottom:20px; border:1px solid var(--border)">
+          <div style="font-weight:700; color:var(--primary)" id="soap-reg-paciente-nome">Paciente</div>
+          <div style="font-size:0.8rem; color:var(--text2)" id="soap-reg-paciente-info">Info</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:15px; border: 2px dashed var(--primary); padding: 15px; border-radius: 10px; background: #f9f5ff;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="color:var(--primary); font-weight:700;">🎙️ Relato Livre (Deixe a IA organizar o SOAP)</label>
+              <textarea id="soap-reg-ai-narrative" rows="4" placeholder="Ex: Paciente refere dor de cabeça há 2 dias. PA: 120/80. Hipótese de enxaqueca. Prescrevi Paracetamol."></textarea>
+            </div>
+            <button type="button" id="btn-gerar-soap" class="btn btn-primary" onclick="gerarSOAPcomIA()" style="margin-left:15px; background: linear-gradient(135deg, #8B5CF6, #EC4899); border:none; height: 100%;">✨ Processar (IA)</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>S - Subjetivo</label>
+            <textarea id="soap-reg-s" rows="3" required></textarea>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>O - Objetivo</label>
+            <textarea id="soap-reg-o" rows="3" required></textarea>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>A - Avaliação</label>
+            <textarea id="soap-reg-a" rows="3" required></textarea>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>P - Plano</label>
+            <textarea id="soap-reg-p" rows="3" required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-soap-registro')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">💾 Finalizar Atendimento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Core Modules -->
+  <script src="assets/js/modules/firebase-config.js"></script>
+  <script src="assets/js/modules/data.js"></script>
+  <script src="assets/js/modules/firebase-sync.js"></script>
+  <script src="assets/js/modules/auth.js"></script>
+  
+  <script src="assets/js/app.js?v=5.2"></script>
+  <!-- MODAL NOVO PACIENTE -->
+  <div class="modal-overlay" id="modal-novo-paciente">
+    <div class="modal-box" style="max-width:600px">
+      <div class="modal-header">
+        <h3>➕ Cadastrar Novo Paciente</h3>
+        <button class="modal-close" onclick="fecharModal('modal-novo-paciente')">✕</button>
+      </div>
+      <div id="modal-novo-paciente-body">
+        <form id="form-novo-paciente" onsubmit="salvarNovoPaciente(event)">
+          <div class="form-grid">
+            <div class="form-group" style="grid-column: span 2">
+              <label>Nome Completo *</label>
+              <input type="text" id="np-nome" required>
+            </div>
+            <div class="form-group">
+              <label>Data de Nascimento *</label>
+              <input type="date" id="np-nasc" required>
+            </div>
+            <div class="form-group">
+              <label>Sexo *</label>
+              <select id="np-sexo" required>
+                <option value="Feminino">Feminino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>CPF</label>
+              <input type="text" id="np-cpf" placeholder="000.000.000-00">
+            </div>
+            <div class="form-group">
+              <label>CNS</label>
+              <input type="text" id="np-cns" placeholder="000000000000000">
+            </div>
+            <div class="form-group">
+              <label>Telefone / Celular</label>
+              <input type="text" id="np-tel" placeholder="(00) 00000-0000">
+            </div>
+            <div class="form-group">
+              <label>Microárea</label>
+              <input type="text" id="np-micro" placeholder="Ex: 01">
+            </div>
+            <div class="form-group" style="grid-column: span 2">
+              <label>Endereço / Rua</label>
+              <input type="text" id="np-rua">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="fecharModal('modal-novo-paciente')">Cancelar</button>
+            <button type="submit" class="btn btn-success">Salvar Paciente</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MEMBRO EQUIPE -->
+  <div class="modal-overlay" id="modal-equipe">
+    <div class="modal-box" style="max-width:400px">
+      <div class="modal-header">
+        <h3 id="equipe-modal-title">Novo Membro</h3>
+        <button class="modal-close" onclick="fecharModal('modal-equipe')">×</button>
+      </div>
+      <form id="form-equipe" onsubmit="salvarEquipe(event)">
+        <input type="hidden" id="eq-id">
+        <div class="form-group"><label>Nome</label><input type="text" id="eq-nome" required></div>
+        <div class="form-group" style="margin-top:12px"><label>Cargo</label>
+          <select id="eq-cargo" required>
+            <option>Técnico de Enfermagem</option>
+            <option>Enfermeiro</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px"><label>COREN</label><input type="text" id="eq-coren"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-equipe')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL LANÇAR HORAS -->
+  <div class="modal-overlay" id="modal-horas">
+    <div class="modal-box" style="max-width:450px">
+      <div class="modal-header">
+        <h3>⏳ Lançar Horas (Banco)</h3>
+        <button class="modal-close" onclick="fecharModal('modal-horas')">×</button>
+      </div>
+      <form id="form-horas" onsubmit="salvarHoras(event)">
+        <div class="form-group"><label>Profissional</label>
+          <select id="ho-membro" required></select>
+        </div>
+        <div class="form-group" style="margin-top:12px"><label>Tipo de Lançamento</label>
+          <select id="ho-tipo" required onchange="toggleFatorHoras()">
+            <option value="Credito">🟢 Crédito (Horas Extras Trabalhadas)</option>
+            <option value="Debito">🔴 Débito (Folga / Saída Antecipada)</option>
+          </select>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="form-group"><label>Data da Ocorrência</label><input type="date" id="ho-data" required></div>
+          <div class="form-group"><label>Quantidade (Horas)</label><input type="number" step="0.5" min="0.5" id="ho-qtd" placeholder="Ex: 2 ou 1.5" required></div>
+        </div>
+        <div class="form-group" style="margin-top:12px" id="div-fator"><label>Fator Multiplicador (Apenas Créditos)</label>
+          <select id="ho-fator">
+            <option value="1">1.0x (Normal)</option>
+            <option value="1.5">1.5x (Ex: Sábado/Feriado Parcial)</option>
+            <option value="2">2.0x (Ex: Domingo/Feriado Total)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px"><label>Justificativa</label><input type="text" id="ho-just" placeholder="Ex: Campanha de Multivacinação" required></div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="fecharModal('modal-horas')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Lançar Horas</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/cadastro_central.js?v=4.2"></script>
+  <script src="assets/js/soap.js?v=4.2"></script>
+  <script src="assets/js/mapa.js"></script>
+  <script>
+    // Aba do Cadastro Central
+    function ccMudarAba(aba, btn) {
+      document.querySelectorAll('.cc-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('cc-aba-lista').style.display = aba === 'lista' ? 'block' : 'none';
+      document.getElementById('cc-aba-busca-ativa').style.display = aba === 'busca-ativa' ? 'block' : 'none';
+      if (aba === 'lista') renderCCLista();
+    }
+
+    // Patch no navegador de páginas do app.js para carregar dados do CC ao entrar
+    if (typeof navTo === 'function') {
+      const _navOrig = navTo;
+      navTo = function (pg) {
+        _navOrig(pg);
+        if (pg === 'cadastro-central') { atualizarCCStats(); renderCCLista(); }
+        if (pg === 'dashboard') { renderDashboard(); } // Forçar atualização do dashboard
+      };
+    }
+
+    // SINCRONIZAÇÃO ENTRE ABAS (Reatividade)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'carisma_prenatal_gestantes' || e.key === 'carisma_pessoas') {
+        console.log('[Dashboard] Atualizando dados devido a mudança em outra aba...');
+        if (typeof renderDashboard === 'function') renderDashboard();
+        if (typeof atualizarCCStats === 'function') atualizarCCStats();
+      }
+    });
+  </script>
+  <script src="assets/js/ai_agent.js?v=5.3"></script>
+</body>
+
+</html>

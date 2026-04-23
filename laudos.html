@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laudos e Fichas — Carisma Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --surface: #F9FAFB;
+            --text: #1F2937;
+            --text2: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar similar to puericultura */
+        .sidebar { width: 280px; background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; z-index: 10; }
+        .sb-header { padding: 24px; border-bottom: 1px solid var(--border); }
+        .sb-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .search-box { padding: 16px; position: sticky; top: 0; background: #fff; z-index: 5; border-bottom: 1px solid var(--border); }
+        .search-box input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; outline: none; }
+        .search-box select { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.85rem; outline: none; margin-top: 8px; background: #fff; }
+        .kid-item { padding: 12px 16px; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: 0.2s; }
+        .kid-item:hover { background: #f3f0ff; }
+        .kid-item.active { background: #ede9fe; border-left: 4px solid var(--primary); }
+        .kid-nome { font-weight: 600; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .kid-info { font-size: 0.75rem; color: var(--text2); }
+
+        .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: #eaeff5; align-items: center; padding: 20px; }
+        
+        .top-actions { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .top-actions h1 { font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+        
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--surface); }
+
+        /* SINAN FORM STYLES - A4 Paper Sheet */
+        .page-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            padding: 10mm;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            position: relative;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+        }
+
+        .sinan-form { font-size: 10px; line-height: 1.2; }
+        .sinan-form input, .sinan-form select { border: none; border-bottom: 1px solid #ccc; width: 100%; font-size: 11px; padding: 2px 0; background: transparent; outline: none; font-family: monospace; }
+        .sinan-form .char-box { display: inline-block; width: 15px; border: 1px solid #000; text-align: center; margin-right: 2px; height: 16px; font-family: monospace; }
+        .sinan-form .flex-row { display: flex; border: 1px solid #000; border-bottom: none; }
+        .sinan-form .flex-row:last-child { border-bottom: 1px solid #000; }
+        .sinan-form .col { border-right: 1px solid #000; padding: 2px 4px; display: flex; flex-direction: column; justify-content: space-between; position: relative;}
+        .sinan-form .col:last-child { border-right: none; }
+        
+        .sinan-form .field-num { background: #333; color: #fff; font-size: 9px; padding: 1px 3px; font-weight: bold; margin-right: 4px; display: inline-block; border-radius: 1px;}
+        .sinan-form .field-label { font-size: 9px; font-weight: bold; color: #333; display: flex; align-items: center;}
+        
+        .section-title { background: #E5E5E5; text-align: center; font-weight: bold; font-size: 11px; padding: 3px; border: 1px solid #000; border-bottom: none; text-transform: uppercase; letter-spacing: 1px;}
+        .section-title.sub { background: #fff; border-top: 1px solid #000; }
+        
+        .vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: 9px; font-weight: bold; background: #E5E5E5; border: 1px solid #000; padding: 2px; width: 20px; display: flex; align-items: center; justify-content: center; border-right: none;}
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .header .logos { text-align: center; font-size: 9px; font-weight: bold; }
+        .header .title { text-align: center; flex: 1; }
+        .header .title h2 { font-size: 14px; margin: 0; }
+        .header .title h3 { font-size: 11px; margin: 0; font-weight: normal; }
+        .header .title h1 { font-size: 13px; margin: 0; margin-top: 2px; }
+        .header .num-box { background: #E5E5E5; border: 1px solid #000; padding: 5px 15px; font-size: 14px; font-weight: bold; border-radius: 3px; }
+
+        .checkbox-group { display: flex; gap: 8px; font-size: 9px; margin-top: 4px; flex-wrap: wrap;}
+        .check-item { display: flex; align-items: center; gap: 2px; }
+        .check-box { width: 12px; height: 12px; border: 1px solid #000; display: inline-block; }
+
+        .date-boxes { display: flex; gap: 2px; margin-top: 2px; }
+        .date-boxes .char-box { width: 12px; }
+
+        .flex-row-wrapper { display: flex; width: 100%; border-bottom: 1px solid #000;}
+        .flex-row-wrapper .vertical-text { border-bottom: none; }
+        .flex-row-wrapper .content-area { flex: 1; display: flex; flex-direction: column; }
+        .flex-row-wrapper .content-area .flex-row:last-child { border-bottom: none; }
+        .flex-row-wrapper:last-child { border-bottom: none; }
+
+        @media print {
+            body { background: #fff; display: block; height: auto; overflow: visible; }
+            .sidebar, .top-actions { display: none !important; }
+            .main { padding: 0; display: block; background: #fff; }
+            .page-sheet { box-shadow: none; padding: 0; width: 100%; min-height: auto; margin: 0; transform: scale(1); transform-origin: top left; }
+            @page { size: A4; margin: 10mm; }
+        }
+
+        /* Helpers for layout */
+        .flex-1 { flex: 1; } .flex-2 { flex: 2; } .flex-3 { flex: 3; } .flex-4 { flex: 4; }
+        .mt-1 { margin-top: 2px; } .mb-1 { margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sb-header">
+            <h2 style="cursor: pointer;" onclick="window.location.href='index.html'">⬅ Voltar ao Painel</h2>
+            <p style="font-size:0.75rem; color:var(--text2); margin-top:5px;">Gerador de Laudos e Fichas</p>
+        </div>
+        <div class="search-box">
+            <input type="text" id="search-paciente" placeholder="🔍 Buscar paciente..." oninput="renderPacientes()">
+            <select id="tipo-ficha" onchange="mudarFicha()">
+                <option value="sinan">SINAN - Notificação/Conclusão</option>
+                <!-- Mais laudos no futuro -->
+            </select>
+        </div>
+        <div id="paciente-list"></div>
+    </aside>
+
+    <main class="main">
+        <div class="top-actions">
+            <h1>📄 Ficha de Notificação/Conclusão - SINAN</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" id="btn-magico-laudos" onclick="preenchimentoMagico()" style="background: linear-gradient(135deg, #8B5CF6, #EC4899); border:none;">✨ Preencher c/ IA</button>
+                <button class="btn btn-outline" onclick="limparFicha()">🧹 Limpar</button>
+                <button class="btn btn-outline" onclick="salvarLocal()">💾 Salvar PDF</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+            </div>
+        </div>
+
+        <div class="page-sheet" id="formulario-papel">
+            <div class="sinan-form">
+                
+                <!-- HEADER -->
+                <div class="header">
+                    <div class="logos">
+                        República Federativa do Brasil<br>
+                        Ministério da Saúde
+                    </div>
+                    <div class="title">
+                        <h2>SINAN</h2>
+                        <h3>SISTEMA DE INFORMAÇÃO DE AGRAVOS DE NOTIFICAÇÃO</h3>
+                        <h1>FICHA DE NOTIFICAÇÃO/CONCLUSÃO</h1>
+                    </div>
+                    <div class="num-box">
+                        Nº <input type="text" style="width: 80px; font-size: 14px; font-weight:bold; border:none;" id="sinan-num">
+                    </div>
+                </div>
+
+                <!-- DADOS GERAIS -->
+                <div class="flex-row-wrapper" style="border-top: 2px solid #000;">
+                    <div class="vertical-text">Dados Gerais</div>
+                    <div class="content-area">
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">1</span> Tipo de Notificação</span>
+                                <div style="text-align: center; margin-top: 5px; font-weight: bold;">2 - Individual</div>
+                            </div>
+                            <div class="col flex-3" style="border-right: none; background: #f0f0f0;">
+                                <!-- Area Vazia na imagem original que tem o CID 10 solto? Não, a imagem mostra "2 Agravo/doença" ocupando grande espaço -->
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">2</span> Agravo/doença</span>
+                                <input type="text" id="f-agravo" value="TOXOPLASMOSE GESTACIONAL" style="font-weight: bold; font-size: 11px;">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código (CID10)</span>
+                                <div class="date-boxes" id="cid10-boxes"><div class="char-box">O</div><div class="char-box">9</div><div class="char-box">8</div><div class="char-box">6</div></div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">3</span> Data da Notificação</span>
+                                <input type="date" id="f-data-notificacao" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col" style="width: 40px;">
+                                <span class="field-label"><span class="field-num">4</span> UF</span>
+                                <input type="text" id="f-uf-not" value="MS" maxlength="2" style="text-align:center;">
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">5</span> Município de Notificação</span>
+                                <input type="text" id="f-mun-not" value="DOURADOS">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código (IBGE)</span>
+                                <div class="date-boxes"><div class="char-box">5</div><div class="char-box">0</div><div class="char-box">0</div><div class="char-box">3</div><div class="char-box">7</div><div class="char-box">0</div><div class="char-box">2</div></div>
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">6</span> Unidade de Saúde (ou outra fonte notificadora)</span>
+                                <input type="text" id="f-ubs" value="UBS ESF 26 - DOURADOS">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código</span>
+                                <div class="date-boxes"><div class="char-box">5</div><div class="char-box">3</div><div class="char-box">9</div><div class="char-box">8</div><div class="char-box">8</div><div class="char-box">0</div><div class="char-box">0</div></div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">7</span> Data dos Primeiros Sintomas</span>
+                                <input type="date" id="f-data-sintomas" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOTIFICAÇÃO INDIVIDUAL -->
+                <div class="flex-row-wrapper" style="border-top: 1px solid #000;">
+                    <div class="vertical-text">Notificação Individual</div>
+                    <div class="content-area">
+                        <div class="flex-row">
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">8</span> Nome do Paciente</span>
+                                <input type="text" id="f-nome" style="font-size: 12px; font-weight:bold;">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">9</span> Data de Nascimento</span>
+                                <input type="date" id="f-nasc" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label" style="margin-bottom:2px;"><span class="field-num">10</span> (ou) Idade</span>
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <input type="text" id="f-idade-num" style="width:30px; text-align:center;">
+                                    <div style="font-size:8px; line-height:1;">1-Hora<br>2-Dia<br>3-Mês<br>4-Ano</div>
+                                </div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">11</span> Sexo</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="sexo" value="M" id="sexm"> M - Masculino</div>
+                                    <div class="check-item"><input type="radio" name="sexo" value="F" id="sexf"> F - Feminino</div>
+                                    <div class="check-item"><input type="radio" name="sexo" value="I" id="sexi"> I - Ignorado</div>
+                                </div>
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">12</span> Gestante</span>
+                                <div class="checkbox-group" style="font-size:8px;">
+                                    <div class="check-item"><input type="radio" name="gestante" value="1"> 1-1º Trimestre</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="2"> 2-2º Trimestre</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="3"> 3-3º Trimestre</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="4"> 4-Idade gestacional ignorada</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="5"> 5-Não</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="6" checked> 6-Não se aplica</div>
+                                    <div class="check-item"><input type="radio" name="gestante" value="9"> 9-Ignorado</div>
+                                </div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">13</span> Raça/Cor</span>
+                                <div class="checkbox-group" style="font-size:8px;">
+                                    <div>1-Branca 2-Preta 3-Amarela<br>4-Parda 5-Indígena 9-Ignorado</div>
+                                    <input type="text" id="f-raca" style="width:20px; text-align:center; border:1px solid #000; height:14px; margin-top:2px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col" style="flex:100%;">
+                                <span class="field-label"><span class="field-num">14</span> Escolaridade</span>
+                                <div style="font-size:8px; display:flex; gap:10px; margin-top:2px; flex-wrap:wrap;">
+                                    <span>0-Analfabeto</span>
+                                    <span>1-1ª a 4ª série incompleta do EF</span>
+                                    <span>2-4ª série completa do EF</span>
+                                    <span>3-5ª a 8ª série incompleta do EF</span>
+                                    <span>4-Ensino fundamental completo</span>
+                                    <span>5-Ensino médio incompleto</span>
+                                    <span>6-Ensino médio completo</span>
+                                    <span>7-Educação superior incompleta</span>
+                                    <span>8-Educação superior completa</span>
+                                    <span>9-Ignorado</span>
+                                    <span>10-Não se aplica</span>
+                                    <input type="text" id="f-escolaridade" style="width:30px; text-align:center; border:1px solid #000; height:14px; margin-left:10px;">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">15</span> Número do Cartão SUS</span>
+                                <input type="text" id="f-cns" style="letter-spacing: 2px; font-family: monospace;">
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">16</span> Nome da mãe</span>
+                                <input type="text" id="f-mae">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DADOS DE RESIDÊNCIA -->
+                <div class="flex-row-wrapper" style="border-top: 1px solid #000;">
+                    <div class="vertical-text">Dados de Residência</div>
+                    <div class="content-area">
+                        <div class="flex-row">
+                            <div class="col" style="width: 40px;">
+                                <span class="field-label"><span class="field-num">17</span> UF</span>
+                                <input type="text" id="f-uf-res" value="MS" maxlength="2" style="text-align:center;">
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">18</span> Município de Residência</span>
+                                <input type="text" id="f-mun-res" value="DOURADOS">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código (IBGE)</span>
+                                <div class="date-boxes"><div class="char-box">5</div><div class="char-box">0</div><div class="char-box">0</div><div class="char-box">3</div><div class="char-box">7</div><div class="char-box">0</div><div class="char-box">2</div></div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">19</span> Distrito</span>
+                                <input type="text" id="f-distrito">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">20</span> Bairro</span>
+                                <input type="text" id="f-bairro">
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">21</span> Logradouro (rua, avenida,...)</span>
+                                <input type="text" id="f-logradouro">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código</span>
+                                <div class="date-boxes"><div class="char-box"></div><div class="char-box"></div><div class="char-box"></div><div class="char-box"></div><div class="char-box"></div></div>
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">22</span> Número</span>
+                                <input type="text" id="f-numero">
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">23</span> Complemento (apto., casa, ...)</span>
+                                <input type="text" id="f-complemento">
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">24</span> Geo campo 1</span>
+                                <input type="text" id="f-geo1">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">25</span> Geo campo 2</span>
+                                <input type="text" id="f-geo2">
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">26</span> Ponto de Referência</span>
+                                <input type="text" id="f-referencia">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">27</span> CEP</span>
+                                <input type="text" id="f-cep">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">28</span> (DDD) Telefone</span>
+                                <input type="text" id="f-telefone">
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">29</span> Zona</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="zona" value="1" checked> 1 - Urbana</div>
+                                    <div class="check-item"><input type="radio" name="zona" value="2"> 2 - Rural</div>
+                                    <div class="check-item"><input type="radio" name="zona" value="3"> 3 - Periurbana</div>
+                                    <div class="check-item"><input type="radio" name="zona" value="9"> 9 - Ignorado</div>
+                                </div>
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">30</span> País (se residente fora do Brasil)</span>
+                                <input type="text" id="f-pais">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONCLUSÃO -->
+                <div class="section-title" style="border-top: 1px solid #000;">Conclusão</div>
+                
+                <div class="flex-row-wrapper" style="border-top: 1px solid #000; padding:0;">
+                    <div class="vertical-text" style="height: auto;">Conclusão</div>
+                    <div class="content-area">
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">31</span> Data da Investigação</span>
+                                <input type="date" id="f-data-invest" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">32</span> Classificação Final</span>
+                                <div class="checkbox-group" style="padding-bottom:5px;">
+                                    <div class="check-item"><input type="radio" name="classif" value="1"> 1 - Confirmado</div>
+                                    <div class="check-item"><input type="radio" name="classif" value="2"> 2 - Descartado</div>
+                                </div>
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">33</span> Critério de Confirmação/Descarte</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="criterio" value="1"> 1 - Laboratorial</div>
+                                    <div class="check-item"><input type="radio" name="criterio" value="2"> 2 - Clínico-Epidemiológico</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-title sub" style="text-align: left; padding-left: 5px;">Local Provável da Fonte de Infecção</div>
+                        
+                        <div class="flex-row">
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">34</span> O caso é autóctone do município de residência?</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="autoct" value="1"> 1-Sim</div>
+                                    <div class="check-item"><input type="radio" name="autoct" value="2"> 2-Não</div>
+                                    <div class="check-item"><input type="radio" name="autoct" value="3"> 3-Indeterminado</div>
+                                </div>
+                            </div>
+                            <div class="col" style="width: 40px;">
+                                <span class="field-label"><span class="field-num">35</span> UF</span>
+                                <input type="text" id="f-uf-inf" value="MS" maxlength="2">
+                            </div>
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">36</span> País</span>
+                                <input type="text" id="f-pais-inf" value="BRASIL">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-2">
+                                <span class="field-label"><span class="field-num">37</span> Município</span>
+                                <input type="text" id="f-mun-inf" value="DOURADOS">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Código (IBGE)</span>
+                                <div class="date-boxes"><div class="char-box">5</div><div class="char-box">0</div><div class="char-box">0</div><div class="char-box">3</div><div class="char-box">7</div><div class="char-box">0</div><div class="char-box">2</div></div>
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">38</span> Distrito</span>
+                                <input type="text" id="f-dist-inf">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">39</span> Bairro</span>
+                                <input type="text" id="f-bairro-inf">
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">40</span> Doença Relacionada ao Trabalho</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="trabalho" value="1"> 1-Sim</div>
+                                    <div class="check-item"><input type="radio" name="trabalho" value="2"> 2-Não</div>
+                                    <div class="check-item"><input type="radio" name="trabalho" value="9"> 9-Ignorado</div>
+                                </div>
+                            </div>
+                            <div class="col flex-3">
+                                <span class="field-label"><span class="field-num">41</span> Evolução do Caso</span>
+                                <div class="checkbox-group">
+                                    <div class="check-item"><input type="radio" name="evol" value="1"> 1-Cura</div>
+                                    <div class="check-item"><input type="radio" name="evol" value="2"> 2-Óbito pelo agravo notificado</div>
+                                    <div class="check-item"><input type="radio" name="evol" value="3"> 3-Óbito por outras causas</div>
+                                    <div class="check-item"><input type="radio" name="evol" value="9"> 9-Ignorado</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-row" style="border-bottom: 1px solid #000;">
+                            <div class="col flex-1">
+                                <span class="field-label"><span class="field-num">42</span> Data do Óbito</span>
+                                <input type="date" id="f-data-obito" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                            <div class="col flex-1" style="border-right: none;">
+                                <span class="field-label"><span class="field-num">43</span> Data do Encerramento</span>
+                                <input type="date" id="f-data-encerra" style="font-family: Arial; font-size: 11px;">
+                            </div>
+                            <div class="col flex-2" style="border-right: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFO COMPLEMENTARES -->
+                <div class="section-title" style="border: 1px solid #000; margin-top: 5px; background: #E5E5E5;">Informações complementares e observações</div>
+                <div style="border: 1px solid #000; border-top: none; padding: 5px; height: 120px;">
+                    <span class="field-label" style="margin-bottom: 5px;">Observações adicionais</span>
+                    <textarea id="f-obs" style="width: 100%; height: 80px; border: none; outline: none; resize: none; font-family: monospace; font-size: 11px; background: repeating-linear-gradient(#fff, #fff 16px, #ccc 17px); line-height: 17px;"></textarea>
+                </div>
+
+                <!-- INVESTIGADOR -->
+                <div class="flex-row-wrapper" style="border-top: 1px solid #000; margin-top: 5px; border-bottom: 1px solid #000;">
+                    <div class="vertical-text" style="height: auto;">Investigador</div>
+                    <div class="content-area">
+                        <div class="flex-row" style="border-bottom: none;">
+                            <div class="col flex-3">
+                                <span class="field-label">Município/Unidade de Saúde</span>
+                                <input type="text" id="f-inv-mun" value="DOURADOS / UBS ESF 26">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Cód. da Unid. de Saúde</span>
+                                <input type="text" id="f-inv-cnes" value="5398800">
+                            </div>
+                        </div>
+                        <div class="flex-row" style="border-bottom: none;">
+                            <div class="col flex-2">
+                                <span class="field-label">Nome</span>
+                                <input type="text" id="f-inv-nome">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Função</span>
+                                <input type="text" id="f-inv-funcao">
+                            </div>
+                            <div class="col flex-1">
+                                <span class="field-label">Assinatura</span>
+                                <div style="border-bottom: 1px solid #000; height: 15px; margin-top: 5px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 8px; margin-top: 2px;">
+                    <span>Notificação/conclusão</span>
+                    <span>Sinan NET</span>
+                    <span>SVS 27/09/2005</span>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load Pacientes from Cadastro Central
+        const STORAGE_KEY = 'carisma_pessoas';
+        
+        function getPacientes() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            } catch(e) { return []; }
+        }
+
+        function renderPacientes() {
+            const busca = document.getElementById('search-paciente').value.toLowerCase();
+            const list = getPacientes()
+                            .filter(p => !p.situacao || p.situacao !== 'Inativa')
+                            .filter(p => p.nome.toLowerCase().includes(busca))
+                            .sort((a,b) => a.nome.localeCompare(b.nome))
+                            .slice(0, 100); // limit for perf
+            
+            const el = document.getElementById('paciente-list');
+            el.innerHTML = list.map(p => `
+                <div class="kid-item" onclick="selecionarPaciente('${p.id}')">
+                    <div class="kid-nome">${p.nome || 'Sem Nome'}</div>
+                    <div class="kid-info">Nasc: ${p.nasc ? p.nasc.split('-').reverse().join('/') : '—'} · CNS: ${p.cns || '—'}</div>
+                </div>
+            `).join('');
+        }
+
+        function calcularIdadeNum(nasc) {
+            if(!nasc) return null;
+            const n = new Date(nasc);
+            const h = new Date();
+            let a = h.getFullYear() - n.getFullYear();
+            if(h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--;
+            return a;
+        }
+
+        function selecionarPaciente(id) {
+            // highlight logic
+            document.querySelectorAll('.kid-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const p = getPacientes().find(x => x.id === id);
+            if(!p) return;
+
+            limparFicha();
+
+            document.getElementById('f-nome').value = p.nome || '';
+            document.getElementById('f-nasc').value = p.nasc || '';
+            
+            const idade = calcularIdadeNum(p.nasc);
+            if(idade !== null) {
+                document.getElementById('f-idade-num').value = idade;
+            }
+
+            if(p.sexo) {
+                const s = p.sexo.toUpperCase().trim();
+                if(s.startsWith('F')) document.getElementById('sexf').checked = true;
+                else if(s.startsWith('M')) document.getElementById('sexm').checked = true;
+            } else { // Mulher default pois o sistema era pra mulheres originalmente
+                document.getElementById('sexf').checked = true;
+            }
+
+            document.getElementById('f-cns').value = p.cns || '';
+            document.getElementById('f-telefone').value = p.tel || p.telefone || p.telCelular || '';
+
+            // Endereço logic (tries to extract end/num/bairro)
+            if(p.endereco) {
+                const parts = p.endereco.split(',');
+                document.getElementById('f-logradouro').value = parts[0] ? parts[0].trim() : '';
+                document.getElementById('f-numero').value = parts[1] ? parts[1].trim() : '';
+            }
+
+            // check pregnant status
+            if(p.tags && p.tags.includes('Gestante')) {
+                document.querySelector('input[name="gestante"][value="9"]').checked = true; // ign
+            }
+        }
+
+        function limparFicha() {
+            document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(el => {
+                // don't clear default structural fields
+                const keepIds = ['f-agravo', 'f-uf-not', 'f-mun-not', 'f-ubs', 'f-uf-res', 'f-mun-res', 'f-uf-inf', 'f-mun-inf', 'f-pais-inf', 'f-inv-mun', 'f-inv-cnes'];
+                if(keepIds.includes(el.id)) return;
+                el.value = '';
+            });
+            document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+            // reset defaults
+            document.querySelector('input[name="gestante"][value="6"]').checked = true;
+            document.querySelector('input[name="zona"][value="1"]').checked = true;
+        }
+
+        function mudarFicha() {
+            // Placeholder for when other fichas are implemented
+            alert("Apenas a ficha SINAN está disponível no momento.");
+        }
+
+        function salvarLocal() {
+            const el = document.getElementById('formulario-papel');
+            
+            // Temporary hide borders/shadows of the page sheet for perfect render
+            el.style.boxShadow = 'none';
+            // Scale up for better resolution
+            
+            alert('Gerando PDF... Aguarde.');
+            
+            html2canvas(el, {
+                scale: 2,
+                useCORS: true,
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`SINAN_${document.getElementById('f-nome').value || 'Branco'}_${new Date().toISOString().slice(0,10)}.pdf`);
+                
+                // restore style
+                el.style.boxShadow = '0 5px 20px rgba(0,0,0,0.1)';
+            });
+        }
+
+        async function preenchimentoMagico() {
+            if (!window.AIManager || !window.AIManager.apiKey) {
+                alert("Ative a Inteligência Artificial clicando no botão flutuante ✨ e inserindo sua chave.");
+                return;
+            }
+            const relato = prompt("Escreva um relato livre sobre o paciente e o caso clínico (ex: 'Paciente tem 30 anos, homem, febre e pintas vermelhas há 3 dias. Suspeita de Dengue'):");
+            if (!relato) return;
+
+            const dataAtual = new Date().toISOString().split('T')[0];
+            const schema = `Atue como um médico triagista preenchendo o SINAN. Hoje é ${dataAtual}. Extraia as informações do relato e retorne APENAS um objeto JSON válido (sem markdown, sem crases) com as chaves exatas:
+{
+  "nomePaciente": "Nome completo",
+  "idadeNumerica": "idade em numero",
+  "sexo": "M ou F",
+  "agravo": "Nome da doença/agravo em MAIÚSCULAS (ex: DENGUE)",
+  "cid10": "O código CID10 exato em 4 caracteres sem ponto (ex: A900)",
+  "dataSintomas": "Data do início dos sintomas estruturada YYYY-MM-DD",
+  "gestante": "1, 2, 3, 4, 5, 6, ou 9 (Conforme regras do SINAN. Se for homem é 6)",
+  "obs": "Resumo clínico limpo para a seção de observações do laudo"
+}`;
+
+            try {
+                const resultado = await window.AIManager.predictStructured(relato, schema);
+                if (resultado) {
+                    if (resultado.nomePaciente) document.getElementById('f-nome').value = resultado.nomePaciente;
+                    if (resultado.idadeNumerica) document.getElementById('f-idade-num').value = resultado.idadeNumerica;
+                    
+                    if (resultado.sexo) {
+                        if(resultado.sexo === 'M') { document.getElementById('sexm').checked = true; document.querySelector('input[name="gestante"][value="6"]').checked = true; }
+                        if(resultado.sexo === 'F') document.getElementById('sexf').checked = true;
+                    }
+
+                    if (resultado.agravo) document.getElementById('f-agravo').value = resultado.agravo;
+                    
+                    if (resultado.cid10) {
+                        const cid = resultado.cid10.padEnd(4, ' ');
+                        const boxes = document.getElementById('cid10-boxes').querySelectorAll('.char-box');
+                        for(let i=0; i<4; i++) {
+                            if(boxes[i]) boxes[i].textContent = cid[i];
+                        }
+                    }
+
+                    if (resultado.dataSintomas) document.getElementById('f-data-sintomas').value = resultado.dataSintomas;
+                    
+                    if (resultado.gestante && resultado.sexo !== 'M') {
+                        const radios = document.getElementsByName('gestante');
+                        for(let r of radios) {
+                            if(r.value == resultado.gestante) r.checked = true;
+                        }
+                    }
+
+                    if (resultado.obs) document.getElementById('f-obs').value = resultado.obs;
+                    
+                    alert("✨ Formulário preenchido pela IA com sucesso! Por favor, revise os dados antes de salvar.");
+                }
+            } catch (e) {
+                alert("Erro no preenchimento mágico: " + e.message);
+            }
+        }
+
+        // Init
+        renderPacientes();
+    </script>
+  <script src="assets/js/ai_agent.js?v=4.2"></script>
+</body>
+</html>

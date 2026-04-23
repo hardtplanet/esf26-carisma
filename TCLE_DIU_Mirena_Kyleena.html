@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCLE - DIU Mirena/Kyleena</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #555;
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .page {
+            background-color: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 20px auto;
+            padding: 15mm 18mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            position: relative;
+            page-break-after: always;
+        }
+
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .logo {
+            height: 60px;
+            object-fit: contain;
+        }
+
+        .logo-container:nth-child(3) .logo {
+            height: 30px;
+        }
+
+        .logo-container {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            margin: 10px 0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 12px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+        }
+
+        .section {
+            margin-bottom: 15px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 3px;
+            white-space: nowrap;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
+            border: 1px solid #000;
+            padding: 3px 5px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        .input-line {
+            border: none;
+            border-bottom: 1px solid #000;
+            border-radius: 0;
+            padding: 2px 4px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .signature-box {
+            margin-top: 30px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            text-align: center;
+            width: 45%;
+        }
+
+        .signature-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        ul {
+            margin: 8px 0;
+            padding-left: 20px;
+            text-align: justify;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        .warning-box {
+            background: #f5f5f5;
+            padding: 8px;
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+
+        .actions {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background-color: #34495e;
+        }
+
+        .btn-clear {
+            background-color: #c0392b;
+        }
+
+        .btn-clear:hover {
+            background-color: #e74c3c;
+        }
+
+        .auto-fill-notice {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #155724;
+            display: none;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 8mm;
+            }
+
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: auto;
+                height: auto;
+                padding: 0;
+                page-break-after: always;
+                break-after: page;
+                border: none;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+
+            .actions, .auto-fill-notice {
+                display: none !important;
+            }
+
+            input, textarea, select {
+                border: none;
+                border-bottom: 1px solid #000;
+                padding: 0;
+                resize: none;
+            }
+
+            .header-logos {
+                border-bottom: 2px solid #000;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+        <button class="btn btn-clear" onclick="if(confirm('Limpar todos os campos?')) document.querySelector('form').reset()">🗑️ Limpar</button>
+    </div>
+
+    <form>
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container"><img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_sems.png" alt="SEMS" class="logo"></div>
+            </div>
+
+            <div class="auto-fill-notice" id="autoFillNotice">✅ Dados preenchidos automaticamente!</div>
+
+            <h1>TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO (TCLE)<br>INSERÇÃO DE DISPOSITIVO INTRAUTERINO (DIU) - SISTEMA MIRENA®/KYLEENA®</h1>
+
+            <div class="section">
+                <h2>1. DADOS DA PACIENTE</h2>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Nome:</label><input type="text" id="p-nome" class="input-line" placeholder="Nome completo"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Data Nascimento:</label><input type="date" id="p-nasc" class="input-line"></div>
+                    <div class="col"><label>Idade:</label><input type="number" id="p-idade" class="input-line" style="width: 60px;"></div>
+                    <div class="col"><label>CNS:</label><input type="text" id="p-cns" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>CPF:</label><input type="text" id="p-cpf" class="input-line"></div>
+                    <div class="col"><label>RG:</label><input type="text" id="p-rg" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Endereço:</label><input type="text" id="p-end" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Bairro:</label><input type="text" id="p-bairro" class="input-line"></div>
+                    <div class="col"><label>Telefone:</label><input type="text" id="p-tel" class="input-line"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. INFORMAÇÕES SOBRE O MÉTODO CONTRACEPTIVO</h2>
+                <p style="text-align: justify; margin-bottom: 10px;">
+                    O Sistema Intrauterino (SIU) Mirena®/Kyleena® é um método contraceptivo hormonal de longa duração (LARC) que libera lentamente levonorgestrel (progestágeno) dentro do útero. É um método altamente eficaz (taxa de falha < 0,2% ao ano), reversível e duradouro.
+                </p>
+                <ul>
+                    <li><strong>Mirena®:</strong> Duração de até 5 anos; libera 20mcg de levonorgestrel/dia; indicada para nulíparas e multíparas.</li>
+                    <li><strong>Kyleena®:</strong> Duração de até 5 anos; libera 17,5mcg de levonorgestrel/dia; menor dose hormonal.</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>3. BENEFÍCIOS</h2>
+                <ul>
+                    <li>Alta eficácia contraceptiva (superior a 99%)</li>
+                    <li>Longa duração (até 5 anos)</li>
+                    <li>Reversível - fertilidade retorna rapidamente após a remoção</li>
+                    <li>Redução do fluxo menstrual (amenorreia em até 20% das usuárias)</li>
+                    <li>Redução de cólicas e sintomas de endometriose</li>
+                    <li>Não requer uso diário</li>
+                    <li>Compatible com amamentação</li>
+                    <li>Pode ser usado por mulheres que não podem usar estrogênio</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>4. RISCOS E COMPLICAÇÕES</h2>
+                <ul>
+                    <li><strong>Expulsão:</strong> Pode ocorrer expulsão parcial ou total do DIU (3-5% das casos), especialmente nos primeiros 3 meses.</li>
+                    <li><strong>Perfuração uterina:</strong> Risco muito baixo (1 a 2 a cada 1.000 inserções), pode ocorrer durante a inserção.</li>
+                    <li><strong>Infecção:</strong> Risco de infecção pélvica aumentado nas primeiras semanas após inserção (cuidado com ISTs).</li>
+                    <li><strong>Alterações menstruais:</strong> Spotting (sangramento de escape) nos primeiros 3-6 meses, depois usually redução do fluxo.</li>
+                    <li><strong>Cistos ovarianos:</strong> Podem ocorrer cistos funcionais (geralmente assintomáticos e regresivos).</li>
+                    <li><strong>Alterações de humor:</strong> Raramente podem ocorrer alterações de humor ou depressivas.</li>
+                    <li><strong>Falha do método:</strong> Embora seja um método muito eficaz, existe risco de gravidez ectópica (5-6% das gestações em usuárias de DIU hormonal são ectópicas).</li>
+                </ul>
+            </div>
+
+            <div class="signature-container">
+                <div class="signature-box">Assinatura Paciente</div>
+                <div class="signature-box">Carimbo e Assinatura do Profissional</div>
+            </div>
+        </div>
+
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container"><img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_sems.png" alt="SEMS" class="logo"></div>
+            </div>
+
+            <h1>TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO (TCLE)<br>INSERÇÃO DE DIU MIRENA®/KYLEENA®</h1>
+
+            <div class="section">
+                <h2>5. CONTRAINDICAÇÕES</h2>
+                <ul>
+                    <li>Gravidade confirmada ou suspeita</li>
+                    <li>Infecção pélvica atual (IST)</li>
+                    <li>Suspeita de malignidade uterina ou cervical</li>
+                    <li>Malformações uterinas</li>
+                    <li>Sangramento vaginal de causa desconhecida</li>
+                    <li>Alergia ao levonorgestrel ou qualquer componente do dispositivo</li>
+                    <li>Histórico de gravidez ectópica prévia (avaliar individualmente)</li>
+                    <li>Doença hepática grave ou tumor hepático</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>6. ORIENTAÇÕES PÓS-INSERÇÃO</h2>
+                <ul>
+                    <li>Retornar em 4-6 semanas para verificação da posição do DIU</li>
+                    <li>Reportar imediatamente: febre, dor pélvica intensa, sangramento abundante, corrimento com cheiro, ou suspicion de expulsão</li>
+                    <li>Realizar exame preventivo anual (PCCU)</li>
+                    <li>O DIU pode ser removido a qualquer momento</li>
+                    <li>Em caso de desejo de gravidez, procurar unidade para remoção</li>
+                    <li>Não protege contra ISTs - usar preservativo em parceiros ocasionais</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>7. DECLARAÇÃO DE CONSENTIMENTO</h2>
+                <p style="text-align: justify; margin-bottom: 10px;">
+                    Declaro que fui informada (o) claramente sobre o método DIU hormonal (Mirena®/Kyleena®), seus benefícios, riscos, contraindicações e orientações pós-inserção. Tive oportunidade de esclarecer todas as minhas dúvidas e concordo espontaneamente com a inserção do dispositivo.
+                </p>
+                
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col" style="flex: 2;">
+                        <label>Declaro ainda que fui orientada sobre outros métodos contraceptivos disponíveis:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="checkbox"> Contraceptivos hormonais orais</label>
+                            <label class="checkbox-item"><input type="checkbox"> Contraceptivos injetáveis</label>
+                            <label class="checkbox-item"><input type="checkbox"> Implante subdérmico</label>
+                            <label class="checkbox-item"><input type="checkbox"> DIU de cobre</label>
+                            <label class="checkbox-item"><input type="checkbox"> Métodos de barreira</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col" style="flex: 2;">
+                        <label>Optei pelo DIU hormonal após orientação sobre os demais métodos:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="radio" name="optou" value="sim"> Sim</label>
+                            <label class="checkbox-item"><input type="radio" name="optou" value="nao"> Não</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col"><label>Tipo de DIU:</label>
+                        <select id="tipo-diu" class="input-line">
+                            <option value="">Selecione...</option>
+                            <option value="Mirena">Mirena® (52mg)</option>
+                            <option value="Kyleena">Kyleena® (19,5mg)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col"><label>Data:</label><input type="date" id="data-consentimento" class="input-line"></div>
+                    <div class="col" style="flex: 2;"><label>Assinatura Paciente:</label><input type="text" id="assinatura-paciente" class="input-line"></div>
+                </div>
+            </div>
+
+            <div class="signature-container">
+                <div class="signature-box">Carimbo e Assinatura do Profissional<br>(Enfermeiro(a)/Médico(a))</div>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            const dados = JSON.parse(localStorage.getItem('dadosPaciente'));
+            if (dados) {
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                document.getElementById('autoFillNotice').style.display = 'block';
+
+                set('p-nome', dados.nome);
+                set('p-cns', dados.cns);
+                set('p-cpf', dados.cpf);
+                set('p-nasc', dados.nasc);
+                set('p-end', dados.end || dados.rua);
+                set('p-bairro', dados.bairro);
+                set('p-tel', dados.tel || dados.telCelular);
+
+                if (dados.nasc) {
+                    const h = new Date(), d = new Date(dados.nasc);
+                    let a = h.getFullYear() - d.getFullYear();
+                    if (h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) a--;
+                    set('p-idade', a);
+                }
+                
+                document.getElementById('data-consentimento').valueAsDate = new Date();
+                console.log('✅ Dados preenchidos automaticamente!', dados);
+            }
+        });
+    </script>
+</body>
+
+</html>

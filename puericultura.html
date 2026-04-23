@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puericultura — Carisma Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --secondary: #3B82F6;
+            --surface: #F9FAFB;
+            --text: #1F2937;
+            --text2: #6B7280;
+            --border: #E5E7EB;
+            --white: #ffffff;
+            --danger: #EF4444;
+            --success: #10B981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sb-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-header h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .search-box {
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 5;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .kid-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .kid-item:hover {
+            background: #f3f0ff;
+        }
+
+        .kid-item.active {
+            background: #ede9fe;
+            border-left: 4px solid var(--primary);
+        }
+
+        .kid-nome {
+            font-weight: 600;
+            font-size: 0.9rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .kid-info {
+            font-size: 0.75rem;
+            color: var(--text2);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            padding: 16px 32px;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .content {
+            padding: 32px;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Profile Header */
+        .p-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .p-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 0;
+            border-bottom: 3px solid transparent;
+            color: var(--text2);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Grids and Groups */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 16px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text2);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .stat-val {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text2);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .dnpm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .dnpm-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .dnpm-check input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 64px;
+            color: var(--text2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="sb-header">
+            <h2>BABY Carisma</h2>
+            <p style="font-size:0.7rem; color:var(--text2)">Puericultura ESF 26</p>
+        </div>
+        <div class="search-box">
+            <input type="text" id="search-kid" placeholder="🔍 Buscar criança..." oninput="renderSidebar()">
+        </div>
+        <div id="kid-list"></div>
+    </aside>
+
+    <main class="main">
+        <div id="selected-content" style="display:none">
+            <div class="top-bar">
+                <span id="kid-path" style="font-size:0.85rem; color:var(--text2)"></span>
+                <button class="btn btn-primary" onclick="salvarAtendimento()">💾 Salvar Atendimento</button>
+            </div>
+            <div class="content">
+                <div class="p-card">
+                    <div class="p-avatar" id="kid-avatar"></div>
+                    <div>
+                        <h1 id="kid-name" style="font-size:1.5rem; margin-bottom:4px"></h1>
+                        <p id="kid-meta" style="font-size:0.9rem; color:var(--text2)"></p>
+                    </div>
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="setTab('crescimento')">📏 Crescimento</div>
+                    <div class="tab" onclick="setTab('desenvolvimento')">🧠 DNPM</div>
+                    <div class="tab" onclick="setTab('vacinas')">💉 Vacinas</div>
+                    <div class="tab" onclick="setTab('anotacoes')">📝 Anotações</div>
+                </div>
+
+                <!-- Aba Crescimento -->
+                <div id="tab-crescimento" class="aba-content">
+                    <div class="grid-3">
+                        <div class="stat-card">
+                            <div class="stat-label">Peso (kg)</div>
+                            <input type="number" step="0.001" id="val-peso" class="stat-val" value="0.000"
+                                style="border:none; width:100%">
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Estatura (cm)</div>
+                            <input type="number" step="0.1" id="val-altura" class="stat-val" value="0.0"
+                                style="border:none; width:100%">
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Perímetro Cefálico (cm)</div>
+                            <input type="number" step="0.1" id="val-pc" class="stat-val" value="0.0"
+                                style="border:none; width:100%">
+                        </div>
+                    </div>
+                    <div class="card stat-card" style="background:#F0F9FF; border-color:#BAE6FD">
+                        <p style="font-size:0.85rem; color:#0369A1">ℹ️ <strong>Percentis MS:</strong> Dados baseados nas
+                            curvas da OMS (2006). Registre os valores para verificar as curvas abaixo.</p>
+                    </div>
+
+                    <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="stat-card" style="min-height: 250px; padding: 10px;">
+                            <canvas id="chart-peso"></canvas>
+                        </div>
+                        <div class="stat-card" style="min-height: 250px; padding: 10px;">
+                            <canvas id="chart-altura"></canvas>
+                        </div>
+                        <div class="stat-card" style="min-height: 250px; padding: 10px;">
+                            <canvas id="chart-pc"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba Desenvolvimento -->
+                <div id="tab-desenvolvimento" class="aba-content" style="display:none">
+                    <h3 style="margin-bottom:12px; font-size:1rem">Marcos do Desenvolvimento (DNPM)</h3>
+                    <p id="dnpm-periodo" style="color:var(--primary); font-weight:700; margin-bottom:16px"></p>
+                    <div class="dnpm-grid" id="dnpm-lista"></div>
+                </div>
+
+                <!-- Aba Vacinas -->
+                <div id="tab-vacinas" class="aba-content" style="display:none">
+                    <div class="form-group">
+                        <label>Status de Vacinação Nacional (Calendário 2024)</label>
+                        <select id="vacina-status">
+                            <option value="Em Dia">✅ Todas em Dia</option>
+                            <option value="Pendente">⚠️ Pendência Identificada</option>
+                            <option value="Atrasada">🔴 Atraso Crítico</option>
+                        </select>
+                    </div>
+                    <textarea id="vacinas-obs" placeholder="Observações de vacinas específicas..." rows="5"
+                        style="width:100%; padding:12px; border:1.5px solid var(--border); border-radius:8px; font-family:inherit"></textarea>
+                </div>
+
+                <!-- Aba Anotações -->
+                <div id="tab-anotacoes" class="aba-content" style="display:none">
+                    <div class="form-group">
+                        <label>Aleitamento e Alimentação</label>
+                        <select id="alimentacao">
+                            <option value="AME">Aleitamento Materno Exclusivo</option>
+                            <option value="AM">Aleitamento Materno + Outros</option>
+                            <option value="AI">Alimentação Complementar</option>
+                            <option value="AF">Alimentação da Família</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label style="margin-bottom:0;">Relato do Atendimento / Condutas</label>
+                            <button class="btn btn-sm" onclick="sugerirCondutaIA()" style="background: linear-gradient(135deg, #8B5CF6, #EC4899); color: #fff; border:none; margin-bottom: 5px;">✨ Sugerir Conduta (IA)</button>
+                        </div>
+                        <textarea id="clinico-obs" rows="10"
+                            style="width:100%; padding:12px; border:1.5px solid var(--border); border-radius:8px; font-family:inherit"></textarea>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="empty-content" class="empty-state">
+            <div style="font-size:4rem">🧸</div>
+            <h2>PuericulturaESF 26</h2>
+            <p>Selecione uma criança na lista lateral para iniciar o atendimento.</p>
+        </div>
+    </main>
+
+    <script>
+        const STORAGE_KEY = 'carisma_pessoas';
+        const PUERI_KEY = 'carisma_puericultura';
+        let selectedId = null;
+
+        function getCrianças() {
+            const ps = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            return ps.filter(p => {
+                if (!p.nasc) return false;
+                const h = new Date(), d = new Date(p.nasc);
+                const meses = (h.getFullYear() - d.getFullYear()) * 12 + (h.getMonth() - d.getMonth());
+                return meses <= 18 && p.situacao !== 'Inativa' && p.situacao !== 'Óbito';
+            });
+        }
+
+        function renderSidebar() {
+            const busca = document.getElementById('search-kid').value.toLowerCase();
+            const list = getCrianças().filter(c => c.nome.toLowerCase().includes(busca));
+            const el = document.getElementById('kid-list');
+
+            el.innerHTML = list.map(c => `
+                <div class="kid-item ${selectedId === c.id ? 'active' : ''}" onclick="selectKid('${c.id}')">
+                    <div class="kid-nome">${c.nome}</div>
+                    <div class="kid-info">Microárea ${c.microArea || '?'} · ${c.nasc.split('-').reverse().join('/')}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectKid(id) {
+            selectedId = id;
+            const kids = getCrianças();
+            const k = kids.find(x => x.id === id);
+            if (!k) return;
+
+            document.getElementById('empty-content').style.display = 'none';
+            document.getElementById('selected-content').style.display = 'block';
+
+            document.getElementById('kid-name').textContent = k.nome;
+            document.getElementById('kid-avatar').textContent = k.nome.charAt(0);
+            document.getElementById('kid-meta').textContent = `Nasc: ${k.nasc.split('-').reverse().join('/')} · CNS: ${k.cns || '—'}`;
+            document.getElementById('kid-path').textContent = `Ficha de Acompanhamento > ${k.nome.split(' ')[0]}`;
+
+            // Reset campos e carregar histórico
+            loadHistorico(id, k.nasc);
+            renderDNPM(k.nasc);
+            renderSidebar();
+        }
+
+        function setTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.aba-content').forEach(c => c.style.display = 'none');
+            document.getElementById(`tab-${name}`).style.display = 'block';
+        }
+
+        const MARCOS = {
+            '15d': ['Ouve bem?', 'Fixa o olhar?', 'Membros flexíveis?'],
+            '1m': ['Observa um rosto', 'Reage ao som', 'Movimenta os membros', 'Mãos fechadas'],
+            '2m': ['Sorriso social', 'Acompanha objeto ou rosto humano (180º)', 'Vocaliza (emite sons)'],
+            '4m': ['Sustenta a cabeça', 'Brinca com as mãos', 'Ri alto', 'Responde quando o examinador fala'],
+            '6m': ['Leva objetos à boca', 'Rola', 'Busca ativamente objetos', 'Volta a cabeça para o som'],
+            '9m': ['Senta-se sem apoio', 'Transfere objetos de uma mão para a outra', 'Imita gestos (tchau)', 'Brinca de esconde-esconde'],
+            '12m': ['Engatinha ou tentar andar', 'Pinça (polegar e indicador)', 'Faz gestos para pedir algo', 'Produz sons (ma-ma, pa-pa)'],
+            '15m': ['Anda sem apoio', 'Entrega um objeto', 'Retira brinquedo de uma caixa', 'Mostra o que quer'],
+            '18m': ['Anda bem e tentar correr', 'Rabisca espontaneamente', 'Diz 3 ou mais palavras', 'Alimenta-se com colher e derrama um pouco'],
+            '24m': ['Equilibra-se num pé só (segundo)', 'Tira a roupa (ou peças simples)', 'Forma frases de duas palavras', 'Sabe o nome e partes do corpo'],
+            '3a': ['Pedala triciclo', 'Lava e seca as mãos', 'Conta fatos ou histórias curtas']
+        };
+
+        function renderDNPM(totalNasc) {
+            const h = new Date(), d = new Date(totalNasc);
+            const meses = (h.getFullYear() - d.getFullYear()) * 12 + (h.getMonth() - d.getMonth());
+
+            let faixa = '15d';
+            if (meses < 1) {
+                const days = Math.round((document.now || h - d) / 86400000); // approximated fallback
+                if (days > 20) faixa = '1m'; else faixa = '15d';
+            }
+            else if (meses <= 1) faixa = '1m';
+            else if (meses <= 2) faixa = '2m';
+            else if (meses <= 4) faixa = '4m';
+            else if (meses <= 6) faixa = '6m';
+            else if (meses <= 9) faixa = '9m';
+            else if (meses <= 12) faixa = '12m';
+            else if (meses <= 15) faixa = '15m';
+            else if (meses <= 18) faixa = '18m';
+            else if (meses <= 24) faixa = '24m';
+            else faixa = '3a';
+
+            document.getElementById('dnpm-periodo').textContent = `Período Atual: ${faixa} (${meses} meses)`;
+            const el = document.getElementById('dnpm-lista');
+            el.innerHTML = (MARCOS[faixa] || []).map(m => `
+                <label class="dnpm-check">
+                    <input type="checkbox" class="check-dnpm" value="${m}"> ${m}
+                </label>
+            `).join('');
+        }
+
+        function loadHistorico(id, totalNasc) {
+            const hist = JSON.parse(localStorage.getItem(PUERI_KEY) || '{}');
+            const p = hist[id] || {};
+
+            document.getElementById('val-peso').value = p.peso || "0.000";
+            document.getElementById('val-altura').value = p.altura || "0.0";
+            document.getElementById('val-pc').value = p.pc || "0.0";
+            document.getElementById('vacina-status').value = p.vacinacao || "Em Dia";
+            document.getElementById('vacinas-obs').value = p.vacinasObs || "";
+            document.getElementById('alimentacao').value = p.alimentacao || "AME";
+            document.getElementById('clinico-obs').value = p.condutas || "";
+
+            // Marcar DNPM salvos se houver
+            const dnpmChecks = document.querySelectorAll('.check-dnpm');
+            dnpmChecks.forEach(ck => {
+                ck.checked = (p.dnpm || []).includes(ck.value);
+            });
+
+            if (window.renderCurvas) {
+                window.renderCurvas(p.medicoes || [], totalNasc);
+            }
+        }
+
+        function salvarAtendimento() {
+            if (!selectedId) return;
+            const hist = JSON.parse(localStorage.getItem(PUERI_KEY) || '{}');
+
+            const pAntigo = hist[selectedId] || {};
+
+            const dnpm = [];
+            document.querySelectorAll('.check-dnpm:checked').forEach(ck => dnpm.push(ck.value));
+
+            const medicoes = pAntigo.medicoes || [];
+            const hj = new Date().toISOString().slice(0, 10);
+            const peso = parseFloat(document.getElementById('val-peso').value) || 0;
+            const altura = parseFloat(document.getElementById('val-altura').value) || 0;
+            const pc = parseFloat(document.getElementById('val-pc').value) || 0;
+            
+            const idxHj = medicoes.findIndex(m => m.data === hj);
+            const novaMed = { data: hj, peso, altura, pc };
+            if (idxHj >= 0) medicoes[idxHj] = novaMed;
+            else medicoes.push(novaMed);
+
+            hist[selectedId] = {
+                peso: document.getElementById('val-peso').value,
+                altura: document.getElementById('val-altura').value,
+                pc: document.getElementById('val-pc').value,
+                vacinacao: document.getElementById('vacina-status').value,
+                vacinasObs: document.getElementById('vacinas-obs').value,
+                alimentacao: document.getElementById('alimentacao').value,
+                condutas: document.getElementById('clinico-obs').value,
+                dnpm: dnpm,
+                medicoes: medicoes,
+                lastUpdate: new Date().toISOString()
+            };
+
+            localStorage.setItem(PUERI_KEY, JSON.stringify(hist));
+
+            const k = getCrianças().find(x => x.id === selectedId);
+            if(k && window.renderCurvas) window.renderCurvas(medicoes, k.nasc);
+
+            alert('✅ Atendimento de Puericultura salvo com sucesso!');
+        }
+
+        let chartsInstance = {};
+        window.renderCurvas = function(medicoes, nasc) {
+            const dataNasc = new Date(nasc);
+            const sorted = [...medicoes].sort((a,b) => new Date(a.data) - new Date(b.data));
+            
+            const labels = [];
+            const dataPeso = [];
+            const dataAltura = [];
+            const dataPc = [];
+
+            sorted.forEach(m => {
+                const md = new Date(m.data);
+                const meses = Math.floor(((md - dataNasc) / 86400000) / 30.44); // approximate precise months
+                labels.push(meses + 'm');
+                dataPeso.push(m.peso);
+                dataAltura.push(m.altura);
+                dataPc.push(m.pc);
+            });
+
+            const criarOuAtualizar = (ctxId, labelStr, dataArr, colorString) => {
+                const ctx = document.getElementById(ctxId);
+                if (!ctx) return;
+                if (chartsInstance[ctxId]) {
+                    chartsInstance[ctxId].data.labels = labels;
+                    chartsInstance[ctxId].data.datasets[0].data = dataArr;
+                    chartsInstance[ctxId].update();
+                } else {
+                    chartsInstance[ctxId] = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: labelStr,
+                                data: dataArr,
+                                borderColor: colorString,
+                                backgroundColor: colorString + '33',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: false, title: { display: true, text: labelStr } },
+                                x: { title: { display: true, text: 'Idade (Meses)' } }
+                            }
+                        }
+                    });
+                }
+            };
+
+            criarOuAtualizar('chart-peso', 'Peso (kg)', dataPeso, '#3B82F6');
+            criarOuAtualizar('chart-altura', 'Estatura (cm)', dataAltura, '#10B981');
+            criarOuAtualizar('chart-pc', 'Perímetro Cefálico (cm)', dataPc, '#8B5CF6');
+        };
+
+        async function sugerirCondutaIA() {
+            if (!window.AIManager || !window.AIManager.apiKey) {
+                alert("Ative a Inteligência Artificial clicando no botão flutuante ✨ e inserindo sua chave.");
+                return;
+            }
+            if(!selectedId) return alert("Selecione uma criança primeiro.");
+            
+            const k = getCrianças().find(x => x.id === selectedId);
+            const idadeMeses = Math.floor(((new Date() - new Date(k.nasc)) / 86400000) / 30.44);
+            const peso = document.getElementById('val-peso').value;
+            const altura = document.getElementById('val-altura').value;
+            const alim = document.getElementById('alimentacao').options[document.getElementById('alimentacao').selectedIndex].text;
+            const relatoAtual = document.getElementById('clinico-obs').value;
+
+            const schema = `Você é um pediatra especialista do SUS. Avalie esta criança de ${idadeMeses} meses:
+Peso atual: ${peso} kg. Estatura: ${altura} cm. Alimentação: ${alim}.
+Anotações atuais da enfermeira/médico: "${relatoAtual}"
+
+Crie uma CONDUTA CLÍNICA padronizada baseada no Caderno de Atenção Básica de Puericultura do Ministério da Saúde.
+Retorne APENAS um objeto JSON válido (sem markdown extra, sem crases) com a chave:
+{
+  "sugestao": "Texto completo com as orientações, próximas vacinas, orientações sobre alimentação para a idade, e sinais de perigo a observar"
+}`;
+
+            const btn = event.currentTarget;
+            const txtOriginal = btn.innerHTML;
+            btn.innerHTML = 'Pensando... ✨';
+
+            try {
+                const result = await window.AIManager.predictStructured("Gere a conduta de puericultura.", schema);
+                if (result && result.sugestao) {
+                    const resumoText = result.sugestao.length > 250 ? result.sugestao.substring(0, 250) + "..." : result.sugestao;
+                    const add = confirm("✨ Sugestão da IA Gerada:\n\n" + resumoText + "\n\nDeseja anexar essa sugestão técnica ao relato do atendimento?");
+                    if (add) {
+                        const obs = document.getElementById('clinico-obs');
+                        obs.value = (obs.value ? obs.value + "\n\n" : "") + "--- Orientação Sugerida pela IA ---\n" + result.sugestao;
+                    }
+                }
+            } catch(e) {
+                alert('Erro na IA: ' + e.message);
+            } finally {
+                btn.innerHTML = txtOriginal;
+            }
+        }
+
+        renderSidebar();
+    </script>
+  <script src="assets/js/ai_agent.js?v=4.2"></script>
+</body>
+
+</html>

@@ -1,0 +1,908 @@
+// ESF 26 Carisma Manager v4.0 - app.js
+const KEYS = {
+  mif: 'carisma_pessoas', // Unificado com Cadastro Central
+  contracep: 'carisma_contracep_v4',
+  pccu: 'carisma_pccu_v4',
+  ist: 'carisma_ist_v4',
+  config: 'carisma_config_v4',
+  session: 'carisma_session_v4',
+  soap_templates: 'carisma_soap_templates',
+  soap_history: 'carisma_soap_history'
+};
+const db = {
+  get: k => {
+    // Migração de segurança: se a chave unificada estiver vazia, tenta ler da antiga migrada
+    const valor = localStorage.getItem(KEYS[k]);
+    if (!valor && k === 'mif') {
+      const legada = localStorage.getItem('carisma_mif_v4');
+      if (legada) {
+        localStorage.setItem(KEYS.mif, legada);
+        return JSON.parse(legada);
+      }
+    }
+    try { return JSON.parse(valor || '[]') } catch { return [] }
+  },
+  set: (k, v) => localStorage.setItem(KEYS[k], JSON.stringify(v)),
+  getObj: k => { try { return JSON.parse(localStorage.getItem(KEYS[k]) || '{}') } catch { return {} } },
+  setObj: (k, v) => localStorage.setItem(KEYS[k], JSON.stringify(v))
+};
+const uuid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+const hoje = () => new Date().toISOString().slice(0, 10);
+const fmtData = d => d ? d.split('-').reverse().join('/') : '—';
+const diffDias = (d1, d2) => { if (!d1 || !d2) return null; return Math.round((new Date(d1) - new Date(d2)) / 86400000) };
+const calcIdadeNum = nasc => { if (!nasc) return 0; const n = new Date(nasc), h = new Date(); let a = h.getFullYear() - n.getFullYear(); if (h.getMonth() < n.getMonth() || (h.getMonth() === n.getMonth() && h.getDate() < n.getDate())) a--; return a };
+const diasAtraso = dp => { if (!dp) return null; const d = diffDias(hoje(), dp); return d > 0 ? d : null };
+
+// ── DATA MANAGEMENT (BACKUP / RESTORE) ────────────────────
+function exportarSistemaCompleto() {
+  const backup = {};
+  const prefixos = ['carisma_', 'carisma_map_'];
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (prefixos.some(p => key.startsWith(p))) {
+      backup[key] = localStorage.getItem(key);
+    }
+  }
+
+  const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ESF26_BACKUP_${hoje()}_${Date.now()}.carisma`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert('Backup exportado com sucesso! Guarde este arquivo em um pendrive para levar para outro computador.');
+}
+
+async function importarSistemaCompleto(file) {
+  if (!file) return;
+  if (!confirm('ATENÇÃO: Isso irá substituir todos os dados atuais por este backup. Deseja continuar?')) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      let count = 0;
+
+      // Limpar chaves antigas do carisma para garantir consistência
+      const prefixos = ['carisma_', 'carisma_map_'];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (prefixos.some(p => key.startsWith(p))) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      // Restaurar do backup
+      for (const [key, value] of Object.entries(backup)) {
+        if (prefixos.some(p => key.startsWith(p))) {
+          localStorage.setItem(key, value);
+          count++;
+        }
+      }
+
+      alert(`Sucesso! ${count} módulos de dados foram restaurados. O sistema irá recarregar.`);
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao importar backup. O arquivo pode estar corrompido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── AUTH ──────────────────────────────────────────────────
+function fazerLogin(e) {
+  e.preventDefault();
+  const s = document.getElementById('l-pass').value;
+  const cfg = db.getObj('config');
+  if (s === (cfg.senha || '123456')) {
+    localStorage.setItem(KEYS.session, JSON.stringify({ logado: true }));
+    iniciarApp();
+  } else { document.getElementById('login-err').classList.add('show') }
+}
+function logout() { if (!confirm('Deseja sair?')) return; localStorage.removeItem(KEYS.session); location.reload() }
+function checarSessao() { const s = JSON.parse(localStorage.getItem(KEYS.session) || '{}'); if (s.logado) iniciarApp() }
+function iniciarApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  carregarConfig();
+  navTo(location.hash.slice(1) || 'dashboard');
+  atualizarBadges();
+  setInterval(atualizarBadges, 60000);
+}
+
+// ── NAV ───────────────────────────────────────────────────
+function navTo(pg) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link[data-page]').forEach(l => l.classList.remove('active'));
+  const el = document.getElementById('pg-' + pg); if (el) el.classList.add('active');
+  const lk = document.querySelector(`[data-page="${pg}"]`); if (lk) lk.classList.add('active');
+  const titles = {
+    dashboard: 'Dashboard', mif: 'Cadastro MIF', contraceptivos: 'Contraceptivos',
+    pccu: 'Citopatológicos', ists: 'ISTs / Vaginoses', alertas: 'Central de Alertas',
+    relatorios: 'Relatórios', importar: 'Importar e-SUS', configuracoes: 'Configurações',
+    'cadastro-central': 'Cadastro Central — População',
+    'puericultura': 'Acompanhamento de Puericultura',
+    'painel-saude': 'Painel de Saúde Global (Epidemiológico)',
+    'soap-templates': 'Banco de SOAP'
+  };
+  document.getElementById('page-title').textContent = titles[pg] || pg;
+  location.hash = pg;
+  document.getElementById('sidebar').classList.remove('open');
+  if (pg === 'dashboard') renderDashboard();
+  if (pg === 'painel-saude') renderHealthPanel();
+  if (pg === 'mif') renderMIF();
+  if (pg === 'contraceptivos') renderContracep();
+  if (pg === 'pccu') renderPCCU();
+  if (pg === 'ists') renderIST();
+  if (pg === 'alertas') renderAlertas();
+  if (pg === 'soap-templates') renderSOAPTemplates();
+}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open') }
+
+// ── DASHBOARD ─────────────────────────────────────────────
+let charts = {};
+function renderDashboard() {
+  const mifs = db.get('mif').filter(m => {
+    const sx = (m.sexo || '').toLowerCase();
+    const idade = calcIdadeNum(m.nasc);
+    const isFem = sx.startsWith('f') || sx === '';
+    return isFem && idade >= 10 && idade <= 49 && m.situacao !== 'Inativa' && m.situacao !== 'Óbito';
+  });
+  const ists = db.get('ist');
+  const atrasados = calcAtrasados();
+
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setVal('d-total', mifs.length);
+  setVal('d-atrasados', atrasados.length);
+  setVal('d-pccu', mifs.filter(m => {
+    const dt = m.pccuData || m.dataUltPCCU;
+    if (!dt || dt === '-') return true;
+    const iso = /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt : parseDateBR(dt);
+    return !iso || diffDias(hoje(), iso) > 365;
+  }).length);
+  setVal('d-ist', ists.filter(i => i.status === 'Em Tratamento' || i.status === 'Acompanhamento').length);
+  setVal('d-adol', mifs.filter(m => calcIdadeNum(m.nasc) <= 19 && (!m.metodo || m.metodo === 'Nenhum' || m.metodo === '')).length);
+
+  // PUERICULTURA: Crianças < 9 anos
+  const pueri = db.get('mif').filter(p => {
+    const idade = calcIdadeNum(p.nasc);
+    return idade !== null && idade < 9 && p.situacao !== 'Inativa' && p.situacao !== 'Óbito';
+  });
+  setVal('d-pueri', pueri.length);
+
+  // GESTANTES: Lógica Multi-Fonte e Leniente
+  const gPN = JSON.parse(localStorage.getItem('carisma_prenatal_gestantes') || '[]');
+  const gCC = db.get('mif').filter(p => (p.tags || []).includes('Gestante'));
+  const mapG = new Map();
+
+  gPN.forEach(g => {
+    const sit = (g.situacao || '').trim().toLowerCase();
+    if (!sit || sit.includes('acompanhamento') || sit.includes('ativa')) {
+      const k = (g.cns || g.cpf || g.id || g.nome || '').trim().toLowerCase();
+      if (k) mapG.set(k, g);
+    }
+  });
+  gCC.forEach(g => {
+    const k = (g.cns || g.cpf || g.id || g.nome || '').trim().toLowerCase();
+    if (k && !mapG.has(k)) mapG.set(k, g);
+  });
+  setVal('d-gestantes', mapG.size);
+
+  if (typeof atualizarCCStats === 'function') { try { atualizarCCStats(); } catch (e) { } }
+
+  const ab = document.getElementById('dash-alertas-box');
+  if (ab) ab.style.display = atrasados.length > 0 ? 'flex' : 'none';
+  const an = document.getElementById('dash-alerta-n');
+  if (an) an.textContent = atrasados.length;
+
+  const prio = [
+    ...atrasados.map(a => ({ nome: a.nome, idade: calcIdadeNum(a.nasc), motivo: 'Contraceptivo atrasado', dias: a.diasAtraso + 'd', tel: a.tel || a.telCelular, id: a.id })),
+    ...mifs.filter(m => calcIdadeNum(m.nasc) <= 19 && (!m.metodo || m.metodo === 'Nenhum'))
+      .map(m => ({ nome: m.nome, idade: calcIdadeNum(m.nasc), motivo: 'Adolescente sem contraceptivo', dias: '—', tel: m.tel || m.telCelular, id: m.id }))
+  ].slice(0, 15);
+
+  const tb = document.getElementById('tb-prioridades');
+  if (tb) {
+    tb.innerHTML = prio.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text2)">✅ Nenhuma prioridade hoje</td></tr>'
+      : prio.map(p => `<tr><td><strong>${p.nome}</strong></td><td>${p.idade} anos</td><td>${p.motivo}</td>
+        <td style="color:var(--danger);font-weight:700">${p.dias}</td><td>${p.tel || '—'}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="verMIF('${p.id}')">Ver</button></td></tr>`).join('');
+  }
+
+  try { renderCharts(mifs); } catch (e) { console.error('[Dashboard] Erro Crítico:', e); }
+}
+function renderCharts(mifs) {
+  if (typeof Chart === 'undefined') { console.warn('Chart.js não carregado'); return; }
+
+  const metodos = {}; mifs.forEach(m => { try { const k = m.metodo || 'Nenhum'; metodos[k] = (metodos[k] || 0) + 1 } catch (e) { } });
+  const faixas = { '10-14': 0, '15-19': 0, '20-24': 0, '25-29': 0, '30-34': 0, '35-39': 0, '40-44': 0, '45-49': 0, '50+': 0 };
+  mifs.forEach(m => {
+    try {
+      const i = calcIdadeNum(m.nasc);
+      if (i >= 10 && i <= 14) faixas['10-14']++; else if (i <= 19) faixas['15-19']++; else if (i <= 24) faixas['20-24']++;
+      else if (i <= 29) faixas['25-29']++; else if (i <= 34) faixas['30-34']++; else if (i <= 39) faixas['35-39']++;
+      else if (i <= 44) faixas['40-44']++; else if (i <= 49) faixas['45-49']++; else faixas['50+']++;
+    } catch (e) { }
+  });
+  const riscos = { 'Baixo': 0, 'Moderado': 0, 'Alto': 0 }; mifs.forEach(m => { try { let r = m.risco || 'Baixo'; if (riscos.hasOwnProperty(r)) riscos[r]++; else riscos['Baixo']++; } catch (e) { } });
+  const statusC = { 'Em Dia': 0, 'Atrasado': 0, 'Sem método': 0 };
+  mifs.forEach(m => {
+    try {
+      if (!m.metodo || m.metodo === 'Nenhum') { statusC['Sem método']++; return }
+      statusC[diasAtraso(m.proximaDose) ? 'Atrasado' : 'Em Dia']++
+    } catch (e) { }
+  });
+
+  const mk = (id, type, labels, data, colors, datasetLabel) => {
+    const ctx = document.getElementById(id); if (!ctx) return;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type, data: { labels, datasets: [{ label: datasetLabel || 'Total', data, backgroundColor: colors || ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#EF4444'], borderWidth: 1 }] },
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+    });
+  };
+  mk('chart-metodos', 'doughnut', Object.keys(metodos), Object.values(metodos), null, 'Uso de Métodos');
+  mk('chart-faixa', 'bar', Object.keys(faixas), Object.values(faixas), '#8B5CF6', 'Pacientes');
+  mk('chart-risco', 'doughnut', Object.keys(riscos), Object.values(riscos), ['#10B981', '#F59E0B', '#EF4444'], 'Grau de Risco');
+  mk('chart-status', 'doughnut', Object.keys(statusC), Object.values(statusC), ['#10B981', '#EF4444', '#9CA3AF'], 'Status de Uso');
+}
+
+function renderHealthPanel() {
+  console.log('[Painel Saúde] Iniciando renderização...');
+  const ps = db.get('mif') || [];
+  console.log('[Painel Saúde] Pacientes encontrados:', ps.length);
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+    else console.warn(`[Painel Saúde] Elemento #${id} não encontrado.`);
+  };
+
+  const diab = ps.filter(p => (p.tags || []).includes('Diabético')).length;
+  const hiper = ps.filter(p => (p.tags || []).includes('Hipertenso')).length;
+  const gest = ps.filter(p => (p.tags || []).includes('Gestante')).length;
+
+  console.log('[Painel Saúde] Stats:', { diab, hiper, gest });
+
+  setVal('h-diab', diab);
+  setVal('h-hiper', hiper);
+  setVal('h-gest', gest);
+
+  if (typeof Chart === 'undefined') {
+    console.error('[Painel Saúde] Chart.js não está disponível!');
+    return;
+  }
+
+  // 1. Gráfico de Condições
+  const tagsAlvo = ['Diabético', 'Hipertenso', 'Tabagista', 'Acamado', 'Saúde Mental', 'Puericultura', 'Hanseníase', 'Tuberculose'];
+  const condContagem = {};
+  tagsAlvo.forEach(t => {
+    condContagem[t] = ps.filter(p => (p.tags || []).includes(t)).length;
+  });
+
+  // 2. Gráfico de Microáreas (Prevalência de Crônicos)
+  const microContagem = {};
+  const cronicos = ps.filter(p => {
+    const t = p.tags || [];
+    return t.includes('Diabético') || t.includes('Hipertenso') || t.includes('Hanseníase') || t.includes('Tuberculose');
+  });
+  cronicos.forEach(p => {
+    const m = p.microArea || 'Sem área';
+    microContagem[m] = (microContagem[m] || 0) + 1;
+  });
+
+  // 3. Perfil Etário (Crônicos)
+  const faixas = { '0-19': 0, '20-39': 0, '40-59': 0, '60-79': 0, '80+': 0 };
+  cronicos.forEach(p => {
+    const idx = calcIdadeNum(p.nasc);
+    if (idx < 20) faixas['0-19']++;
+    else if (idx < 40) faixas['20-39']++;
+    else if (idx < 60) faixas['40-59']++;
+    else if (idx < 80) faixas['60-79']++;
+    else faixas['80+']++;
+  });
+
+  const mk = (id, type, labels, data, colors, datasetLabel) => {
+    const ctx = document.getElementById(id);
+    if (!ctx) {
+      console.warn(`[Painel Saúde] Canvas #${id} não encontrado.`);
+      return;
+    }
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(ctx, {
+      type, data: { labels, datasets: [{ label: datasetLabel || 'Total', data, backgroundColor: colors || ['#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#EF4444', '#06B6D4', '#6366F1'], borderWidth: 1 }] },
+      options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+    });
+  };
+
+  mk('chart-saude-condicoes', 'doughnut', Object.keys(condContagem), Object.values(condContagem), null, 'Condições');
+  mk('chart-saude-microareas', 'bar', Object.keys(microContagem), Object.values(microContagem), '#3B82F6', 'Pacientes Crônicos');
+  mk('chart-saude-idade', 'bar', Object.keys(faixas), Object.values(faixas), '#10B981', 'Distribuição Etária');
+}
+
+// ── MIF CRUD ──────────────────────────────────────────────
+function abrirModalMIF(id) {
+  document.getElementById('mif-modal-title').textContent = id ? 'Editar – MIF' : 'Nova Mulher – MIF';
+  document.getElementById('form-mif').reset(); document.getElementById('mif-id').value = '';
+  if (id) {
+    const m = db.get('mif').find(x => x.id === id); if (!m) return;
+    const s = (eid, val) => { const el = document.getElementById(eid); if (el) el.value = val || '' };
+    s('mif-id', m.id); s('mif-nome', m.nome); s('mif-nomesocial', m.nomeSocial); s('mif-nasc', m.nasc);
+    s('mif-cns', m.cns); s('mif-cpf', m.cpf); s('mif-tel', m.tel); s('mif-micro', m.microArea); s('mif-end', m.endereco);
+    s('mif-gest', m.gestacoes || 0); s('mif-partos', m.partos || 0); s('mif-ces', m.cesareas || 0);
+    s('mif-abort', m.abortamentos || 0); s('mif-fvivos', m.filhosVivos || 0); s('mif-dum', m.dum);
+    s('mif-metodo', m.metodo); s('mif-inicio-metodo', m.inicioMetodo); s('mif-proxima-dose', m.proximaDose); s('mif-obs-metodo', m.obsMetodo);
+    s('mif-pccu-data', m.pccuData); s('mif-pccu-result', m.pccuResultado); s('mif-pccu-status', m.pccuStatus || 'Pendente'); s('mif-pccu-prox', m.pccuProx);
+    s('mif-hpv', m.hpv || 'Não'); s('mif-hepb', m.hepatiteB || 'Não'); s('mif-risco', m.risco || 'Baixo');
+    s('mif-prioridade', m.prioridade || 'Rotina'); s('mif-situacao', m.situacao || 'Ativa'); s('mif-obs', m.obs);
+    calcIdade();
+  }
+  toggleDose(); abrirModal('modal-mif');
+}
+function salvarMIF(e) {
+  e.preventDefault();
+  const id = document.getElementById('mif-id').value;
+  const nasc = document.getElementById('mif-nasc').value;
+  const metodo = document.getElementById('mif-metodo').value;
+  const idade = calcIdadeNum(nasc);
+  let risco = document.getElementById('mif-risco').value;
+  let prioridade = document.getElementById('mif-prioridade').value;
+  if (idade <= 19 && (!metodo || metodo === 'Nenhum')) { risco = 'Alto'; prioridade = 'Prioritária' }
+  const g = eid => document.getElementById(eid).value;
+  const obj = {
+    id: id || uuid(), nome: g('mif-nome').trim(), nomeSocial: g('mif-nomesocial').trim(),
+    nasc, idade, cns: g('mif-cns').trim(), cpf: g('mif-cpf').trim(), tel: g('mif-tel').trim(),
+    microArea: g('mif-micro'), endereco: g('mif-end').trim(),
+    gestacoes: +g('mif-gest'), partos: +g('mif-partos'), cesareas: +g('mif-ces'),
+    abortamentos: +g('mif-abort'), filhosVivos: +g('mif-fvivos'), dum: g('mif-dum'),
+    metodo, inicioMetodo: g('mif-inicio-metodo'), proximaDose: g('mif-proxima-dose'), obsMetodo: g('mif-obs-metodo'),
+    pccuData: g('mif-pccu-data'), pccuResultado: g('mif-pccu-result'), pccuStatus: g('mif-pccu-status'), pccuProx: g('mif-pccu-prox'),
+    hpv: g('mif-hpv'), hepatiteB: g('mif-hepb'), risco, prioridade, situacao: g('mif-situacao'), obs: g('mif-obs'),
+    dataCadastro: id ? undefined : new Date().toISOString(), dataAtualizacao: new Date().toISOString()
+  };
+  let lista = db.get('mif');
+  lista = id ? lista.map(x => x.id === id ? { ...x, ...obj } : x) : [...lista, obj];
+  db.set('mif', lista); fecharModal('modal-mif'); renderMIF(); atualizarBadges();
+}
+function renderMIF() {
+  const busca = document.getElementById('s-mif').value.toLowerCase();
+  const fM = document.getElementById('f-metodo').value;
+  const fR = document.getElementById('f-risco').value;
+  const fA = document.getElementById('f-microarea').value;
+  let lista = db.get('mif');
+  const areas = [...new Set(lista.map(m => m.microArea).filter(Boolean))].sort();
+  const sel = document.getElementById('f-microarea'); const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas as microáreas</option>' + areas.map(a => `<option${a === cur ? ' selected' : ''}>${a}</option>`).join('');
+  if (busca) lista = lista.filter(m => (m.nome + m.cns + m.cpf).toLowerCase().includes(busca));
+  if (fM) lista = lista.filter(m => m.metodo === fM);
+  if (fR) lista = lista.filter(m => m.risco === fR);
+  if (fA) lista = lista.filter(m => m.microArea === fA);
+  const tb = document.getElementById('tb-mif'); const em = document.getElementById('mif-empty');
+  if (!lista.length) { tb.innerHTML = ''; em.style.display = 'block'; document.getElementById('mif-count').textContent = ''; return }
+  em.style.display = 'none'; document.getElementById('mif-count').textContent = `Exibindo ${lista.length} registro(s)`;
+  tb.innerHTML = lista.map(m => {
+    const id = calcIdadeNum(m.nasc);
+    const atraso = m.proximaDose ? diasAtraso(m.proximaDose) : null;
+    const sb = atraso ? `<span class="badge b-red">⚠️ ${atraso}d atraso</span>` : m.proximaDose ? `<span class="badge b-green">✅ Em Dia</span>` : `<span class="badge b-gray">${m.metodo || 'Sem método'}</span>`;
+    const rb = { Baixo: 'b-green', Moderado: 'b-yellow', Alto: 'b-red' }[m.risco] || 'b-gray';
+    return `<tr>
+      <td><strong>${m.nomeSocial || m.nome}</strong><br><small style="color:var(--text2)">${m.cns || m.cpf || '—'}</small></td>
+      <td>${id} anos</td><td>${m.microArea || '—'}</td><td>${sb}</td>
+      <td>${m.proximaDose ? fmtData(m.proximaDose) : '—'}</td>
+      <td>${m.pccuData ? fmtData(m.pccuData) : '<span style="color:var(--danger)">Pendente</span>'}</td>
+      <td><span class="badge ${rb}">${m.risco || 'Baixo'}</span></td>
+      <td><div class="actions">
+        <button class="btn btn-sm btn-primary" onclick="abrirModalMIF('${m.id}')">✏️</button>
+        <button class="btn btn-sm btn-mulher" onclick="abrirModalContracepPac('${m.id}')">💊</button>
+        <button class="btn btn-sm btn-danger" onclick="excluirMIF('${m.id}')">🗑️</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function excluirMIF(id) { const m = db.get('mif').find(x => x.id === id); if (!m || !confirm(`Excluir ${m.nome}?`)) return; db.set('mif', db.get('mif').filter(x => x.id !== id)); renderMIF(); atualizarBadges() }
+function verMIF(id) { navTo('mif'); setTimeout(() => { const m = db.get('mif').find(x => x.id === id); if (m) { document.getElementById('s-mif').value = m.nome; renderMIF() } }, 100) }
+function calcIdade() { const n = document.getElementById('mif-nasc').value; document.getElementById('mif-idade').value = n ? calcIdadeNum(n) + ' anos' : '' }
+function toggleDose() { const m = document.getElementById('mif-metodo').value; document.getElementById('div-proxima-dose').style.display = (m === 'Injetável Mensal' || m === 'Injetável Trimestral' || m === 'Oral') ? 'flex' : 'none' }
+
+// ── CONTRACEPTIVOS ────────────────────────────────────────
+function calcAtrasados() {
+  return db.get('mif')
+    .filter(m => m.proximaDose && m.metodo && m.metodo !== 'Nenhum' && diasAtraso(m.proximaDose) !== null)
+    .map(m => ({ ...m, diasAtraso: diasAtraso(m.proximaDose) }))
+    .sort((a, b) => b.diasAtraso - a.diasAtraso);
+}
+function abrirModalContracep() { _openContracep(null) }
+function abrirModalContracepPac(mifId) { _openContracep(mifId) }
+function _openContracep(mifId) {
+  document.getElementById('form-contracep').reset();
+  document.getElementById('contracep-id').value = '';
+  document.getElementById('contracep-data').value = hoje();
+  preencherSel('contracep-mulher');
+  if (mifId) { document.getElementById('contracep-mulher').value = mifId; preencherMetodoPaciente() }
+  abrirModal('modal-contracep');
+}
+function preencherSel(selId) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">Selecionar paciente...</option>' +
+    db.get('mif').sort((a, b) => a.nome.localeCompare(b.nome))
+      .map(m => `<option value="${m.id}">${m.nome}${m.cns ? ' – ' + m.cns : ''}</option>`).join('');
+}
+function preencherMetodoPaciente() {
+  const id = document.getElementById('contracep-mulher').value; if (!id) return;
+  const m = db.get('mif').find(x => x.id === id);
+  if (m && m.metodo) { document.getElementById('contracep-tipo').value = m.metodo; calcProxDoseAuto() }
+}
+function calcProxDoseAuto() {
+  const tipo = document.getElementById('contracep-tipo').value;
+  const data = document.getElementById('contracep-data').value; if (!data) return;
+  const d = new Date(data);
+  if (tipo === 'Injetável Mensal') d.setDate(d.getDate() + 30);
+  else if (tipo === 'Injetável Trimestral') d.setDate(d.getDate() + 90);
+  else if (tipo === 'Oral') d.setDate(d.getDate() + 28);
+  else { document.getElementById('contracep-prox').value = ''; return }
+  document.getElementById('contracep-prox').value = d.toISOString().slice(0, 10);
+}
+function salvarContracep(e) {
+  e.preventDefault();
+  const mifId = document.getElementById('contracep-mulher').value;
+  const tipo = document.getElementById('contracep-tipo').value;
+  const data = document.getElementById('contracep-data').value;
+  const prox = document.getElementById('contracep-prox').value;
+  db.set('contracep', [...db.get('contracep'), {
+    id: uuid(), mulherId: mifId, tipo, data, proxDose: prox,
+    dose: document.getElementById('contracep-dose').value, lote: document.getElementById('contracep-lote').value,
+    obs: document.getElementById('contracep-obs').value, criadoEm: new Date().toISOString()
+  }]);
+  db.set('mif', db.get('mif').map(m => m.id !== mifId ? m : { ...m, metodo: tipo, inicioMetodo: data, proximaDose: prox }));
+  fecharModal('modal-contracep'); renderContracep(); atualizarBadges();
+}
+function renderContracep() {
+  const busca = document.getElementById('s-contracep').value.toLowerCase();
+  const fT = document.getElementById('f-contracep-tipo').value;
+  const fS = document.getElementById('f-contracep-status').value;
+  let lista = db.get('mif').filter(m => m.metodo && m.metodo !== 'Nenhum' && m.metodo !== '')
+    .map(m => ({ ...m, atraso: diasAtraso(m.proximaDose) }))
+    .map(m => ({ ...m, status: m.atraso ? 'Atrasado' : 'Em Dia' }));
+  if (busca) lista = lista.filter(m => m.nome.toLowerCase().includes(busca));
+  if (fT) lista = lista.filter(m => m.metodo === fT);
+  if (fS) lista = lista.filter(m => m.status === fS);
+  const at = lista.filter(m => m.status === 'Atrasado');
+  const alEl = document.getElementById('alert-contracep-atraso');
+  if (at.length) { alEl.style.display = 'flex'; document.getElementById('n-atrasados').textContent = at.length }
+  else alEl.style.display = 'none';
+  const tb = document.getElementById('tb-contracep'); const em = document.getElementById('contracep-empty');
+  if (!lista.length) { tb.innerHTML = ''; em.style.display = 'block'; return } em.style.display = 'none';
+  tb.innerHTML = lista.map(m => `<tr>
+    <td><strong>${m.nome}</strong><br><small style="color:var(--text2)">${m.tel || '—'}</small></td>
+    <td>${m.metodo}</td>
+    <td>${m.inicioMetodo ? fmtData(m.inicioMetodo) : '—'}</td>
+    <td>${m.proximaDose ? fmtData(m.proximaDose) : '—'}</td>
+    <td><span class="badge ${m.status === 'Atrasado' ? 'b-red' : 'b-green'}">${m.status}</span></td>
+    <td>${m.atraso ? `<span style="color:var(--danger);font-weight:700">+${m.atraso}d</span>` : '—'}</td>
+    <td><div class="actions">
+      <button class="btn btn-sm btn-mulher" onclick="abrirModalContracepPac('${m.id}')">+ Dose</button>
+      <button class="btn btn-sm btn-primary" onclick="abrirModalMIF('${m.id}')">✏️</button>
+    </div></td></tr>`).join('');
+}
+
+// ── PCCU ──────────────────────────────────────────────────
+function abrirModalPCCU(id) {
+  document.getElementById('form-pccu').reset();
+  document.getElementById('pccu-id').value = '';
+  document.getElementById('pccu-coleta').value = hoje();
+  preencherSel('pccu-mulher');
+  if (id) {
+    const p = db.get('pccu').find(x => x.id === id);
+    if (p) {
+      const s = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v || '' };
+      s('pccu-id', p.id); s('pccu-mulher', p.mulherId); s('pccu-coleta', p.coleta);
+      s('pccu-envio', p.envio); s('pccu-recebido', p.recebido); s('pccu-resultado', p.resultado);
+      s('pccu-status', p.status || 'Coletado'); s('pccu-prox', p.prox); s('pccu-conduta', p.conduta)
+    }
+  }
+  abrirModal('modal-pccu');
+}
+function salvarPCCU(e) {
+  e.preventDefault();
+  const id = document.getElementById('pccu-id').value;
+  const mifId = document.getElementById('pccu-mulher').value;
+  const coleta = document.getElementById('pccu-coleta').value;
+  const dp = new Date(coleta); dp.setFullYear(dp.getFullYear() + 1);
+  const prox = document.getElementById('pccu-prox').value || dp.toISOString().slice(0, 10);
+  const g = eid => document.getElementById(eid).value;
+  const obj = {
+    id: id || uuid(), mulherId: mifId, coleta, envio: g('pccu-envio'), recebido: g('pccu-recebido'),
+    resultado: g('pccu-resultado'), status: g('pccu-status'), prox, conduta: g('pccu-conduta'), criadoEm: new Date().toISOString()
+  };
+  let lista = db.get('pccu'); lista = id ? lista.map(x => x.id === id ? obj : x) : [...lista, obj]; db.set('pccu', lista);
+  db.set('mif', db.get('mif').map(m => m.id === mifId ? { ...m, pccuData: coleta, pccuResultado: obj.resultado, pccuStatus: obj.status, pccuProx: prox } : m));
+  fecharModal('modal-pccu'); renderPCCU();
+}
+function renderPCCU() {
+  const busca = document.getElementById('s-pccu').value.toLowerCase();
+  const fS = document.getElementById('f-pccu-status').value;
+  const mm = {}; db.get('mif').forEach(m => mm[m.id] = m);
+  let lista = db.get('pccu').map(p => ({ ...p, mif: mm[p.mulherId] })).filter(p => p.mif);
+  if (busca) lista = lista.filter(p => p.mif.nome.toLowerCase().includes(busca));
+  if (fS) lista = lista.filter(p => p.status === fS);
+  const tb = document.getElementById('tb-pccu'); const em = document.getElementById('pccu-empty');
+  if (!lista.length) { tb.innerHTML = ''; em.style.display = 'block'; return } em.style.display = 'none';
+  const rb = r => ({ 'Negativo': 'b-green', 'ASC-US': 'b-yellow', 'ASC-H': 'b-yellow', 'LSIL': 'b-yellow', 'HSIL': 'b-red', 'Câncer': 'b-red', 'Insatisfatório': 'b-gray' }[r] || 'b-gray');
+  tb.innerHTML = lista.map(p => `<tr>
+    <td><strong>${p.mif.nome}</strong></td>
+    <td>${fmtData(p.coleta)}</td>
+    <td>${p.resultado ? `<span class="badge ${rb(p.resultado)}">${p.resultado}</span>` : '<span style="color:var(--text2)">Aguardando</span>'}</td>
+    <td><span class="badge b-blue">${p.status}</span></td>
+    <td>${p.prox ? fmtData(p.prox) : '—'}</td>
+    <td><div class="actions">
+      <button class="btn btn-sm btn-primary" onclick="abrirModalPCCU('${p.id}')">✏️</button>
+      <button class="btn btn-sm btn-danger" onclick="excItem('pccu','${p.id}',renderPCCU)">🗑️</button>
+    </div></td></tr>`).join('');
+}
+
+// ── ISTs ──────────────────────────────────────────────────
+function abrirModalIST(id) {
+  document.getElementById('form-ist').reset();
+  document.getElementById('ist-id').value = '';
+  document.getElementById('ist-data').value = hoje();
+  preencherSel('ist-mulher');
+  if (id) {
+    const p = db.get('ist').find(x => x.id === id);
+    if (p) {
+      const s = (eid, v) => { const el = document.getElementById(eid); if (el) el.value = v || '' };
+      s('ist-id', p.id); s('ist-mulher', p.mulherId); s('ist-diag', p.diagnostico); s('ist-data', p.data);
+      s('ist-trat', p.tratamento); s('ist-inicio-trat', p.inicioTrat); s('ist-fim-trat', p.fimTrat);
+      s('ist-parceiro', p.parceiro); s('ist-status', p.status || 'Em Tratamento'); s('ist-obs', p.obs)
+    }
+  }
+  abrirModal('modal-ist');
+}
+function salvarIST(e) {
+  e.preventDefault(); const id = document.getElementById('ist-id').value;
+  const g = eid => document.getElementById(eid).value;
+  const obj = {
+    id: id || uuid(), mulherId: g('ist-mulher'), diagnostico: g('ist-diag'), data: g('ist-data'),
+    tratamento: g('ist-trat'), inicioTrat: g('ist-inicio-trat'), fimTrat: g('ist-fim-trat'),
+    parceiro: g('ist-parceiro'), status: g('ist-status'), obs: g('ist-obs'), criadoEm: new Date().toISOString()
+  };
+  let lista = db.get('ist'); lista = id ? lista.map(x => x.id === id ? obj : x) : [...lista, obj]; db.set('ist', lista);
+  fecharModal('modal-ist'); renderIST(); atualizarBadges();
+}
+function renderIST() {
+  const busca = document.getElementById('s-ist').value.toLowerCase();
+  const fD = document.getElementById('f-ist-diag').value;
+  const fS = document.getElementById('f-ist-status').value;
+  const mm = {}; db.get('mif').forEach(m => mm[m.id] = m);
+  let lista = db.get('ist').map(p => ({ ...p, mif: mm[p.mulherId] })).filter(p => p.mif);
+  if (busca) lista = lista.filter(p => p.mif.nome.toLowerCase().includes(busca));
+  if (fD) lista = lista.filter(p => p.diagnostico === fD); if (fS) lista = lista.filter(p => p.status === fS);
+  const tb = document.getElementById('tb-ist'); const em = document.getElementById('ist-empty');
+  if (!lista.length) { tb.innerHTML = ''; em.style.display = 'block'; return } em.style.display = 'none';
+  const sc = { 'Em Tratamento': 'b-yellow', 'Curada': 'b-green', 'Acompanhamento': 'b-blue', 'Perda de Seguimento': 'b-gray' };
+  tb.innerHTML = lista.map(p => `<tr>
+    <td><strong>${p.mif.nome}</strong></td><td>${p.diagnostico}</td><td>${fmtData(p.data)}</td>
+    <td>${p.tratamento || '—'}</td>
+    <td><span class="badge ${sc[p.status] || 'b-gray'}">${p.status}</span></td>
+    <td><div class="actions">
+      <button class="btn btn-sm btn-primary" onclick="abrirModalIST('${p.id}')">✏️</button>
+      <button class="btn btn-sm btn-danger" onclick="excItem('ist','${p.id}',renderIST)">🗑️</button>
+    </div></td></tr>`).join('');
+}
+
+// ── ALERTAS ───────────────────────────────────────────────
+function renderAlertas() {
+  const atrasados = calcAtrasados();
+  const mifs = db.get('mif');
+  const adolSem = mifs.filter(m => calcIdadeNum(m.nasc) <= 19 && (!m.metodo || m.metodo === 'Nenhum'));
+  const pccuPend = mifs.filter(m => !m.pccuData || diffDias(hoje(), m.pccuData) > 365);
+  let html = '';
+  if (atrasados.length) {
+    html += `<div class="alert-box danger"><span class="alert-icon">🚨</span><div><strong>Contraceptivos Atrasados (${atrasados.length})</strong> – Dose injetável vencida</div></div>`;
+    html += atrasados.map(m => `<div class="alert-card">
+      <span style="font-size:1.6rem">💊</span>
+      <div class="ac-info"><div class="ac-name">${m.nome}</div>
+        <div class="ac-detail">${m.metodo} · Vencida há <strong>${m.diasAtraso} dia(s)</strong> · ${m.tel || 'Sem tel.'} · ${m.microArea || '—'}</div></div>
+      <button class="btn btn-sm btn-mulher" onclick="abrirModalContracepPac('${m.id}')">💊 Aplicar</button>
+    </div>`).join('');
+  }
+  if (adolSem.length) {
+    html += `<div class="alert-box warning" style="margin-top:16px"><span class="alert-icon">⚠️</span><div><strong>Adolescentes Sem Contraceptivo (${adolSem.length})</strong> – Alto risco de gravidez</div></div>`;
+    html += adolSem.map(m => `<div class="alert-card" style="border-left-color:var(--warning)">
+      <span style="font-size:1.6rem">👧</span>
+      <div class="ac-info"><div class="ac-name">${m.nome}</div>
+        <div class="ac-detail">${calcIdadeNum(m.nasc)} anos · ${m.tel || 'Sem tel.'} · ${m.microArea || '—'}</div></div>
+      <button class="btn btn-sm btn-primary" onclick="abrirModalMIF('${m.id}')">✏️ Ver</button>
+    </div>`).join('');
+  }
+  if (pccuPend.length) {
+    html += `<div class="alert-box warning" style="margin-top:16px"><span class="alert-icon">📋</span><div><strong>PCCU Pendente/Vencido (${pccuPend.length})</strong> – Exame anual em atraso</div></div>`;
+    html += pccuPend.map(m => `<div class="alert-card" style="border-left-color:var(--warning)">
+      <span style="font-size:1.6rem">📋</span>
+      <div class="ac-info"><div class="ac-name">${m.nome}</div>
+        <div class="ac-detail">Últ. PCCU: ${m.pccuData ? fmtData(m.pccuData) : 'Nunca'} · ${m.tel || 'Sem tel.'}</div></div>
+      <button class="btn btn-sm btn-mulher" onclick="abrirModalPCCU()">+ Coletar</button>
+    </div>`).join('');
+  }
+  if (!html) html = '<div class="empty-state"><div class="es-icon">✅</div><h3>Nenhum alerta ativo</h3><p>Todas as pacientes estão em dia!</p></div>';
+  document.getElementById('alertas-list').innerHTML = html;
+}
+function atualizarBadges() {
+  const n = calcAtrasados().length;
+  ['badge-atrasados', 'badge-alertas'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = n; el.style.display = n > 0 ? 'inline' : 'none' } });
+}
+
+// ── CSV IMPORT ────────────────────────────────────────────
+// Palavras-chave que identificam a LINHA DE CABEÇALHO real do e-SUS
+const CSV_HEADER_KEYS = ['nome', 'cns', 'nascimento', 'nasc', 'cpf', 'sexo', 'microarea', 'micro'];
+
+// Converte data DD/MM/AAAA → AAAA-MM-DD ou retorna string original se já estiver no formato ISO
+function parseDateBR(raw) {
+  if (!raw) return '';
+  const r = raw.trim().replace(/"/g, '');
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(r)) { const [d, m, a] = r.split('/'); return `${a}-${m}-${d}` }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(r)) return r;
+  return '';
+}
+
+// Detecta o separador dominante da linha (';' ou ',')
+function detectSep(line) { return (line.match(/;/g) || []).length >= (line.match(/,/g) || []).length ? ';' : ',' }
+
+// Divide uma linha CSV respeitando campos entre aspas
+function splitCSV(line, sep) {
+  const res = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ }
+    else if (c === sep && !inQ) { res.push(cur.trim().replace(/^"+|"+$/g, '')); cur = '' }
+    else cur += c;
+  }
+  res.push(cur.trim().replace(/^"+|"+$/g, ''));
+  return res;
+}
+
+function processarCSV(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const allLines = text.split(/\r?\n/).filter(l => l.trim());
+    if (allLines.length < 2) { alert('CSV inválido ou vazio'); return }
+
+    // ── 1. Detectar separador ───────────────────────────────
+    const sep = detectSep(allLines[0]);
+
+    // ── 2. Encontrar linha de cabeçalho real ───────────────
+    // O e-SUS tem ~6-10 linhas de metadados antes do cabeçalho de colunas.
+    // Procuramos a primeira linha que contenha pelo menos 2 das palavras-chave.
+    let headerIdx = -1;
+    for (let i = 0; i < Math.min(50, allLines.length); i++) {
+      const norm = allLines[i].toLowerCase();
+      const hits = CSV_HEADER_KEYS.filter(k => norm.includes(k)).length;
+      if (hits >= 2) { headerIdx = i; break }
+    }
+
+    if (headerIdx === -1) {
+      document.getElementById('import-preview').innerHTML =
+        `<div style="color:var(--danger);padding:16px">
+          ⚠️ Não foi possível identificar o cabeçalho do CSV.<br>
+          Verifique se o arquivo é um Relatório de Cadastro do e-SUS PEC.<br>
+          <small>Primeiras linhas encontradas:</small><br>
+          <code>${allLines.slice(0, 5).join('<br>')}</code>
+        </div>`;
+      return;
+    }
+
+    const rawHeader = splitCSV(allLines[headerIdx], sep).map(h => h.toLowerCase().trim());
+    const dataLines = allLines.slice(headerIdx + 1);
+
+    // ── 3. Mapear colunas ───────────────────────────────────
+    // Aliases em ordem de prioridade para cada campo
+    const ci = (...keys) => { for (const k of keys) { const i = rawHeader.findIndex(h => h.includes(k)); if (i >= 0) return i } return -1 };
+    const nomeI = ci('nome');
+    const nascI = ci('nascimento', 'nasc', 'data nasc', 'dt.nasc', 'dn');
+    const cnsI = ci('cns', 'cartão sus', 'cartao sus');
+    const cpfI = ci('cpf');
+    const sexoI = ci('sexo');
+    const telI = ci('telefone', 'celular', 'fone', 'tel');
+    const endI = ci('endereço', 'endereco', 'logradouro', 'rua');
+    const numI = ci('número', 'numero', 'num');
+    const microI = ci('microárea', 'microarea', 'micro área', 'equipe', 'acs');
+    const cidI = ci('cidade', 'municipio', 'município');
+
+    if (nomeI === -1) {
+      document.getElementById('import-preview').innerHTML =
+        `<div style="color:var(--danger);padding:16px">⚠️ Coluna "Nome" não encontrada.<br>
+        Colunas detectadas: <code>${rawHeader.join(' | ')}</code></div>`;
+      return;
+    }
+
+    // ── 4. Processar linhas de dados ────────────────────────
+    let importadas = 0, duplicadas = 0, foraDeFaixa = 0, errors = [];
+    const existentes = db.get('mif');
+    const existCNS = new Set(existentes.map(m => m.cns).filter(Boolean));
+    const existCPF = new Set(existentes.map(m => m.cpf).filter(Boolean));
+    const existNome = new Set(existentes.map(m => m.nome.toLowerCase()));
+    const novos = [];
+
+    const batchTag = document.getElementById('mif-batch-tag')?.value;
+
+    // Preview HTML
+    let prevRows = '';
+    const previewCols = [nomeI, nascI, cnsI, sexoI, microI].filter(i => i >= 0);
+
+    dataLines.forEach((row, ri) => {
+      if (!row.trim()) return;
+      const cols = splitCSV(row, sep);
+      const get = i => i >= 0 && i < cols.length ? cols[i].trim() : '';
+
+      const nome = get(nomeI);
+      if (!nome || nome.length < 3) return; // pula linhas sem nome válido
+
+      // Filtro de sexo — aceita: F, FEM, FEMININO, ou sem info
+      const sexoRaw = get(sexoI).toUpperCase();
+      if (sexoRaw && sexoRaw !== '' && !sexoRaw.startsWith('F')) return;
+
+      // Data de nascimento
+      const nasc = parseDateBR(get(nascI));
+      const idade = calcIdadeNum(nasc);
+      if (nasc && (idade < 10 || idade > 49)) { foraDeFaixa++; return }
+
+      // CNS/CPF/Nome — deduplicação
+      const cns = get(cnsI).replace(/\D/g, '');
+      const cpf = get(cpfI).replace(/\D/g, '');
+
+      if (cns && existCNS.has(cns)) { duplicadas++; return }
+      if (cpf && existCPF.has(cpf)) { duplicadas++; return }
+      if (!cns && !cpf && existNome.has(nome.toLowerCase())) { duplicadas++; return }
+
+      // Montar endereço
+      const end = [get(endI), get(numI)].filter(Boolean).join(', ');
+      const micro = get(microI);
+      const tel = get(telI).replace(/\D/g, ''); // só dígitos
+
+      // Preview (5 primeiras linhas)
+      if (ri < 5) prevRows += `<tr><td>${nome}</td><td>${nasc ? fmtData(nasc) : '?'}</td><td>${cns || '—'}</td><td>${micro || '—'}</td></tr>`;
+
+      if (cns) existCNS.add(cns);
+      if (cpf) existCPF.add(cpf);
+      existNome.add(nome.toLowerCase());
+
+      novos.push({
+        id: uuid(), nome, nasc, cns,
+        cpf: get(cpfI).replace(/\D/g, ''),
+        tel, endereco: end, microArea: micro,
+        metodo: '', situacao: 'Ativa',
+        risco: idade <= 19 ? 'Alto' : 'Baixo',
+        prioridade: idade <= 19 ? 'Prioritária' : 'Rotina',
+        tags: batchTag ? [batchTag] : [],
+        dataCadastro: new Date().toISOString()
+      });
+      importadas++;
+    });
+
+    // ── 5. Exibir resultado ─────────────────────────────────
+    const prevHTML = `
+      <div style="margin-bottom:12px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:.85rem">
+        <strong>Arquivo:</strong> ${file.name} &nbsp;|&nbsp;
+        <strong>Cabeçalho na linha ${headerIdx + 1}</strong> &nbsp;|&nbsp;
+        Colunas mapeadas: Nome✓${nascI >= 0 ? ' DataNasc✓' : ''}${cnsI >= 0 ? ' CNS✓' : ''}${sexoI >= 0 ? ' Sexo✓' : ''}${microI >= 0 ? ' Microárea✓' : ''}${telI >= 0 ? ' Tel✓' : ''}
+      </div>
+      <table>
+        <thead><tr><th>Nome</th><th>Nasc.</th><th>CNS</th><th>Microárea</th></tr></thead>
+        <tbody>${prevRows || '<tr><td colspan="4">Nenhuma linha processada</td></tr>'}</tbody>
+      </table>
+      ${importadas > 0 ? `<p style="margin-top:8px;color:var(--success)">✅ <strong>${importadas}</strong> registros prontos para importar.</p>` : ''}
+      ${duplicadas > 0 ? `<p style="color:var(--warning)">⚠️ ${duplicadas} duplicatas ignoradas (CNS ou nome já cadastrado).</p>` : ''}
+      ${foraDeFaixa > 0 ? `<p style="color:var(--text2)">ℹ️ ${foraDeFaixa} registros fora da faixa 10-49 anos ignorados.</p>` : ''}
+    `;
+    document.getElementById('import-preview').innerHTML = prevHTML;
+
+    if (importadas > 0) {
+      db.set('mif', [...existentes, ...novos]);
+      document.getElementById('import-result').style.display = 'flex';
+      document.getElementById('import-n').textContent = importadas;
+      atualizarBadges();
+    } else {
+      document.getElementById('import-preview').innerHTML +=
+        `<div style="color:var(--danger);margin-top:12px">⚠️ Nenhum registro importado. Verifique se o arquivo contém mulheres de 10-49 anos não cadastradas.</div>`;
+    }
+  };
+  reader.readAsText(file, 'latin1');
+}
+
+// ── RELATÓRIOS PDF ────────────────────────────────────────
+function exportarJSON() {
+  const blob = new Blob([JSON.stringify({
+    sistema: 'ESF26 Carisma v4', exportadoEm: new Date().toISOString(),
+    mif: db.get('mif'), contraceptivos: db.get('contracep'), pccu: db.get('pccu'), ist: db.get('ist')
+  }, null, 2)],
+    { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `carisma_backup_${hoje()}.json`; a.click();
+}
+function importarJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  if (!confirm('Isso SUBSTITUIRÁ todos os dados atuais. Continuar?')) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.mif) db.set('mif', d.mif); if (d.contraceptivos) db.set('contracep', d.contraceptivos);
+      if (d.pccu) db.set('pccu', d.pccu); if (d.ist) db.set('ist', d.ist);
+      alert('✅ Backup restaurado!'); location.reload()
+    }
+    catch { alert('❌ Arquivo inválido') }
+  };
+  r.readAsText(file);
+}
+function exportarRelatorio(tipo) {
+  const cfg = db.getObj('config'); const ubs = cfg.ubs || 'ESF 26 – Carisma';
+  const { jsPDF } = window.jspdf; const doc = new jsPDF(); const hj = new Date().toLocaleDateString('pt-BR');
+  doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text(ubs, 105, 15, { align: 'center' });
+  doc.setFontSize(10); doc.setFont(undefined, 'normal'); doc.text(`Dourados/MS – ${hj}`, 105, 22, { align: 'center' });
+  let titulo = '', rows = [];
+  if (tipo === 'atrasados') {
+    titulo = 'Contraceptivos Atrasados – Busca Ativa';
+    rows = calcAtrasados().map((m, i) => [i + 1, m.nome, m.metodo, fmtData(m.proximaDose), m.diasAtraso + 'd', m.tel || '—', m.microArea || '—'])
+  }
+  else if (tipo === 'mif') {
+    titulo = 'Cadastro MIF';
+    rows = db.get('mif').map((m, i) => [i + 1, m.nome, calcIdadeNum(m.nasc) + 'a', m.metodo || '—', m.microArea || '—', m.tel || '—'])
+  }
+  else if (tipo === 'pccu') {
+    titulo = 'PCCU Pendentes';
+    rows = db.get('mif').filter(m => !m.pccuData || diffDias(hoje(), m.pccuData) > 365)
+      .map((m, i) => [i + 1, m.nome, m.pccuData ? fmtData(m.pccuData) : 'Nunca', m.tel || '—'])
+  }
+  doc.setFontSize(12); doc.setFont(undefined, 'bold'); doc.text(titulo, 105, 32, { align: 'center' });
+  let y = 44; doc.setFontSize(8); doc.setFont(undefined, 'normal');
+  rows.forEach(row => { doc.text(row.join('   '), 10, y); y += 7; if (y > 280) { doc.addPage(); y = 15 } });
+  doc.save(`${titulo.replace(/\W/g, '_')}_${hoje()}.pdf`);
+}
+function exportarBuscaAtiva() { exportarRelatorio('atrasados') }
+function exportarPrioridades() {
+  const { jsPDF } = window.jspdf; const doc = new jsPDF(); const cfg = db.getObj('config');
+  doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text(cfg.ubs || 'ESF 26 – Carisma', 105, 15, { align: 'center' });
+  doc.setFontSize(11); doc.text('Prioridades – ' + new Date().toLocaleDateString('pt-BR'), 105, 23, { align: 'center' });
+  let y = 35; doc.setFontSize(9);
+  calcAtrasados().forEach((m, i) => { doc.text(`${i + 1}. ${m.nome} – ${m.metodo} – ${m.diasAtraso}d atraso – Tel: ${m.tel || '—'}`, 10, y); y += 7; if (y > 280) { doc.addPage(); y = 15 } });
+  doc.save(`prioridades_${hoje()}.pdf`);
+}
+
+// ── CONFIGURAÇÕES ─────────────────────────────────────────
+function carregarConfig() {
+  const cfg = db.getObj('config');
+  ['ubs', 'mun', 'cnes', 'resp'].forEach(k => { const el = document.getElementById('cfg-' + k); if (el && cfg[k]) el.value = cfg[k] });
+}
+function salvarConfig() {
+  const g = id => document.getElementById(id).value;
+  const novaSenha = g('cfg-senha');
+  db.setObj('config', {
+    ubs: g('cfg-ubs'), mun: g('cfg-mun'), cnes: g('cfg-cnes'), resp: g('cfg-resp'),
+    senha: novaSenha || db.getObj('config').senha || '123456'
+  });
+  const ok = document.getElementById('cfg-ok'); ok.style.display = 'flex'; setTimeout(() => ok.style.display = 'none', 3000);
+}
+function confirmarLimpar() {
+  if (!confirm('⚠️ Apagará TODOS os dados permanentemente. Tem certeza?')) return;
+  if (!confirm('ÚLTIMA CONFIRMAÇÃO: Apagar tudo?')) return;
+  Object.values(KEYS).forEach(k => localStorage.removeItem(k)); alert('Dados apagados.'); location.reload();
+}
+
+// ── UTILS MODAL ───────────────────────────────────────────
+function abrirModal(id) { document.getElementById(id).classList.add('open') }
+function fecharModal(id) { document.getElementById(id).classList.remove('open') }
+function excItem(chave, id, fn) { if (!confirm('Excluir este registro?')) return; db.set(chave, db.get(chave).filter(x => x.id !== id)); fn() }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') }));
+
+// ── INIT ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-link[data-page]').forEach(l => l.addEventListener('click', e => { e.preventDefault(); navTo(l.dataset.page) }));
+  checarSessao();
+});

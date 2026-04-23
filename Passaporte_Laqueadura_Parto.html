@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passaporte - Laqueadura Tubária Eletiva</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #555;
+            padding: 20px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        .page {
+            background-color: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 20px auto;
+            padding: 12mm 15mm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+
+        .header-logos {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+
+        .logo {
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .logo-container {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            text-transform: uppercase;
+        }
+
+        h3 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 3px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 3px;
+            white-space: nowrap;
+            font-size: 10px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        .input-line {
+            border: none;
+            border-bottom: 1px solid #000;
+            border-radius: 0;
+            padding: 1px 3px;
+        }
+
+        .check-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 10px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .signature-box {
+            margin-top: 20px;
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            text-align: center;
+            width: 48%;
+            display: inline-block;
+            font-size: 10px;
+        }
+
+        .signature-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        ul {
+            margin: 5px 0;
+            padding-left: 20px;
+            font-size: 10px;
+        }
+
+        li {
+            margin: 2px 0;
+        }
+
+        .warning-box {
+            background: #f9f9f9;
+            padding: 5px;
+            border: 1px solid #ccc;
+            margin: 5px 0;
+            font-size: 10px;
+        }
+
+        .actions {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            background-color: #34495e;
+        }
+
+        .btn-clear {
+            background-color: #c0392b;
+        }
+
+        .btn-clear:hover {
+            background-color: #e74c3c;
+        }
+
+        .auto-fill-notice {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            color: #155724;
+            display: none;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 10mm;
+            }
+
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: auto;
+                height: auto;
+                padding: 0;
+                page-break-after: always;
+                break-after: page;
+                border: none;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+
+            .actions,
+            .auto-fill-notice {
+                display: none !important;
+            }
+
+            input,
+            textarea,
+            select {
+                border: none;
+                border-bottom: 1px solid #000;
+                padding: 0;
+                resize: none;
+            }
+
+            input[type="radio"],
+            input[type="checkbox"] {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .header-logos {
+                border-bottom: 2px solid #000;
+            }
+
+            .section,
+            .row,
+            .signature-container {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+        <button class="btn btn-clear"
+            onclick="if(confirm('Limpar todos os campos?')) document.querySelector('form').reset()">🗑️ Limpar</button>
+    </div>
+
+    <form>
+        <!-- PÁGINA 1 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container"><img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados"
+                        class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_sems.png" alt="SEMS" class="logo"></div>
+            </div>
+
+            <div class="auto-fill-notice" id="autoFillNotice">✅ Dados preenchidos automaticamente!</div>
+
+            <h1>PASSAPORTE PARA REALIZAÇÃO DE ESTERILIZAÇÃO CIRÚRGICA - LAQUEADURA TUBÁRIA NO PARTO</h1>
+
+            <div class="section">
+                <h2>1. DADOS DA PACIENTE</h2>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Nome:</label><input type="text" id="p-nome"
+                            class="input-line" placeholder="Nome completo"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Nome Social:</label><input type="text" id="p-nome-social"
+                            class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Nome da Mãe:</label><input type="text" id="p-mae" class="input-line">
+                    </div>
+                    <div class="col"><label>Data Nascimento:</label><input type="date" id="p-nasc" class="input-line">
+                    </div>
+                    <div class="col"><label>Idade:</label><input type="number" id="p-idade" class="input-line"
+                            style="width: 50px;"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Nº Filhos:</label><input type="number" id="p-filhos" class="input-line"
+                            style="width: 50px;"></div>
+                    <div class="col"><label>Idade dos filhos:</label><input type="text" id="p-idade-filhos"
+                            class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Estado Civil:</label>
+                        <div class="check-group">
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Solteira">
+                                Solteira</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Casada">
+                                Casada</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Viúva">
+                                Viúva</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="Divorciada">
+                                Divorciada</label>
+                            <label class="check-item"><input type="radio" name="estado_civil" value="União Estável">
+                                União Estável</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>Raça/Cor:</label>
+                        <div class="check-group">
+                            <label class="check-item"><input type="radio" name="raca" value="Branca"> Branca</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Preta"> Preta</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Parda"> Parda</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Amarela"> Amarela</label>
+                            <label class="check-item"><input type="radio" name="raca" value="Indígena"> Indígena</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Nacionalidade:</label><input type="text" id="p-nacionalidade"
+                            class="input-line"></div>
+                    <div class="col">
+                        <label>Escolaridade:</label>
+                        <select id="p-escolaridade" class="input-line">
+                            <option value="">Selecione...</option>
+                            <option value="Não Alfabetizado">Não Alfabetizado</option>
+                            <option value="Ensino Fundamental">Ensino Fundamental</option>
+                            <option value="Ensino Médio">Ensino Médio</option>
+                            <option value="Ensino Superior">Ensino Superior</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>CNS:</label><input type="text" id="p-cns" class="input-line"></div>
+                    <div class="col"><label>CPF:</label><input type="text" id="p-cpf" class="input-line"></div>
+                    <div class="col"><label>RG:</label><input type="text" id="p-rg" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Endereço:</label><input type="text" id="p-end"
+                            class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Bairro:</label><input type="text" id="p-bairro" class="input-line"></div>
+                    <div class="col"><label>Cidade/UF:</label><input type="text" id="p-cidade" class="input-line"></div>
+                    <div class="col"><label>CEP:</label><input type="text" id="p-cep" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Telefone:</label><input type="text" id="p-tel" class="input-line"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>2. CERTIFICADO DE PARTICIPAÇÃO EM AÇÃO EDUCATIVA</h2>
+                <p style="text-align: justify; margin-bottom: 5px; font-size: 10px;">Em cumprimento à Lei do
+                    Planejamento Familiar n°9.263, de 12/01/1996, alterada pela Lei n°14.443, de 02/09/2022, e a
+                    Portaria SAS/MS n°48, de 11/02/1999, certificamos que:</p>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Paciente:</label><input type="text" id="cert-nome"
+                            class="input-line"></div>
+                    <div class="col"><label>CNS:</label><input type="text" id="cert-cns" class="input-line"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;">Participou de consulta em Planejamento Familiar/Ação educativa no
+                        dia: <input type="date" id="certData" class="input-line"
+                            style="width: 120px; display:inline-block;"> e foi orientada sobre ação, índice de falha e
+                        eficácia, método de uso, riscos, reações adversas e disponibilidade dos métodos contraceptivos
+                        naturais, de barreira, hormonais, reversíveis de longa duração (LARC's) e cirúrgicos,
+                        disponibilizados pela Secretaria Municipal de Saúde de: <input type="text" id="cert-cidade"
+                            class="input-line" placeholder="Cidade" style="width: 150px;"></div>
+                </div>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Motivo da opção pela esterilização
+                            cirúrgica:</label><textarea id="motivo" class="input-line" rows="2"
+                            style="width: 100%;"></textarea></div>
+                </div>
+                <div class="signature-container">
+                    <div class="signature-box">Carimbo e Assinatura dos Profissionais<br>(Enf / Med / Psic / Ass.
+                        Social)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 2 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container"><img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados"
+                        class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_sems.png" alt="SEMS" class="logo"></div>
+            </div>
+
+            <div class="section">
+                <h2>3. MANIFESTAÇÃO DA VONTADE DE ESTERILIZAÇÃO CIRÚRGICA</h2>
+                <h3>ELETIVA (preencher e assinar no dia da ação educativa)</h3>
+                <div class="row">
+                    <div class="col" style="flex: 2;">Eu, <input type="text" id="manifest-nome" class="input-line"
+                            style="width: 200px; display:inline-block;">, CPF: <input type="text" id="manifest-cpf"
+                            class="input-line" style="width: 120px; display:inline-block;">, residente na cidade de:
+                        <input type="text" id="manifest-cidade" class="input-line"
+                            style="width: 150px; display:inline-block;">, usuária da unidade: <input type="text"
+                            id="manifest-unidade" class="input-line" style="width: 150px; display:inline-block;">, CNS:
+                        <input type="text" id="manifest-cns" class="input-line"
+                            style="width: 150px; display:inline-block;">, desejo submeter-me voluntariamente ao
+                        procedimento de laqueadura tubária eletiva. Estou ciente que o prazo mínimo entre esta
+                        manifestação da vontade e a realização da cirurgia é de, no mínimo, 60 (sessenta) dias.
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col"><label>Data:</label><input type="date" id="manifestData" class="input-line"></div>
+                    <div class="col"><label>Assinatura Paciente:</label><input type="text" id="manifestAssinatura"
+                            class="input-line"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>4. TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO (TCLE)</h2>
+                <h3>(preencher e assinar no dia da ação educativa)</h3>
+                <div class="row">
+                    <div class="col" style="flex: 2;">Eu, <input type="text" id="tcle-nome" class="input-line"
+                            style="width: 200px; display:inline-block;">, CPF: <input type="text" id="tcle-cpf"
+                            class="input-line" style="width: 120px; display:inline-block;">, Declaro ter recebido
+                        informações sobre os riscos da esterilização cirúrgica e compreendido que:</div>
+                </div>
+                <ul style="text-align: justify;">
+                    <li>Existem outras opções para contracepção, disponibilizadas pela Secretaria de Saúde do meu
+                        município, as quais me foram oferecidas;</li>
+                    <li>Para a consulta pré-operatória preciso levar todos os documentos exigidos;</li>
+                    <li>A laqueadura tubária é um método definitivo de contracepção, devido o corte de ambas as tubas
+                        uterinas, que impede o encontro dos óvulos com o espermatozoide;</li>
+                    <li>É uma cirurgia realizada com anestesia geral ou raquidiana, por via vaginal ou via abdominal,
+                        por laparoscopia (com 3 a 4 pequenos cortes no abdome) ou minilaparotomia (corte igual da
+                        cesariana);</li>
+                    <li>A laqueadura tubária é um método contraceptivo de reversão extremamente difícil e não coberto
+                        pelo SUS, portanto, assumo a responsabilidade pela decisão de não ter mais filhos;</li>
+                    <li>A laqueadura tubária é um ato cirúrgico e, como tal, envolve riscos anestésicos, de lesão de
+                        estruturas abdominais, hemorragia e de infecção no pós-operatório;</li>
+                    <li>Pode ocorrer também alterações no meu ciclo menstrual após esta cirurgia;</li>
+                    <li>Embora rara, existe a possibilidade de gravidez (em torno de 0,41%) por recanalização das
+                        trompas e também de gravidez tubária, ou seja, sua efetividade contraceptiva não é de 100%;</li>
+                    <li>A laqueadura tubária não me protege contra as infecções sexualmente transmissíveis (IST),
+                        inclusive HIV/AIDS.</li>
+                </ul>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col"><label>Data:</label><input type="date" id="tcleData" class="input-line"></div>
+                    <div class="col"><label>Assinatura Paciente:</label><input type="text" id="tcleAssinatura"
+                            class="input-line"></div>
+                </div>
+                <div class="signature-container">
+                    <div class="signature-box">Carimbo e Assinatura dos Profissionais<br>(Enf / Med / Psic / Ass.
+                        Social)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 3 -->
+        <div class="page">
+            <div class="header-logos">
+                <div class="logo-container"><img src="assets/img/logo_dourados.png" alt="Prefeitura de Dourados"
+                        class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_alyne.png" alt="Rede Alyne" class="logo"></div>
+                <div class="logo-container"><img src="assets/img/logo_sems.png" alt="SEMS" class="logo"></div>
+            </div>
+
+            <div class="section">
+                <h2>5. AGENDAMENTO E CONSULTA PRÉ-OPERATÓRIA</h2>
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Consulta pré-operatória marcada para:</label><input
+                            type="date" id="consultaData" class="input-line"
+                            style="width: 120px; display:inline-block;"> às <input type="time" id="consultaHora"
+                            class="input-line" style="width: 70px; display:inline-block;"> com Dr(a): <input type="text"
+                            id="consultaMedico" class="input-line" style="width: 150px; display:inline-block;"> no:
+                        <input type="text" id="consultaLocal" class="input-line"
+                            style="width: 200px; display:inline-block;">
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <strong>LEVAR PARA ESTA CONSULTA:</strong>
+                    <ul style="margin: 3px 0; padding-left: 20px;">
+                        <li>Original e cópia do RG, CPF, CNS e comprovante de residência</li>
+                        <li>Resultado do preventivo</li>
+                        <li>Laudo da USG transvaginal</li>
+                        <li>Passaporte de Laqueadura Tubária Eletiva</li>
+                        <li>Filipeta do CORE</li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col" style="flex: 2;"><label>Preenchimento e envio da AIH para
+                            autorização:</label><input type="text" id="aih" class="input-line"></div>
+                </div>
+
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col" style="flex: 2;"><label>Cirurgia marcada para:</label><input type="date"
+                            id="cirurgiaData" class="input-line" style="width: 120px; display:inline-block;"> às <input
+                            type="time" id="cirurgiaHora" class="input-line" style="width: 70px; display:inline-block;">
+                        com Dr(a): <input type="text" id="cirurgiaMedico" class="input-line"
+                            style="width: 150px; display:inline-block;"> no: <input type="text" id="cirurgiaLocal"
+                            class="input-line" style="width: 200px; display:inline-block;"></div>
+                    <div class="col" style="margin-top: 8px;"><label>IG na cirurgia:</label><input type="text" id="p-ig"
+                            class="input-line" style="width: 100px;"></div>
+                </div>
+
+                <div class="signature-container" style="margin-top: 40px;">
+                    <div class="signature-box">Assinatura e Carimbo do Responsável<br>pelo Agendamento</div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- SCRIPT DE PREENCHIMENTO AUTOMÁTICO -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            const dados = JSON.parse(localStorage.getItem('dadosEsterilizacao'));
+            if (dados) {
+                const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                document.getElementById('autoFillNotice').style.display = 'block';
+
+                set('p-nome', dados.nome);
+                set('p-cns', dados.cns);
+                set('p-cpf', dados.cpf);
+                set('p-nasc', dados.nasc);
+                set('p-mae', dados.mae);
+                set('p-end', dados.end);
+                set('p-bairro', dados.bairro);
+                set('p-cidade', dados.cidade || 'Dourados/MS');
+                set('p-cep', dados.cep);
+                set('p-tel', dados.tel);
+                set('p-ig', dados.ig);
+
+                set('cert-nome', dados.nome);
+                set('cert-cns', dados.cns);
+                set('cert-cidade', 'Dourados');
+                set('manifest-nome', dados.nome);
+                set('manifest-cpf', dados.cpf);
+                set('manifest-cns', dados.cns);
+                set('manifest-cidade', 'Dourados');
+                set('manifest-unidade', 'ESF 26 - Carisma');
+                set('tcle-nome', dados.nome);
+                set('tcle-cpf', dados.cpf);
+
+                if (dados.nasc) {
+                    const h = new Date(), d = new Date(dados.nasc);
+                    let a = h.getFullYear() - d.getFullYear();
+                    if (h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) a--;
+                    set('p-idade', a);
+                }
+                console.log('✅ Dados preenchidos automaticamente!', dados);
+            }
+        });
+    </script>
+</body>
+
+</html>

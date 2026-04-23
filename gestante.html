@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#DB2777">
+    <title>Meu Pré-Natal — ESF 26</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #DB2777;
+            --secondary: #7C3AED;
+            --bg: #FFF5F7;
+            --white: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #333;
+            line-height: 1.5;
+            padding-bottom: 40px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #DB2777, #7C3AED);
+            color: #fff;
+            padding: 40px 24px 60px;
+            border-radius: 0 0 30px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-card {
+            background: var(--white);
+            margin: -40px 20px 20px;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(219, 39, 119, 0.1);
+            border: 1px solid rgba(219, 39, 119, 0.1);
+        }
+
+        .paciente-nome {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .paciente-info {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: #FFF0F5;
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-val {
+            display: block;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section {
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #444;
+        }
+
+        .info-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #F3F4F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-subtitle {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .btn-install {
+            background: #333;
+            color: #fff;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 20px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="content" style="display: none;">
+        <div class="header">
+            <h1>Meu Pré-Natal</h1>
+            <p>ESF 26 Carisma • Cartão Digital</p>
+        </div>
+
+        <div class="main-card">
+            <div id="p-nome" class="paciente-nome">Nome da Gestante</div>
+            <div id="p-detalhes" class="paciente-info">CNS: 000.0000.0000.0000</div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span id="p-ig" class="stat-val">--</span>
+                    <span class="stat-label">Idade Gestacional</span>
+                </div>
+                <div class="stat-item">
+                    <span id="p-dpp" class="stat-val">--</span>
+                    <span class="stat-label">Data Prov. Parto</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">📅 Próximos Passos</h2>
+            <div id="lista-passos"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">📝 Consultas e Exames</h2>
+            <div id="lista-atendimentos"></div>
+        </div>
+
+        <div class="section" style="text-align: center;">
+            <div id="btnInstall" class="btn-install" onclick="installApp()">📲 Instalar Cartão no Celular</div>
+            <p style="font-size: 11px; color: #999; margin-top: 15px;">Atualizado em: <span id="p-atualizacao">--</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="no-data" class="empty-state">
+        <h2 style="color: var(--primary); margin-bottom: 10px;">Ops!</h2>
+        <p>Dados não encontrados. Por favor, peça o link de acesso ao seu Agente de Saúde ou Enfermeiro na ESF 26.</p>
+    </div>
+
+    <script>
+        // Lógica PWA Básica
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('btnInstall').style.display = 'block';
+        });
+
+        function installApp() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choice) => {
+                if (choice.outcome === 'accepted') document.getElementById('btnInstall').style.display = 'none';
+            });
+        }
+
+        // Carregamento de Dados
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawData = urlParams.get('data');
+
+            let data = null;
+            if (rawData) {
+                try {
+                    data = JSON.parse(atob(rawData));
+                    localStorage.setItem('meu_prenatal_data', JSON.stringify(data));
+                } catch (e) {
+                    console.error('Erro ao ler dados da URL');
+                }
+            } else {
+                data = JSON.parse(localStorage.getItem('meu_prenatal_data'));
+            }
+
+            if (!data) {
+                document.getElementById('no-data').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('content').style.display = 'block';
+            document.getElementById('no-data').style.display = 'none';
+
+            // Preencher
+            document.getElementById('p-nome').textContent = data.nome;
+            document.getElementById('p-detalhes').textContent = `CNS: ${data.cns} | Nasc: ${fmtData(data.nasc)}`;
+            document.getElementById('p-ig').textContent = data.ig;
+            document.getElementById('p-dpp').textContent = data.dpp;
+            document.getElementById('p-atualizacao').textContent = new Date(data.ts).toLocaleString();
+
+            // Passos baseados na IG (em semanas)
+            const sem = parseInt(data.ig) || 0;
+            const passos = [];
+            if (sem < 12) passos.push({ t: 'Exames de 1º Trimestre', d: 'Sangue, Urina e Preventivo', i: '🔬' });
+            if (sem < 20) passos.push({ t: 'Vacinas', d: 'Hepatite B e Influenza', i: '💉' });
+            if (sem >= 24 && sem < 28) passos.push({ t: 'Curva Glicêmica', d: 'Exame de Glicose', i: '🍬' });
+            if (sem > 30) passos.push({ t: 'Preparação para o Parto', d: 'Converse com sua equipe!', i: '🏥' });
+
+            document.getElementById('lista-passos').innerHTML = passos.map(p => `
+                <div class="info-card">
+                    <div class="info-icon">${p.i}</div>
+                    <div class="info-content">
+                        <div class="info-title">${p.t}</div>
+                        <div class="info-subtitle">${p.d}</div>
+                    </div>
+                </div>
+            `).join('') || '<p style="font-size:13px; color:#999">Tudo em dia por enquanto! ✨</p>';
+
+            // Consultas
+            const atendimentos = data.consultas || [];
+            document.getElementById('lista-atendimentos').innerHTML = atendimentos.map(c => `
+                <div class="info-card">
+                    <div class="info-icon">📅</div>
+                    <div class="info-content">
+                        <div class="info-title">Consulta Realizada</div>
+                        <div class="info-subtitle">${fmtData(c.data)} • ${c.profissional || 'ESF 26'}</div>
+                    </div>
+                </div>
+            `).join('') || '<p style="font-size:13px; color:#999">Nenhuma consulta registrada ainda.</p>';
+        }
+
+        function fmtData(d) { return d ? d.split('-').reverse().join('/') : '--'; }
+
+        init();
+    </script>
+    <script src="assets/js/ai_agent.js?v=4.2"></script>
+</body>
+
+</html>

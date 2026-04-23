@@ -1,0 +1,3210 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Pré-Natal ESF 26 - Sistema Completo</title>
+
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="assets/js/prenatal.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --primary-light: #A78BFA;
+            --secondary: #10B981;
+            --background: #F9FAFB;
+            --surface: #FFFFFF;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --success: #10B981;
+            --info: #3B82F6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .print-sheet,
+            .print-sheet * {
+                visibility: visible;
+            }
+
+            .print-sheet {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 210mm;
+                height: 297mm;
+                display: grid !important;
+                grid-template-columns: 105mm 105mm;
+                grid-template-rows: 99mm 99mm 99mm;
+                padding: 0;
+                margin: 0;
+                background: white;
+            }
+
+            .print-label {
+                width: 105mm;
+                height: 99mm;
+                padding: 10mm;
+                box-sizing: border-box;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                border: 0.1mm solid transparent;
+                /* Alinhamento fino */
+            }
+
+            .print-label-content {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                border: 1px solid #eee;
+                padding: 5mm;
+                border-radius: 4mm;
+            }
+        }
+
+        .print-sheet {
+            display: none;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .user-details h3 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .user-details p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* NAVEGAÇÃO INFERIOR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        /* CONTEÚDO PRINCIPAL */
+        .main-content {
+            padding: 16px;
+            padding-bottom: 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* PÁGINAS */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* CARDS */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 16px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--primary-light);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* DASHBOARD GRID */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+        }
+
+        .dashboard-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+        }
+
+        .dashboard-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .dashboard-card-subtitle {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger);
+            color: white;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 0 6px;
+        }
+
+        /* ESTATÍSTICAS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* FORMULÁRIOS */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        /* BOTÕES */
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        /* TABELAS */
+        .table-container {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #F9FAFB;
+        }
+
+        /* CALCULADORAS */
+        .calculator-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .calc-tab {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .calc-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .calc-result {
+            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .calc-result-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .calc-result-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* CARTÃO DA GESTANTE */
+        .prenatal-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            padding: 24px;
+            color: white;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prenatal-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-logo {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .card-qr {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .card-patient {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .card-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .card-info h3 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .card-info p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .card-stat {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .card-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        /* ALERTAS */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-warning {
+            background: #FFFBEB;
+            border-left: 4px solid var(--warning);
+        }
+
+        .alert-danger {
+            background: #FEF2F2;
+            border-left: 4px solid var(--danger);
+        }
+
+        .alert-success {
+            background: #F0FDF4;
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-icon {
+            font-size: 20px;
+        }
+
+        .alert-content h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .alert-content p {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* LISTA */
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-bottom: 1px solid var(--border);
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item:hover {
+            background: #F9FAFB;
+        }
+
+        .list-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #EDE9FE;
+            flex-shrink: 0;
+        }
+
+        .list-content {
+            flex: 1;
+        }
+
+        .list-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .list-subtitle {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .list-action {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* LOGIN */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 40px;
+        }
+
+        .login-header h1 {
+            font-size: 24px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .user-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .user-type {
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .user-type.active {
+            border-color: var(--primary);
+            background: #EDE9FE;
+        }
+
+        .user-type-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .user-type-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalSlide 0.3s ease-out;
+        }
+
+        @keyframes modalSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--border);
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* NOTIFICAÇÕES */
+        .notification-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            max-width: 90%;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            transition: right 0.3s ease-out;
+            overflow-y: auto;
+        }
+
+        .notification-panel.active {
+            right: 0;
+        }
+
+        .notification-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-list {
+            padding: 16px;
+        }
+
+        .notification-item {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .notification-item.urgent {
+            border-left-color: var(--danger);
+            background: #FEF2F2;
+        }
+
+        .notification-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* PWA INSTALL */
+        .pwa-install {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        /* UTILITÁRIOS */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-4 {
+            margin-top: 16px;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .text-success {
+            color: var(--success);
+        }
+
+        .text-danger {
+            color: var(--danger);
+        }
+
+        .text-warning {
+            color: var(--warning);
+        }
+
+        /* RESPONSIVO */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 12px;
+            }
+
+            .main-content {
+                padding: 12px;
+            }
+
+            .card-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* GRÁFICOS */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        /* CONFIGURAÇÕES */
+        .settings-section {
+            margin-bottom: 24px;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-item-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .settings-item-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* TOGGLE */
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* ÁREA DE IMPRESSÃO */
+        @media print {
+
+            .header,
+            .bottom-nav,
+            .btn,
+            .actions,
+            .pwa-install,
+            .notification-panel {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .main-content {
+                padding: 0;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+
+        /* PRONTUÁRIO */
+        .patient-profile {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 16px;
+            padding: 24px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .patient-profile-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .patient-profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .patient-profile-info h2 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .patient-profile-info p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .patient-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .patient-stat {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .patient-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .patient-stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .tab {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .timeline-content {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- TELA DE LOGIN -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🤰</div>
+                <h1>Pré-Natal ESF 26</h1>
+                <p>Carisma - Dourados/MS</p>
+            </div>
+
+            <div class="user-type-selector">
+                <div class="user-type active" onclick="selectUserType('profissional')">
+                    <div class="user-type-icon">👨‍⚕️</div>
+                    <div class="user-type-label">Profissional</div>
+                </div>
+                <div class="user-type" onclick="selectUserType('gestante')">
+                    <div class="user-type-icon">🤰</div>
+                    <div class="user-type-label">Gestante</div>
+                </div>
+            </div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>CNS ou CPF</label>
+                    <input type="text" id="loginCNS" placeholder="Digite seu CNS ou CPF" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginSenha" placeholder="Digite sua senha" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    🔐 Entrar no Sistema
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <p style="font-size: 12px; color: var(--text-secondary);">
+                    Primeira vez? Entre em contato com a ESF 26<br>
+                    <strong style="color: var(--primary);">Senha padrão: 123456</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICAÇÃO PRINCIPAL -->
+    <div id="appScreen" class="hidden">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-top">
+                <div class="logo">
+                    <span>🤰</span>
+                    <span>Pré-Natal ESF 26 - Carisma</span>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="toggleNotifications()" title="Notificações">🔔</button>
+                    <button class="icon-btn" onclick="navigateTo('configuracoes')" title="Configurações">⚙️</button>
+                    <button class="icon-btn" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+            <div class="user-info">
+                <div class="avatar" id="userAvatar">JH</div>
+                <div class="user-details">
+                    <h3 id="userName">Enf. Jackson Hardt</h3>
+                    <p id="userRole">Enfermeiro - ESF 26 Carisma</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main class="main-content">
+            <!-- PÁGINA: DASHBOARD -->
+            <div id="page-dashboard" class="page active">
+                <!-- ALERTAS -->
+                <div id="alertsContainer"></div>
+
+                <!-- DASHBOARD PROFISSIONAL -->
+                <div id="dashboardProfissional">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalGestantes">0</div>
+                            <div class="stat-label">Gestantes Ativas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="consultasHoje">0</div>
+                            <div class="stat-label">Consultas Hoje</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="altoRisco">0</div>
+                            <div class="stat-label">Alto Risco</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="partosMes">0</div>
+                            <div class="stat-label">Partos este Mês</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">⚡ Acesso Rápido</h3>
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" onclick="navigateTo('gestantes')">
+                            <div class="badge" id="badgeGestantes">0</div>
+                            <div class="dashboard-card-icon">🤰</div>
+                            <div class="dashboard-card-title">Gestantes</div>
+                            <div class="dashboard-card-subtitle">Acompanhamento</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('exames')">
+                            <div class="badge" id="badgeExames">0</div>
+                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-title">Exames</div>
+                            <div class="dashboard-card-subtitle">Citopatológicos</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('calculadoras')">
+                            <div class="dashboard-card-icon">🧮</div>
+                            <div class="dashboard-card-title">Calculadoras</div>
+                            <div class="dashboard-card-subtitle">IG, DPP, IMC</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('esterilizacao')">
+                            <div class="dashboard-card-icon">📋</div>
+                            <div class="dashboard-card-title">Esterilização</div>
+                            <div class="dashboard-card-subtitle">Laqueadura/Vasectomia</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('cartao')">
+                            <div class="dashboard-card-icon">💳</div>
+                            <div class="dashboard-card-title">Cartão Digital</div>
+                            <div class="dashboard-card-subtitle">Gestante</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('relatorios')">
+                            <div class="dashboard-card-icon">📊</div>
+                            <div class="dashboard-card-title">Relatórios</div>
+                            <div class="dashboard-card-subtitle">PDF/Exportar</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">⚠️ Alertas Importantes</h3>
+                    <div class="card" id="alertasList">
+                        <!-- Alertas serão inseridos aqui -->
+                    </div>
+                </div>
+
+                <!-- DASHBOARD GESTANTE -->
+                <div id="dashboardGestante" class="hidden">
+                    <div class="prenatal-card">
+                        <div class="card-top">
+                            <div class="card-logo">🤰 Meu Pré-Natal</div>
+                            <div class="card-qr">📱</div>
+                        </div>
+                        <div class="card-patient">
+                            <div class="card-avatar" id="gestanteAvatar">G</div>
+                            <div class="card-info">
+                                <h3 id="gestanteNome">Gestante</h3>
+                                <p id="gestanteIdade">-- anos | CNS: --</p>
+                            </div>
+                        </div>
+                        <div class="card-stats">
+                            <div class="card-stat">
+                                <div class="card-stat-value" id="gestanteIG">--</div>
+                                <div class="card-stat-label">Idade Gestacional</div>
+                            </div>
+                            <div class="card-stat">
+                                <div class="card-stat-value" id="gestanteDPP">--</div>
+                                <div class="card-stat-label">DPP</div>
+                            </div>
+                            <div class="card-stat">
+                                <div class="card-stat-value" id="gestanteTrimestre">--</div>
+                                <div class="card-stat-label">Trimestre</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">📱 Meu Acompanhamento</h3>
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" onclick="navigateTo('meus-exames')">
+                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-title">Meus Exames</div>
+                            <div class="dashboard-card-subtitle">Resultados</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('vacinas')">
+                            <div class="dashboard-card-icon">💉</div>
+                            <div class="dashboard-card-title">Vacinas</div>
+                            <div class="dashboard-card-subtitle">Calendário</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('consultas-gestante')">
+                            <div class="dashboard-card-icon">📅</div>
+                            <div class="dashboard-card-title">Consultas</div>
+                            <div class="dashboard-card-subtitle">Agendamentos</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="navigateTo('orientacoes')">
+                            <div class="dashboard-card-icon">📖</div>
+                            <div class="dashboard-card-title">Orientações</div>
+                            <div class="dashboard-card-subtitle">Por trimestre</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-bottom: 12px; font-size: 16px;">📋 Próximos Passos</h3>
+                    <div class="card" id="proximosPassos">
+                        <!-- Próximos passos serão inseridos aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: GESTANTES -->
+            <div id="page-gestantes" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🤰 Gestantes Cadastradas</div>
+                        <div style="display:flex; gap:8px">
+                            <button class="btn btn-secondary btn-sm" onclick="sincronizarGestantesCadastroCentral()"
+                                title="Busca gestantes já cadastradas no sistema">📥
+                                Importar do Sistema</button>
+                            <label class="btn btn-secondary btn-sm" style="cursor:pointer"
+                                title="Importa CSV direto e marca como gestante">
+                                📥 Importar CSV e-SUS
+                                <input type="file" accept=".csv" onchange="importarCSVGestantes(event)"
+                                    style="display:none">
+                            </label>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalGestante()">+ Nova</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="searchGestante" placeholder="🔍 Buscar por nome ou CNS..."
+                            onkeyup="buscarGestantes()">
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CNS</th>
+                                    <th>IG</th>
+                                    <th>DPP</th>
+                                    <th>Risco</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyGestantes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: PRONTUÁRIO INDIVIDUAL -->
+            <div id="page-prontuario" class="page">
+                <button class="btn btn-secondary btn-sm mb-4" onclick="navigateTo('gestantes')">← Voltar para
+                    Lista</button>
+
+                <div class="patient-profile" id="patientProfile">
+                    <!-- Perfil da paciente será renderizado aqui -->
+                </div>
+
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('consultas')">📅 Consultas</div>
+                    <div class="tab" onclick="switchTab('exames')">🔬 Exames</div>
+                    <div class="tab" onclick="switchTab('vacinas')">💉 Vacinas</div>
+                    <div class="tab" onclick="switchTab('lembretes')">📝 Lembretes</div>
+                    <div class="tab" onclick="switchTab('graficos')">📈 Gráficos</div>
+                </div>
+
+                <!-- CONSULTAS -->
+                <div id="tab-consultas" class="tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">📅 Histórico de Consultas</div>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalConsulta()">+ Nova
+                                Consulta</button>
+                        </div>
+                        <div class="timeline" id="timelineConsultas">
+                            <!-- Consultas serão inseridas aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EXAMES -->
+                <div id="tab-exames" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔬 Exames Solicitados</div>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalExamePrenatal()">+ Novo
+                                Exame</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Exame</th>
+                                        <th>Resultado</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyExamesPrenatal"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VACINAS -->
+                <div id="tab-vacinas" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">💉 Vacinas Administradas</div>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalVacina()">+ Nova Vacina</button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Vacina</th>
+                                        <th>Lote</th>
+                                        <th>Próxima Dose</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyVacinas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LEMBRETES -->
+                <div id="tab-lembretes" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">📝 Lembretes e Observações</div>
+                            <button class="btn btn-primary btn-sm" onclick="abrirModalLembrete()">+ Novo
+                                Lembrete</button>
+                        </div>
+                        <div id="listaLembretes">
+                            <!-- Lembretes serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRÁFICOS -->
+                <div id="tab-graficos" class="tab-content">
+                    <div class="chart-container">
+                        <div class="chart-title">Evolução do Peso</div>
+                        <canvas id="chartPeso"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Pressão Arterial</div>
+                        <canvas id="chartPressao"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: EXAMES CITOPATOLÓGICOS -->
+            <div id="page-exames" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🔬 Exames Citopatológicos</div>
+                        <button class="btn btn-primary btn-sm" onclick="abrirModalExame()">+ Novo</button>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="searchExame" placeholder="🔍 Buscar por nome ou CNS..."
+                            onkeyup="buscarExames()">
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Nome</th>
+                                    <th>CNS</th>
+                                    <th>Resultado</th>
+                                    <th>Situação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyExames"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: CALCULADORAS -->
+            <div id="page-calculadoras" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🧮 Calculadoras Obstétricas</div>
+                    </div>
+
+                    <div class="calculator-tabs">
+                        <div class="calc-tab active" onclick="switchCalcTab('ig-dpp')">IG & DPP</div>
+                        <div class="calc-tab" onclick="switchCalcTab('imc')">IMC Gestacional</div>
+                        <div class="calc-tab" onclick="switchCalcTab('intervalo')">Intervalo</div>
+                    </div>
+
+                    <!-- IG & DPP -->
+                    <div id="calc-ig-dpp">
+                        <div class="form-group">
+                            <label>Data da Última Menstruação (DUM)</label>
+                            <input type="date" id="calcDUM" onchange="calcularIGDPP()">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Data do Ultrassom</label>
+                                <input type="date" id="calcDataUSG" onchange="calcularIGDPP()">
+                            </div>
+                            <div class="form-group">
+                                <label>Semanas na USG</label>
+                                <input type="number" id="calcSemanasUSG" placeholder="Ex: 12"
+                                    onchange="calcularIGDPP()">
+                            </div>
+                            <div class="form-group">
+                                <label>Dias na USG</label>
+                                <input type="number" id="calcDiasUSG" placeholder="0-6" min="0" max="6"
+                                    onchange="calcularIGDPP()">
+                            </div>
+                        </div>
+                        <div class="calc-result" id="resultIGDPP" style="display: none;">
+                            <div class="calc-result-value" id="igValor">-- semanas</div>
+                            <div class="calc-result-label">Idade Gestacional</div>
+                            <div style="margin-top: 12px; font-size: 16px; font-weight: 600;">
+                                DPP: <span id="dppValor" class="text-primary">--/--/----</span>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 14px;">
+                                Trimestre: <span id="trimestreValor">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IMC -->
+                    <div id="calc-imc" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Peso (kg)</label>
+                                <input type="number" id="calcPeso" placeholder="Ex: 65" step="0.1"
+                                    onchange="calcularIMC()">
+                            </div>
+                            <div class="form-group">
+                                <label>Altura (m)</label>
+                                <input type="number" id="calcAltura" placeholder="Ex: 1.65" step="0.01"
+                                    onchange="calcularIMC()">
+                            </div>
+                        </div>
+                        <div class="calc-result" id="resultIMC" style="display: none;">
+                            <div class="calc-result-value" id="imcValor">--</div>
+                            <div class="calc-result-label">IMC Atual</div>
+                            <div style="margin-top: 12px; font-size: 14px;" id="imcClassificacao"></div>
+                        </div>
+                    </div>
+
+                    <!-- INTERVALO -->
+                    <div id="calc-intervalo" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Data do Último Parto</label>
+                                <input type="date" id="calcDataParto" onchange="calcularIntervalo()">
+                            </div>
+                            <div class="form-group">
+                                <label>Data Atual</label>
+                                <input type="date" id="calcDataAtual" onchange="calcularIntervalo()">
+                            </div>
+                        </div>
+                        <div class="calc-result" id="resultIntervalo" style="display: none;">
+                            <div class="calc-result-value" id="intervaloValor">-- meses</div>
+                            <div class="calc-result-label">Intervalo Intergestacional</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: CARTÃO DIGITAL -->
+            <div id="page-cartao" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">💳 Cartão da Gestante</div>
+                        <button class="btn btn-secondary btn-sm" onclick="exportarCartaoPDF()">📄 PDF</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selecionar Gestante</label>
+                        <select id="selectGestanteCartao" onchange="carregarCartao()">
+                            <option value="">Selecione uma gestante...</option>
+                        </select>
+                    </div>
+
+                    <div id="cartaoPreview">
+                        <!-- Cartão será renderizado aqui -->
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <label>Personalizar Cores</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn btn-sm"
+                                style="background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: white;"
+                                onclick="mudarCorCartao('roxo')">Roxo</button>
+                            <button class="btn btn-sm"
+                                style="background: linear-gradient(135deg, #10B981, #059669); color: white;"
+                                onclick="mudarCorCartao('verde')">Verde</button>
+                            <button class="btn btn-sm"
+                                style="background: linear-gradient(135deg, #EC4899, #DB2777); color: white;"
+                                onclick="mudarCorCartao('rosa')">Rosa</button>
+                            <button class="btn btn-sm"
+                                style="background: linear-gradient(135deg, #3B82F6, #2563EB); color: white;"
+                                onclick="mudarCorCartao('azul')">Azul</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: RELATÓRIOS -->
+            <div id="page-relatorios" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">📊 Relatórios e Exportação</div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" onclick="exportarRelatorioGestantes()">
+                            <div class="dashboard-card-icon">📋</div>
+                            <div class="dashboard-card-title">Lista de Gestantes</div>
+                            <div class="dashboard-card-subtitle">Exportar PDF</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="exportarRelatorioExames()">
+                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-title">Exames Citopatológicos</div>
+                            <div class="dashboard-card-subtitle">Exportar PDF</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="exportarBackupCompleto()">
+                            <div class="dashboard-card-icon">💾</div>
+                            <div class="dashboard-card-title">Backup Completo</div>
+                            <div class="dashboard-card-subtitle">JSON (Todos os dados)</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="document.getElementById('importBackup').click()">
+                            <div class="dashboard-card-icon">📥</div>
+                            <div class="dashboard-card-title">Importar Backup</div>
+                            <div class="dashboard-card-subtitle">Restaurar dados</div>
+                        </div>
+                        <input type="file" id="importBackup" class="hidden" accept=".json"
+                            onchange="importarBackup(this)">
+                    </div>
+
+                    <div class="alert alert-warning mt-4">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <h4>Importante</h4>
+                            <p>Faça backup regularmente dos dados. Os dados ficam armazenados apenas neste dispositivo.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: ESTERILIZAÇÃO -->
+            <div id="page-esterilizacao" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">📋 Esterilização Cirúrgica</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selecionar Paciente para Preenchimento Automático</label>
+                        <select id="selectPacienteEsterilizacao">
+                            <option value="">Selecione uma paciente...</option>
+                        </select>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('laqueadura-eletiva')">
+                            <div class="dashboard-card-icon">👩</div>
+                            <div class="dashboard-card-title">Laqueadura Eletiva</div>
+                            <div class="dashboard-card-subtitle">Fora do parto</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('laqueadura-parto')">
+                            <div class="dashboard-card-icon">🤰</div>
+                            <div class="dashboard-card-title">Laqueadura no Parto</div>
+                            <div class="dashboard-card-subtitle">Pós-parto imediato</div>
+                        </div>
+
+                        <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('vasectomia')">
+                            <div class="dashboard-card-icon">👨</div>
+                            <div class="dashboard-card-title">Vasectomia</div>
+                            <div class="dashboard-card-subtitle">Esterilização masculina</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-4">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <h4>Importante</h4>
+                            <p>Todos os formulários de esterilização devem seguir a Lei nº 14.443/2022 com prazo mínimo
+                                de 60 dias entre manifestação e cirurgia.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-success mt-4">
+                        <div class="alert-icon">✅</div>
+                        <div class="alert-content">
+                            <h4>Integração Automática</h4>
+                            <p>Selecione uma paciente acima e os dados serão automaticamente preenchidos no formulário!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PÁGINA: CONFIGURAÇÕES -->
+            <div id="page-configuracoes" class="page">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">⚙️ Configurações</div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4 style="margin-bottom: 12px; font-size: 14px;">Notificações</h4>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Alertas de DPP</h4>
+                                <p>Receber notificações sobre parto próximo</p>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="toggleDPP" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Alertas de Alto Risco</h4>
+                                <p>Notificações para gestantes de alto risco</p>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="toggleRisco" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4 style="margin-bottom: 12px; font-size: 14px;">Dados</h4>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Exportar Backup</h4>
+                                <p>Salvar todos os dados em arquivo JSON</p>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="exportarBackupCompleto()">Exportar</button>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Importar Backup</h4>
+                                <p>Restaurar dados de arquivo JSON</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm"
+                                onclick="document.getElementById('importBackup').click()">Importar</button>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Limpar Dados</h4>
+                                <p>Apagar todos os dados do sistema</p>
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="limparTodosDados()">Limpar</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4 style="margin-bottom: 12px; font-size: 14px;">Sobre</h4>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Versão do Sistema</h4>
+                                <p>Pré-Natal ESF 26 - Carisma</p>
+                            </div>
+                            <span style="font-size: 12px; color: var(--text-secondary);">v3.2.0</span>
+                        </div>
+
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <h4>Unidade</h4>
+                                <p>ESF 26 - Carisma</p>
+                            </div>
+                            <span style="font-size: 12px; color: var(--text-secondary);">Dourados/MS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- NAVEGAÇÃO INFERIOR -->
+        <nav class="bottom-nav">
+            <a href="#" class="nav-item active" onclick="navigateTo('dashboard')">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-label">Início</span>
+            </a>
+            <a href="#" class="nav-item" onclick="navigateTo('gestantes')">
+                <span class="nav-icon">🤰</span>
+                <span class="nav-label">Gestantes</span>
+            </a>
+            <a href="#" class="nav-item" onclick="navigateTo('calculadoras')">
+                <span class="nav-icon">🧮</span>
+                <span class="nav-label">Calc</span>
+            </a>
+            <a href="#" class="nav-item" onclick="navigateTo('relatorios')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Relatórios</span>
+            </a>
+        </nav>
+
+        <!-- PAINEL DE NOTIFICAÇÕES -->
+        <div class="notification-panel" id="notificationPanel">
+            <div class="notification-header">
+                <h3>🔔 Notificações</h3>
+                <button class="icon-btn" onclick="toggleNotifications()"
+                    style="background: rgba(255,255,255,0.2);">✕</button>
+            </div>
+            <div class="notification-list" id="notificationList">
+                <!-- Notificações serão inseridas aqui -->
+            </div>
+        </div>
+
+        <!-- BOTÃO PWA INSTALL -->
+        <div class="pwa-install" id="pwaInstall" onclick="installPWA()">
+            <span>📲</span>
+            <span>Instalar Aplicativo</span>
+        </div>
+    </div>
+
+    <!-- MODAL GESTANTE -->
+    <div id="modalGestante" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🤰 Cadastrar Gestante</div>
+                <button class="modal-close" onclick="fecharModal('modalGestante')">×</button>
+            </div>
+            <form id="formGestante" onsubmit="salvarGestante(event)">
+                <input type="hidden" id="editIndexGestante" value="-1">
+                <div class="form-group">
+                    <label>Nome Completo *</label>
+                    <input type="text" id="gestanteNomeInput" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data de Nascimento *</label>
+                        <input type="date" id="gestanteDataNasc" required>
+                    </div>
+                    <div class="form-group">
+                        <label>CNS *</label>
+                        <input type="text" id="gestanteCNS" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>DUM *</label>
+                        <input type="date" id="gestanteDUM" required onchange="calcularDadosGestanteForm()">
+                    </div>
+                    <div class="form-group">
+                        <label>Classificação de Risco *</label>
+                        <select id="gestanteRisco" required>
+                            <option value="Baixo Risco">Baixo Risco</option>
+                            <option value="Risco Intermediário">Risco Intermediário</option>
+                            <option value="Alto Risco">Alto Risco</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome do Companheiro/Parceiro</label>
+                        <input type="text" id="gestanteCompanheiro" placeholder="Nome do parceiro">
+                    </div>
+                    <div class="form-group">
+                        <label>CNS do Companheiro</label>
+                        <input type="text" id="companheiroCNS" placeholder="CNS do parceiro">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Lembretes / Observações</label>
+                    <textarea id="gestanteLembretes" rows="3" placeholder="Alergias, comorbidades, etc."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL CONSULTA -->
+    <div id="modalConsulta" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📅 Registrar Consulta</div>
+                <button class="modal-close" onclick="fecharModal('modalConsulta')">×</button>
+            </div>
+            <form id="formConsulta" onsubmit="salvarConsulta(event)">
+                <input type="hidden" id="consultaGestanteCNS">
+                <div class="form-group">
+                    <label>Data da Consulta *</label>
+                    <input type="date" id="consultaData" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Peso (kg)</label>
+                        <input type="number" id="consultaPeso" step="0.1" placeholder="Ex: 65.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Pressão Arterial</label>
+                        <input type="text" id="consultaPA" placeholder="Ex: 120/80">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Altura Uterina (cm)</label>
+                        <input type="number" id="consultaAU" placeholder="Ex: 28">
+                    </div>
+                    <div class="form-group">
+                        <label>Batimentos Cardíacos Fetais</label>
+                        <input type="number" id="consultaBCF" placeholder="Ex: 140">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label>Observações / SOAP</label>
+                        <button type="button" class="btn btn-sm" id="btn-gerar-soap" onclick="gerarSOAPPrenatal()" style="background: linear-gradient(135deg, #8B5CF6, #EC4899); color: white; border:none; margin-bottom:5px">✨ Formatar SOAP (IA)</button>
+                    </div>
+                    <textarea id="consultaObservacoes" rows="6" placeholder="Relato livre da consulta... (A IA irá organizar como SOAP)"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar Consulta</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EXAME PRENATAL -->
+    <div id="modalExamePrenatal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🔬 Solicitar Exame</div>
+                <button class="modal-close" onclick="fecharModal('modalExamePrenatal')">×</button>
+            </div>
+            <form id="formExamePrenatal" onsubmit="salvarExamePrenatal(event)">
+                <input type="hidden" id="examePrenatalGestanteCNS">
+                <div class="form-group">
+                    <label>Data da Solicitação *</label>
+                    <input type="date" id="examePrenatalData" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Exame *</label>
+                    <select id="examePrenatalTipo" required>
+                        <option value="">Selecione...</option>
+                        <option value="Hemograma Completo">Hemograma Completo</option>
+                        <option value="Glicemia de Jejum">Glicemia de Jejum</option>
+                        <option value="TOXOPLASMOSE IgG/IgM">TOXOPLASMOSE IgG/IgM</option>
+                        <option value="RUBÉOLA IgG/IgM">RUBÉOLA IgG/IgM</option>
+                        <option value="SÍFILIS (VDRL)">SÍFILIS (VDRL)</option>
+                        <option value="HIV">HIV</option>
+                        <option value="HEPATITE B (HBsAg)">HEPATITE B (HBsAg)</option>
+                        <option value="HEPATITE C (Anti-HCV)">HEPATITE C (Anti-HCV)</option>
+                        <option value="UROCULTURA">UROCULTURA</option>
+                        <option value="ULTRASSOM OBSTÉTRICO">ULTRASSOM OBSTÉTRICO</option>
+                        <option value="OUTRO">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Resultado</label>
+                    <textarea id="examePrenatalResultado" rows="3" placeholder="Resultado do exame..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="examePrenatalStatus">
+                        <option value="Solicitado">Solicitado</option>
+                        <option value="Coletado">Coletado</option>
+                        <option value="Aguardando Resultado">Aguardando Resultado</option>
+                        <option value="Resultado Recebido">Resultado Recebido</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar Exame</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL VACINA -->
+    <div id="modalVacina" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">💉 Registrar Vacina</div>
+                <button class="modal-close" onclick="fecharModal('modalVacina')">×</button>
+            </div>
+            <form id="formVacina" onsubmit="salvarVacina(event)">
+                <input type="hidden" id="vacinaGestanteCNS">
+                <div class="form-group">
+                    <label>Data da Aplicação *</label>
+                    <input type="date" id="vacinaData" required>
+                </div>
+                <div class="form-group">
+                    <label>Vacina *</label>
+                    <select id="vacinaTipo" required>
+                        <option value="">Selecione...</option>
+                        <option value="dTpa (Difteria, Tétano e Coqueluche)">dTpa (Difteria, Tétano e Coqueluche)
+                        </option>
+                        <option value="Hepatite B">Hepatite B</option>
+                        <option value="Influenza (Gripe)">Influenza (Gripe)</option>
+                        <option value="COVID-19">COVID-19</option>
+                        <option value="Outra">Outra</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Lote</label>
+                    <input type="text" id="vacinaLote" placeholder="Ex: AB12345">
+                </div>
+                <div class="form-group">
+                    <label>Próxima Dose</label>
+                    <input type="date" id="vacinaProximaDose">
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar Vacina</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL LEMBRETE -->
+    <div id="modalLembrete" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📝 Adicionar Lembrete</div>
+                <button class="modal-close" onclick="fecharModal('modalLembrete')">×</button>
+            </div>
+            <form id="formLembrete" onsubmit="salvarLembrete(event)">
+                <input type="hidden" id="lembreteGestanteCNS">
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="lembreteTitulo" placeholder="Ex: Retornar com exames" required>
+                </div>
+                <div class="form-group">
+                    <label>Prioridade</label>
+                    <select id="lembretePrioridade">
+                        <option value="Normal">Normal</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="lembreteDescricao" rows="3" placeholder="Detalhes do lembrete..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Data Limite</label>
+                    <input type="date" id="lembreteDataLimite">
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar Lembrete</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DE IMPRESSÃO (ESCONDIDA) -->
+    <div id="printSheet" class="print-sheet">
+        <div id="pos-1" class="print-label"></div>
+        <div id="pos-2" class="print-label"></div>
+        <div id="pos-3" class="print-label"></div>
+        <div id="pos-4" class="print-label"></div>
+        <div id="pos-5" class="print-label"></div>
+        <div id="pos-6" class="print-label"></div>
+    </div>
+
+    <!-- MODAL ESCOLHER POSIÇÃO ETIQUETA -->
+    <div id="modalPosicaoEtiqueta" class="modal">
+        <div class="modal-content" style="max-width: 400px">
+            <div class="modal-header">
+                <div class="modal-title">📍 Posição na Folha</div>
+                <button class="modal-close" onclick="fecharModal('modalPosicaoEtiqueta')">×</button>
+            </div>
+            <div style="padding: 20px; text-align: center;">
+                <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 14px;">Em qual posição da folha
+                    A4 você deseja imprimir?</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(1)">1</button>
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(2)">2</button>
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(3)">3</button>
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(4)">4</button>
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(5)">5</button>
+                    <button class="btn btn-secondary" style="height: 60px; font-size: 18px;"
+                        onclick="prepararImpressaoEtiqueta(6)">6</button>
+                </div>
+                <div
+                    style="font-size: 11px; color: var(--text-secondary); border-top: 1px solid var(--border); padding-top: 12px">
+                    Layout: 2 colunas x 3 linhas
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // VARIÁVEIS GLOBAIS
+        let currentUserType = 'profissional';
+        let currentUser = null;
+        let gestantes = pnGet(KEYS.gestantes);
+        let exames = pnGet(KEYS.examesCito);
+        let consultas = pnGet(KEYS.consultas);
+        let examesPrenatal = pnGet(KEYS.examesPn);
+        let vacinas = pnGet(KEYS.vacinas);
+        let lembretes = pnGet(KEYS.lembretes);
+        let notificacoes = JSON.parse(localStorage.getItem('notificacoes')) || [];
+        let deferredPrompt = null;
+        let currentGestanteCNS = null;
+        let chartPesoInstance = null;
+        let chartPressaoInstance = null;
+
+        // INICIALIZAÇÃO
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('App Pré-Natal ESF 26 - Carisma v3.2.0 inicializado');
+
+            // Tentar restaurar sessão persistente
+            const savedSession = localStorage.getItem('carisma_prenatal_session');
+            if (savedSession) {
+                try {
+                    const session = JSON.parse(savedSession);
+                    currentUser = session.user;
+                    currentUserType = session.type;
+
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('appScreen').classList.remove('hidden');
+
+                    document.getElementById('userName').textContent = currentUser.name;
+                    document.getElementById('userRole').textContent = currentUser.role;
+                    document.getElementById('userAvatar').textContent = currentUser.avatar;
+
+                    if (currentUserType === 'profissional') {
+                        document.getElementById('dashboardProfissional').classList.remove('hidden');
+                        document.getElementById('dashboardGestante').classList.add('hidden');
+                        loadProfissionalData();
+                    } else {
+                        document.getElementById('dashboardProfissional').classList.add('hidden');
+                        document.getElementById('dashboardGestante').classList.remove('hidden');
+                        loadGestanteData();
+                    }
+                } catch (e) {
+                    console.error('Erro ao restaurar sessão:', e);
+                    localStorage.removeItem('carisma_prenatal_session');
+                }
+            }
+
+            checkPWAInstall();
+            verificarNotificacoes();
+        });
+
+        // PWA INSTALL
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwaInstall').style.display = 'flex';
+        });
+
+        function checkPWAInstall() {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                document.getElementById('pwaInstall').style.display = 'none';
+            }
+        }
+
+        async function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('pwaInstall').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        }
+
+        // LOGIN
+        function selectUserType(type) {
+            currentUserType = type;
+            document.querySelectorAll('.user-type').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const cns = document.getElementById('loginCNS').value;
+            const senha = document.getElementById('loginSenha').value;
+
+            if (senha !== '123456') {
+                alert('Senha incorreta! Use a senha padrão: 123456');
+                return;
+            }
+
+            if (currentUserType === 'profissional') {
+                currentUser = {
+                    name: 'Enf. Jackson Hardt',
+                    role: 'Enfermeiro - ESF 26 Carisma',
+                    type: 'profissional',
+                    avatar: 'JH',
+                    cns: cns
+                };
+            } else {
+                const gestante = gestantes.find(g => g.cns === cns);
+                if (!gestante) {
+                    alert('Gestante não encontrada. Verifique o CNS.');
+                    return;
+                }
+                currentUser = {
+                    name: gestante.nome,
+                    role: 'Gestante',
+                    type: 'gestante',
+                    avatar: gestante.nome.charAt(0),
+                    cns: cns,
+                    data: gestante
+                };
+            }
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role;
+            document.getElementById('userAvatar').textContent = currentUser.avatar;
+
+            if (currentUserType === 'profissional') {
+                document.getElementById('dashboardProfissional').classList.remove('hidden');
+                document.getElementById('dashboardGestante').classList.add('hidden');
+                loadProfissionalData();
+            } else {
+                document.getElementById('dashboardProfissional').classList.add('hidden');
+                document.getElementById('dashboardGestante').classList.remove('hidden');
+                loadGestanteData();
+            }
+
+            // Persistir sessão
+            localStorage.setItem('carisma_prenatal_session', JSON.stringify({
+                user: currentUser,
+                type: currentUserType,
+                timestamp: new Date().toISOString()
+            }));
+        }
+
+        function logout() {
+            if (confirm('Deseja sair do sistema?')) {
+                localStorage.removeItem('carisma_prenatal_session');
+                location.reload();
+            }
+        }
+
+        // NAVEGAÇÃO
+        function navigateTo(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const pageElement = document.getElementById('page-' + page);
+            if (pageElement) {
+                pageElement.classList.add('active');
+            }
+
+            const navIndex = ['dashboard', 'gestantes', 'calculadoras', 'relatorios'].indexOf(page);
+            if (navIndex >= 0) {
+                document.querySelectorAll('.nav-item')[navIndex]?.classList.add('active');
+            }
+
+            if (page === 'gestantes') {
+                carregarGestantesTabela();
+            } else if (page === 'exames') {
+                carregarExamesTabela();
+            } else if (page === 'cartao') {
+                carregarSelectGestantesCartao();
+            } else if (page === 'esterilizacao') {
+                carregarSelectPacienteEsterilizacao();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // PRONTUÁRIO INDIVIDUAL
+        function abrirProntuario(cns) {
+            currentGestanteCNS = cns;
+            const gestante = gestantes.find(g => g.cns === cns);
+
+            if (!gestante) {
+                alert('Gestante não encontrada!');
+                return;
+            }
+
+            // Renderizar perfil
+            document.getElementById('patientProfile').innerHTML = `
+                <div class="patient-profile-header">
+                    <div class="patient-profile-avatar">${gestante.nome.charAt(0)}</div>
+                    <div class="patient-profile-info">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                            <div>
+                                <h2>${gestante.nome}</h2>
+                                <p>CNS: ${gestante.cns} | Idade: ${calcularIdade(gestante.dataNascimento)} anos</p>
+                                <p>Companheiro: ${gestante.companheiro || 'Não informado'}</p>
+                            </div>
+                            <button class="btn btn-sm" onclick="enviarAppWhatsApp('${gestante.cns}')" style="background:#25D366; color:#fff; border:none; display:flex; align-items:center; gap:6px">
+                                <span>📲 Enviar App</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="patient-stats">
+                    <div class="patient-stat">
+                        <div class="patient-stat-value">${gestante.idadeGestacional || '--'}</div>
+                        <div class="patient-stat-label">Idade Gestacional</div>
+                    </div>
+                    <div class="patient-stat">
+                        <div class="patient-stat-value">${gestante.dpp || '--'}</div>
+                        <div class="patient-stat-label">DPP</div>
+                    </div>
+                    <div class="patient-stat">
+                        <div class="patient-stat-value">${gestante.trimestre || '--'}</div>
+                        <div class="patient-stat-label">Trimestre</div>
+                    </div>
+                    <div class="patient-stat">
+                        <div class="patient-stat-value">${gestante.classificacaoRisco || '--'}</div>
+                        <div class="patient-stat-label">Risco</div>
+                    </div>
+                </div>
+            `;
+
+            // Carregar dados
+            carregarConsultas(cns);
+            carregarExamesPrenatal(cns);
+            carregarVacinas(cns);
+            carregarLembretes(cns);
+            carregarGraficos(cns);
+
+            // Navegar para página de prontuário
+            navigateTo('prontuario');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.currentTarget.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // CONSULTAS
+        function abrirModalConsulta() {
+            if (!currentGestanteCNS) {
+                alert('Selecione uma gestante primeiro!');
+                return;
+            }
+            document.getElementById('consultaGestanteCNS').value = currentGestanteCNS;
+            document.getElementById('formConsulta').reset();
+            document.getElementById('consultaData').valueAsDate = new Date();
+            document.getElementById('modalConsulta').classList.add('active');
+        }
+
+        function salvarConsulta(e) {
+            e.preventDefault();
+
+            const consulta = {
+                cns: document.getElementById('consultaGestanteCNS').value,
+                data: document.getElementById('consultaData').value,
+                peso: document.getElementById('consultaPeso').value,
+                pa: document.getElementById('consultaPA').value,
+                au: document.getElementById('consultaAU').value,
+                bcf: document.getElementById('consultaBCF').value,
+                observacoes: document.getElementById('consultaObservacoes').value,
+                dataCadastro: new Date().toISOString()
+            };
+
+            consultas.push(consulta);
+            pnSet(KEYS.consultas, consultas);
+
+            fecharModal('modalConsulta');
+            carregarConsultas(currentGestanteCNS);
+            carregarGraficos(currentGestanteCNS);
+            alert('Consulta registrada com sucesso!');
+        }
+
+        function carregarConsultas(cns) {
+            consultas = pnGet(KEYS.consultas);
+            const consultasGestante = consultas.filter(c => c.cns === cns).sort((a, b) => new Date(b.data) - new Date(a.data));
+            const timeline = document.getElementById('timelineConsultas');
+
+            if (consultasGestante.length === 0) {
+                timeline.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Nenhuma consulta registrada</div>';
+                return;
+            }
+
+            timeline.innerHTML = consultasGestante.map(c => `
+                <div class="timeline-item">
+                    <div class="timeline-date">${new Date(c.data + 'T12:00').toLocaleDateString('pt-BR')}</div>
+                    <div class="timeline-title" style="display:flex; justify-content:space-between; align-items:center">
+                        <span>Consulta de Pré-Natal</span>
+                        <button class="btn btn-sm btn-secondary" onclick="abrirModalPosicaoEtiqueta('${cns}', '${c.data}')" style="width:auto; padding:4px 8px; font-size:10px; border-radius:6px; border:1px solid #ddd">🖨️ Etiqueta</button>
+                    </div>
+                    <div class="timeline-content">
+                        ${c.peso ? `<strong>Peso:</strong> ${c.peso}kg | ` : ''}
+                        ${c.pa ? `<strong>PA:</strong> ${c.pa} | ` : ''}
+                        ${c.au ? `<strong>AU:</strong> ${c.au}cm | ` : ''}
+                        ${c.bcf ? `<strong>BCF:</strong> ${c.bcf}bpm` : ''}
+                        ${c.observacoes ? `<br><br><em>${c.observacoes}</em>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // EXAMES PRENATAL
+        function abrirModalExamePrenatal() {
+            if (!currentGestanteCNS) {
+                alert('Selecione uma gestante primeiro!');
+                return;
+            }
+            document.getElementById('examePrenatalGestanteCNS').value = currentGestanteCNS;
+            document.getElementById('formExamePrenatal').reset();
+            document.getElementById('examePrenatalData').valueAsDate = new Date();
+            document.getElementById('modalExamePrenatal').classList.add('active');
+        }
+
+        function salvarExamePrenatal(e) {
+            e.preventDefault();
+
+            const exame = {
+                cns: document.getElementById('examePrenatalGestanteCNS').value,
+                data: document.getElementById('examePrenatalData').value,
+                tipo: document.getElementById('examePrenatalTipo').value,
+                resultado: document.getElementById('examePrenatalResultado').value,
+                status: document.getElementById('examePrenatalStatus').value,
+                dataCadastro: new Date().toISOString()
+            };
+
+            examesPrenatal.push(exame);
+            pnSet(KEYS.examesPn, examesPrenatal);
+
+            fecharModal('modalExamePrenatal');
+            carregarExamesPrenatal(currentGestanteCNS);
+            alert('Exame registrado com sucesso!');
+        }
+
+        function carregarExamesPrenatal(cns) {
+            examesPrenatal = pnGet(KEYS.examesPn);
+            const examesGestante = examesPrenatal.filter(e => e.cns === cns).sort((a, b) => new Date(b.data) - new Date(a.data));
+            const tbody = document.getElementById('tbodyExamesPrenatal');
+
+            if (examesGestante.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Nenhum exame registrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = examesGestante.map(e => `
+                <tr>
+                    <td>${new Date(e.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${e.tipo}</td>
+                    <td>${e.resultado || 'Aguardando...'}</td>
+                    <td>${e.status}</td>
+                </tr>
+            `).join('');
+        }
+
+        // VACINAS
+        function abrirModalVacina() {
+            if (!currentGestanteCNS) {
+                alert('Selecione uma gestante primeiro!');
+                return;
+            }
+            document.getElementById('vacinaGestanteCNS').value = currentGestanteCNS;
+            document.getElementById('formVacina').reset();
+            document.getElementById('vacinaData').valueAsDate = new Date();
+            document.getElementById('modalVacina').classList.add('active');
+        }
+
+        function salvarVacina(e) {
+            e.preventDefault();
+
+            const vacina = {
+                cns: document.getElementById('vacinaGestanteCNS').value,
+                data: document.getElementById('vacinaData').value,
+                tipo: document.getElementById('vacinaTipo').value,
+                lote: document.getElementById('vacinaLote').value,
+                proximaDose: document.getElementById('vacinaProximaDose').value,
+                dataCadastro: new Date().toISOString()
+            };
+
+            vacinas.push(vacina);
+            pnSet(KEYS.vacinas, vacinas);
+
+            fecharModal('modalVacina');
+            carregarVacinas(currentGestanteCNS);
+            alert('Vacina registrada com sucesso!');
+        }
+
+        function carregarVacinas(cns) {
+            vacinas = pnGet(KEYS.vacinas);
+            const vacinasGestante = vacinas.filter(v => v.cns === cns).sort((a, b) => new Date(b.data) - new Date(a.data));
+            const tbody = document.getElementById('tbodyVacinas');
+
+            if (vacinasGestante.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Nenhuma vacina registrada</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = vacinasGestante.map(v => `
+                <tr>
+                    <td>${new Date(v.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${v.tipo}</td>
+                    <td>${v.lote || '-'}</td>
+                    <td>${v.proximaDose ? new Date(v.proximaDose).toLocaleDateString('pt-BR') : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // LEMBRETES
+        function abrirModalLembrete() {
+            if (!currentGestanteCNS) {
+                alert('Selecione uma gestante primeiro!');
+                return;
+            }
+            document.getElementById('lembreteGestanteCNS').value = currentGestanteCNS;
+            document.getElementById('formLembrete').reset();
+            document.getElementById('modalLembrete').classList.add('active');
+        }
+
+        function salvarLembrete(e) {
+            e.preventDefault();
+
+            const lembrete = {
+                cns: document.getElementById('lembreteGestanteCNS').value,
+                titulo: document.getElementById('lembreteTitulo').value,
+                prioridade: document.getElementById('lembretePrioridade').value,
+                descricao: document.getElementById('lembreteDescricao').value,
+                dataLimite: document.getElementById('lembreteDataLimite').value,
+                concluido: false,
+                dataCadastro: new Date().toISOString()
+            };
+
+            lembretes.push(lembrete);
+            pnSet(KEYS.lembretes, lembretes);
+
+            fecharModal('modalLembrete');
+            carregarLembretes(currentGestanteCNS);
+            alert('Lembrete registrado com sucesso!');
+        }
+
+        function carregarLembretes(cns) {
+            lembretes = pnGet(KEYS.lembretes);
+            const lembretesGestante = lembretes.filter(l => l.cns === cns).sort((a, b) => new Date(b.dataCadastro) - new Date(a.dataCadastro));
+            const container = document.getElementById('listaLembretes');
+
+            if (lembretesGestante.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Nenhum lembrete registrado</div>';
+                return;
+            }
+
+            container.innerHTML = lembretesGestante.map(l => `
+                <div class="list-item" style="border-left: 4px solid ${l.prioridade === 'Urgente' ? 'var(--danger)' : l.prioridade === 'Alta' ? 'var(--warning)' : 'var(--primary)'}">
+                    <div class="list-content">
+                        <div class="list-title">${l.titulo} ${l.prioridade === 'Urgente' ? '🔴' : l.prioridade === 'Alta' ? '🟡' : ''}</div>
+                        <div class="list-subtitle">${l.descricao} ${l.dataLimite ? '| Vence: ' + new Date(l.dataLimite).toLocaleDateString('pt-BR') : ''}</div>
+                    </div>
+                    <button class="btn btn-sm ${l.concluido ? 'btn-success' : 'btn-secondary'}" onclick="toggleLembrete('${l.cns}', '${l.dataCadastro}')" style="width: auto;">
+                        ${l.concluido ? '✅' : '⭕'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleLembrete(cns, dataCadastro) {
+            const lembrete = lembretes.find(l => l.cns === cns && l.dataCadastro === dataCadastro);
+            if (lembrete) {
+                lembrete.concluido = !lembrete.concluido;
+                pnSet(KEYS.lembretes, lembretes);
+                carregarLembretes(cns);
+            }
+        }
+
+        // GRÁFICOS
+        function carregarGraficos(cns) {
+            const consultasGestante = consultas.filter(c => c.cns === cns).sort((a, b) => new Date(a.data) - new Date(b.data));
+
+            // Gráfico de Peso
+            const ctxPeso = document.getElementById('chartPeso');
+            if (ctxPeso) {
+                if (chartPesoInstance) {
+                    chartPesoInstance.destroy();
+                }
+
+                chartPesoInstance = new Chart(ctxPeso, {
+                    type: 'line',
+                    data: {
+                        labels: consultasGestante.filter(c => c.peso).map(c => new Date(c.data).toLocaleDateString('pt-BR')),
+                        datasets: [{
+                            label: 'Peso (kg)',
+                            data: consultasGestante.filter(c => c.peso).map(c => parseFloat(c.peso)),
+                            borderColor: '#8B5CF6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico de Pressão
+            const ctxPressao = document.getElementById('chartPressao');
+            if (ctxPressao) {
+                if (chartPressaoInstance) {
+                    chartPressaoInstance.destroy();
+                }
+
+                const sistolicas = [];
+                const diastolicas = [];
+                const labels = [];
+
+                consultasGestante.forEach(c => {
+                    if (c.pa) {
+                        const pa = c.pa.split('/');
+                        if (pa.length === 2) {
+                            sistolicas.push(parseInt(pa[0]));
+                            diastolicas.push(parseInt(pa[1]));
+                            labels.push(new Date(c.data).toLocaleDateString('pt-BR'));
+                        }
+                    }
+                });
+
+                chartPressaoInstance = new Chart(ctxPressao, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Sistólica',
+                                data: sistolicas,
+                                borderColor: '#EF4444',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Diastólica',
+                                data: diastolicas,
+                                borderColor: '#10B981',
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 50,
+                                max: 180
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // GESTANTES
+        function abrirModalGestante() {
+            document.getElementById('formGestante').reset();
+            document.getElementById('editIndexGestante').value = '-1';
+            document.getElementById('modalGestante').classList.add('active');
+        }
+
+        function salvarGestante(e) {
+            e.preventDefault();
+
+            const editIndex = parseInt(document.getElementById('editIndexGestante').value);
+
+            const dum = document.getElementById('gestanteDUM').value;
+            const dpp = new Date(dum);
+            dpp.setDate(dpp.getDate() + 280);
+
+            const hoje = new Date();
+            const diffDays = Math.ceil((hoje - new Date(dum)) / (1000 * 60 * 60 * 24));
+            const semanas = Math.floor(diffDays / 7);
+            const dias = diffDays % 7;
+
+            let trimestre = '';
+            if (semanas < 14) trimestre = '1º Trimestre';
+            else if (semanas < 28) trimestre = '2º Trimestre';
+            else trimestre = '3º Trimestre';
+
+            const registro = {
+                nome: document.getElementById('gestanteNomeInput').value.toUpperCase(),
+                dataNascimento: document.getElementById('gestanteDataNasc').value,
+                cns: document.getElementById('gestanteCNS').value,
+                dum: dum,
+                dpp: dpp.toLocaleDateString('pt-BR'),
+                idadeGestacional: `${semanas} semanas e ${dias} dias`,
+                trimestre: trimestre,
+                classificacaoRisco: document.getElementById('gestanteRisco').value,
+                situacao: 'Em Acompanhamento',
+                lembretes: document.getElementById('gestanteLembretes').value,
+                companheiro: document.getElementById('gestanteCompanheiro').value.toUpperCase() || '',
+                companheiroCNS: document.getElementById('companheiroCNS').value || '',
+                dataCadastro: new Date().toISOString()
+            };
+
+            if (editIndex >= 0) {
+                gestantes[editIndex] = { ...gestantes[editIndex], ...registro };
+                alert('Gestante atualizada!');
+            } else {
+                gestantes.push(registro);
+                alert('Gestante cadastrada!');
+            }
+
+            pnSet(KEYS.gestantes, gestantes);
+            fecharModal('modalGestante');
+            carregarGestantesTabela();
+            loadProfissionalData();
+        }
+
+        function carregarGestantesTabela(lista = null) {
+            gestantes = pnGet(KEYS.gestantes);
+            const dadosExibir = lista || gestantes;
+            const tbody = document.getElementById('tbodyGestantes');
+            tbody.innerHTML = dadosExibir.map((g, i) => {
+                const globalIndex = gestantes.indexOf(g); // Mantém o índice real para exclusão
+                return `
+                <tr>
+                    <td>${g.nome}</td>
+                    <td>${g.cns}</td>
+                    <td>${g.idadeGestacional || '-'}</td>
+                    <td>${g.dpp || '-'}</td>
+                    <td>${g.classificacaoRisco}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="abrirProntuario('${g.cns}')">📋 Prontuário</button>
+                        <button class="btn btn-sm btn-danger" onclick="excluirGestante(${globalIndex})">🗑️</button>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        function buscarGestantes() {
+            const search = document.getElementById('searchGestante').value.toLowerCase();
+            const filtrados = gestantes.filter(g =>
+                (g.nome && g.nome.toLowerCase().includes(search)) ||
+                (g.cns && g.cns.includes(search)) ||
+                (g.cpf && g.cpf.includes(search))
+            );
+
+            const tbody = document.getElementById('tbodyGestantes');
+            tbody.innerHTML = filtrados.map((g, i) => `
+                <tr>
+                    <td>${g.nome}</td>
+                    <td>${g.cns}</td>
+                    <td>${g.idadeGestacional || '-'}</td>
+                    <td>${g.dpp || '-'}</td>
+                    <td>${g.classificacaoRisco}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="abrirProntuario('${g.cns}')">📋 Prontuário</button>
+                        <button class="btn btn-sm btn-danger" onclick="excluirGestante(${gestantes.indexOf(g)})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function excluirGestante(index) {
+            if (confirm('Excluir esta gestante?')) {
+                gestantes.splice(index, 1);
+                pnSet(KEYS.gestantes, gestantes);
+                carregarGestantesTabela();
+                loadProfissionalData();
+            }
+        }
+
+        // UTILITÁRIOS
+        function calcularIdade(dataNascimento) {
+            if (!dataNascimento) return '--';
+            const hoje = new Date();
+            const nasc = new Date(dataNascimento);
+            let idade = hoje.getFullYear() - nasc.getFullYear();
+            const mes = hoje.getMonth() - nasc.getMonth();
+            if (mes < 0 || (mes === 0 && hoje.getDate() < nasc.getDate())) {
+                idade--;
+            }
+            return idade;
+        }
+
+        function fecharModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // IMPRESSÃO DE ETIQUETAS
+        let consultaParaImprimir = null;
+        function abrirModalPosicaoEtiqueta(cns, consultaData) {
+            const gestante = gestantes.find(g => g.cns === cns);
+            const consulta = consultas.find(c => c.cns === (cns || currentGestanteCNS) && c.data === consultaData);
+            if (!gestante || !consulta) {
+                alert('Dados não encontrados para impressão.');
+                return;
+            }
+            consultaParaImprimir = { gestante, consulta };
+            document.getElementById('modalPosicaoEtiqueta').classList.add('active');
+        }
+
+        function prepararImpressaoEtiqueta(posicao) {
+            if (!consultaParaImprimir) return;
+
+            const { gestante, consulta } = consultaParaImprimir;
+            const igAtConsultation = calcIG(gestante.dum, consulta.data).ig;
+            const appUrl = gerarLinkGestante(gestante.cns);
+
+            // Limpar posições anteriores
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`pos-${i}`).innerHTML = '';
+            }
+
+            const content = `
+                <div class="print-label-content">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 5px">
+                        <div>
+                            <h2 style="margin:0; font-size:12px; color: #4C1D95">🤰 ATENDIMENTO PRÉ-NATAL</h2>
+                            <p style="margin:0; font-size:8px; color: #6B7280; font-weight:600">ESF 26 - CARISMA | Dourados-MS</p>
+                        </div>
+                        <div id="qrcode-print" style="width:45px; height:45px"></div>
+                    </div>
+                    <div style="border-top: 1px solid #eee; padding-top: 5px; font-size:11px; line-height: 1.3">
+                        <div style="font-size:12px; font-weight:700; margin-bottom:2px">${gestante.nome}</div>
+                        <strong>Data:</strong> ${new Date(consulta.data + 'T12:00').toLocaleDateString('pt-BR')} | <strong>IG:</strong> ${igAtConsultation}<br>
+                        <strong>Peso:</strong> ${consulta.peso || '--'}kg | <strong>PA:</strong> ${consulta.pa || '--'}<br>
+                        <strong>AU:</strong> ${consulta.au || '--'}cm | <strong>BCF:</strong> ${consulta.bcf || '--'}bpm
+                    </div>
+                    <div style="margin-top:5px; font-size:10px; font-style: italic; color: #374151; flex: 1; border-top: 1px dashed #f0f0f0; padding-top:4px">
+                        ${consulta.observacoes ? '<strong>Obs:</strong> ' + consulta.observacoes : 'Sem observações registradas.'}
+                    </div>
+                    <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:flex-end; font-size:7px; color: #9CA3AF">
+                        <div>SISTEMA CARISMA MANAGER</div>
+                        <div>${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                </div>
+            `;
+
+            const targetPos = document.getElementById(`pos-${posicao}`);
+            targetPos.innerHTML = content;
+
+            fecharModal('modalPosicaoEtiqueta');
+
+            // Gerar QR Code e imprimir
+            setTimeout(() => {
+                new QRCode(document.getElementById("qrcode-print"), {
+                    text: appUrl,
+                    width: 45,
+                    height: 45,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                window.print();
+                consultaParaImprimir = null;
+            }, 200);
+        }
+    </script>
+
+    <!-- MODAL EXAME CITOPATOLÓGICO -->
+    <div id="modalExame" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">🔬 Registrar Exame Citopatológico</div>
+                <button class="modal-close" onclick="fecharModal('modalExame')">×</button>
+            </div>
+            <form id="formExame" onsubmit="salvarExame(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data da Coleta *</label>
+                        <input type="date" id="exameData" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Situação *</label>
+                        <select id="exameSituacao" required>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Resultado Normal">Resultado Normal</option>
+                            <option value="Resultado Alterado">Resultado Alterado</option>
+                            <option value="Insatisfatório">Material Insatisfatório</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome da Paciente *</label>
+                        <input type="text" id="exameNomePac" required placeholder="Nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label>CNS</label>
+                        <input type="text" id="exameCNS" placeholder="CNS">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Resultado / Observações</label>
+                    <textarea id="exameResultado" rows="3" placeholder="Resultado do exame..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Salvar Exame</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Patch: injetar filtros ao navegar para a lista de gestantes
+        const _navOriginal = navigateTo;
+        navigateTo = function (page) {
+            _navOriginal(page);
+            if (page === 'gestantes') injetarFiltrosGestantes();
+        };
+    </script>
+    <script>
+        async function gerarSOAPPrenatal() {
+            if (!window.AIManager || !window.AIManager.apiKey) {
+                alert("O Assistente IA não está ativado. Insira sua chave (botão ✨).");
+                return;
+            }
+            const txtObs = document.getElementById('consultaObservacoes').value.trim();
+            if (!txtObs) {
+                alert("Por favor, digite algumas anotações na Observação primeiro para a IA organizar.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-gerar-soap');
+            const originalText = btn ? btn.innerHTML : '✨ Formatar SOAP (IA)';
+            if(btn) {
+                btn.innerHTML = 'Processando... ✨';
+                btn.disabled = true;
+            }
+
+            const schema = `Você é enfermeiro(a) do ESF preenchendo prontuário de pré-natal na atenção primária (SUS/e-SUS APS).
+REGRAS OBRIGATÓRIAS DO MÉTODO SOAP:
+- S = "o paciente disse" (subjetivo)
+- O = "eu vi/medi/confirmei" (objetivo)
+- A = "o que o paciente tem" (interpretação)
+- P = "o que será feito" (ação)
+
+NUNCA FAÇA:
+- Misturar S com O
+- Colocar diagnóstico no S ou O
+- Colocar conduta no A
+
+Modelo por trimestre:
+
+1º TRIMESTRE (até 13s):
+S: Gestante refere [sintomas]. Nega sangramento/dor/perda líquido.
+O: BEG. Sem sinais de intercorrências.
+A: Gestação X sem, evolução adequada/inadequada.
+P: Iniciado acompanhamento PN. Orientações (álcool/fumo/alimentação/ácido fólico). Vaccine Influenza (UBS). Sinais de alerta. Retorno 30 dias.
+
+2º TRIMESTRE (14-27s):
+S: Gestante refere [sintomas]. Movimentos fetais presentes. Nega intercorrências.
+O: BEG. BCF audível X bpm. Sinais compatíveis com IG.
+A: Gestação X sem, evolução adequada/inadequada.
+P: Manter PN. Orientações (alimentação/ganho peso/atividade física). Vaccine dTpa (20-36 sem). Sinais de alerta. Retorno 30 dias.
+
+3º TRIMESTRE (28s-termo):
+S: Movimentos fetais ativos. Nega TP. Refere [desconfortos].
+O: BEG. BCF presente. Sem sinais de TP.
+A: Gestação X sem, evolução adequada/inadequada.
+P: Manter PN. Orientações TP/quando procurar urgência. Sinais de alerta. Planejamento parto. Retorno.
+
+Retorne apenas JSON válido: {"soap": "texto completo"}`;
+
+            try {
+                const result = await window.AIManager.predictStructured(txtObs, schema);
+                if (result && result.soap) {
+                    document.getElementById('consultaObservacoes').value = result.soap;
+                } else {
+                    throw new Error("O sistema de IA não conseguiu processar ou o modelo falhou (ex: chave inválida ou erro do Gemini).");
+                }
+            } catch (e) {
+                alert("Aviso IA: " + e.message);
+                console.error("Erro gerarSOAPPrenatal:", e);
+            } finally {
+                if(btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        }
+    </script>
+    <script src="assets/js/ai_agent.js?v=5.3"></script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Perfil — Carisma Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --surface: #F9FAFB;
+            --text: #1F2937;
+            --text2: #6B7280;
+            --border: #E5E7EB;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            padding: 30px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .footer {
+            padding: 20px 30px;
+            background: #F3F4F6;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 15px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #E5E7EB;
+            color: var(--text);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10B981;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            transform: translateY(100px);
+            transition: 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1 id="p-nome-title">Carregando...</h1>
+            <p>Edição completa de dados cadastrais e clínicos • ESF 26</p>
+        </header>
+        <div class="content">
+            <form id="form-perfil">
+                <div class="section-title">Dados Pessoais</div>
+                <div class="grid">
+                    <div class="form-group"><label>Nome Completo</label><input type="text" id="p-nome" required></div>
+                    <div class="form-group"><label>CNS</label><input type="text" id="p-cns"></div>
+                    <div class="form-group"><label>CPF</label><input type="text" id="p-cpf"></div>
+                    <div class="form-group"><label>Data de Nascimento</label><input type="date" id="p-nasc"></div>
+                    <div class="form-group"><label>Sexo</label>
+                        <select id="p-sexo">
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:none">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                            <input type="checkbox" id="p-gestante" style="width:18px;height:18px"> Marcar como Gestante
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section-title">Endereço e Contato</div>
+                <div class="grid">
+                    <div class="form-group"><label>Celular</label><input type="text" id="p-tel-cel"></div>
+                    <div class="form-group"><label>Rua</label><input type="text" id="p-rua"></div>
+                    <div class="form-group"><label>Número</label><input type="text" id="p-num"></div>
+                    <div class="form-group"><label>Microárea</label><input type="text" id="p-micro"></div>
+                </div>
+
+                <div class="section-title">Acompanhamento Clínico</div>
+                <div class="grid" style="grid-template-columns: 1fr;">
+                    <div class="form-group"><label>Medicamentos</label><textarea id="p-meds" rows="3"></textarea></div>
+                    <div class="form-group"><label>Condições de Saúde</label><textarea id="p-cond" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-top:10px">
+                        <label>Rótulos Disponíveis</label>
+                        <div
+                            style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;background:#F9FAFB;border-radius:8px;border:1.5px solid var(--border)">
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Gestante"> 🤰 Gestante</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Diabético"> 🍬 Diabético</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Hipertenso"> 🩺 Hipertenso</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Tabagista"> 🚬 Tabagista</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Acamado"> 🛏️ Acamado</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Saúde Mental"> 🧠 Saúde Mental</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Puericultura"> 👶 Puericultura</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Hanseníase"> 🩹 Hanseníase</label>
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer"><input
+                                    type="checkbox" class="p-tag-check" value="Tuberculose"> 💊 Tuberculose</label>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                        <div class="form-group">
+                            <label>Outras Etiquetas (separadas por vírgula)</label>
+                            <input type="text" id="p-tags-extras" placeholder="Ex: Alérgico a AAS, Cardiopata">
+                        </div>
+                        <div class="form-group">
+                            <label>Nº de Filhos Vivos</label>
+                            <input type="number" id="p-filhos" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO DE ESTERILIZAÇÃO -->
+                    <div id="section-esterilizacao"
+                        style="display:none; margin-top: 20px; padding: 15px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                            <span style="font-size: 20px;">✂️</span>
+                            <h3 style="margin: 0; font-size: 16px; color: #9A3412;">Esterilização Cirúrgica</h3>
+                        </div>
+                        <p id="esterilizacao-msg" style="font-size: 13px; color: #C2410C; margin-bottom: 15px;">
+                            Aguardando dados...</p>
+                        <div id="esterilizacao-actions" style="display: flex; gap: 10px;">
+                            <!-- Botões serão inseridos via JS -->
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top:20px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <label>Anotações e Lembretes</label>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="abrirNovoRegistroSOAP()">📝
+                                Registrar Atendimento SOAP</button>
+                        </div>
+                        <textarea id="p-anot" rows="5"></textarea>
+                    </div>
+
+                    <div id="section-historico-soap" style="margin-top:30px">
+                        <div class="section-title">Histórico de Atendimentos (SOAP)</div>
+                        <div id="historico-soap-lista" style="display:grid;gap:12px">
+                            <!-- Histórico será inserido via JS -->
+                            <div
+                                style="text-align:center;padding:20px;color:var(--text2);background:var(--surface);border-radius:8px;border:1px dashed var(--border)">
+                                Nenhum atendimento registrado ainda.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <button type="button" class="btn btn-secondary" onclick="window.close()">❌ Fechar sem
+                        salvar</button>
+                    <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">✅ Alterações salvas com sucesso!</div>
+
+    <script>
+        const KEY = 'carisma_pessoas';
+        const urlParams = new URLSearchParams(window.location.search);
+        const pId = urlParams.get('id');
+
+        function load() {
+            if (!pId) return alert('Nenhum paciente selecionado');
+            const ps = JSON.parse(localStorage.getItem(KEY) || '[]');
+            const p = ps.find(x => x.id === pId);
+            if (!p) return alert('Paciente não encontrado');
+
+            document.getElementById('p-nome-title').textContent = p.nome;
+            document.getElementById('p-nome').value = p.nome || '';
+            document.getElementById('p-cns').value = p.cns || '';
+            document.getElementById('p-cpf').value = p.cpf || '';
+            document.getElementById('p-nasc').value = p.nasc || '';
+            document.getElementById('p-sexo').value = p.sexo || 'Masculino';
+            document.getElementById('p-tel-cel').value = p.telCelular || '';
+            document.getElementById('p-rua').value = p.rua || '';
+            document.getElementById('p-num').value = p.numero || '';
+            document.getElementById('p-micro').value = p.microArea || '';
+            document.getElementById('p-meds').value = p.medicamentos || '';
+            document.getElementById('p-cond').value = p.condicoesClinicas || '';
+            document.getElementById('p-anot').value = p.anotacoes || '';
+            document.getElementById('p-filhos').value = p.numFilhos || 0;
+
+            // Carregar Tags
+            const tags = p.tags || [];
+            document.querySelectorAll('.p-tag-check').forEach(ck => {
+                ck.checked = tags.includes(ck.value);
+            });
+            const mainTags = ["Gestante", "Diabético", "Hipertenso", "Tabagista", "Acamado", "Saúde Mental", "Puericultura", "Hanseníase", "Tuberculose"];
+            const extras = tags.filter(t => !mainTags.includes(t));
+            document.getElementById('p-tags-extras').value = extras.join(', ');
+
+            renderEsterilizacaoSection(p);
+        }
+
+        document.getElementById('form-perfil').onsubmit = e => {
+            e.preventDefault();
+            const ps = JSON.parse(localStorage.getItem(KEY) || '[]');
+            const idx = ps.findIndex(x => x.id === pId);
+            if (idx === -1) return;
+
+            const g = id => document.getElementById(id).value;
+            ps[idx] = {
+                ...ps[idx],
+                nome: g('p-nome'),
+                cns: g('p-cns'),
+                cpf: g('p-cpf'),
+                nasc: g('p-nasc'),
+                sexo: g('p-sexo'),
+                telCelular: g('p-tel-cel'),
+                rua: g('p-rua'),
+                numero: g('p-num'),
+                microArea: g('p-micro'),
+                medicamentos: g('p-meds'),
+                condicoesClinicas: g('p-cond'),
+                numFilhos: parseInt(g('p-filhos')) || 0,
+                anotacoes: g('p-anot'),
+                dataAtualizacao: new Date().toISOString()
+            };
+
+            // Atualizar Tags
+            let tags = [];
+            document.querySelectorAll('.p-tag-check:checked').forEach(ck => tags.push(ck.value));
+            const extras = document.getElementById('p-tags-extras').value.split(',').map(t => t.trim()).filter(Boolean);
+            tags = Array.from(new Set([...tags, ...extras]));
+
+            ps[idx].tags = tags;
+            const isGestante = tags.includes('Gestante');
+
+            // Se for marcada como gestante e não existir no módulo pré-natal, adicionar básica
+            if (isGestante) {
+                const gs = JSON.parse(localStorage.getItem('carisma_prenatal_gestantes') || '[]');
+                if (!gs.find(x => x.cns === ps[idx].cns)) {
+                    gs.push({
+                        id: ps[idx].id,
+                        nome: ps[idx].nome.toUpperCase(),
+                        dataNascimento: ps[idx].nasc,
+                        cns: ps[idx].cns,
+                        cpf: ps[idx].cpf || '',
+                        telCelular: ps[idx].telCelular || '',
+                        dum: '',
+                        dpp: '--',
+                        idadeGestacional: '--',
+                        trimestre: '--',
+                        classificacaoRisco: 'Risco Intermediário',
+                        situacao: 'Em Acompanhamento',
+                        lembretes: ps[idx].anotacoes || '',
+                        dataCadastro: new Date().toISOString()
+                    });
+                    localStorage.setItem('carisma_prenatal_gestantes', JSON.stringify(gs));
+                }
+            }
+
+            localStorage.setItem(KEY, JSON.stringify(ps));
+            showToast('✅ Alterações salvas com sucesso!');
+            renderEsterilizacaoSection(ps[idx]);
+        };
+
+        // Lógica de Esterilização e LARCs (Lei 14.443/2022)
+        function renderEsterilizacaoSection(p) {
+            const sec = document.getElementById('section-esterilizacao');
+            const msg = document.getElementById('esterilizacao-msg');
+            const acts = document.getElementById('esterilizacao-actions');
+
+            if (!sec || !p) return;
+            sec.style.display = 'block';
+            acts.innerHTML = '';
+
+            const hoje = new Date();
+            const nasc = new Date(p.nasc);
+            let idade = hoje.getFullYear() - nasc.getFullYear();
+            if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
+
+            const filhos = parseInt(p.numFilhos) || 0;
+            const elegivel = idade >= 21 || (idade >= 18 && filhos >= 2);
+
+            // Seção de Métodos Contraceptivos LARCs
+            let htmlBotoes = '';
+            
+            // Verifica se é mulher
+            if (p.sexo === 'Feminino') {
+                // Botões de Esterilização
+                if (elegivel) {
+                    msg.innerHTML = `✅ Paciente <strong>ELEGÍVEL</strong> para Esterilização Cirúrgica (Lei 14.443/2022).<br>Idade: ${idade} anos | Filhos: ${filhos}`;
+                    htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-eletiva')">📄 Laqueadura Eletiva</button>`;
+                    htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-parto')">📄 Laqueadura no Parto</button>`;
+                } else {
+                    msg.innerHTML = `⚠️ Paciente <strong>NÃO CUMPRE</strong> critérios para Esterilização.<br>Critério: ≥ 21 anos OU (≥ 18 anos e ≥ 2 filhos).`;
+                }
+                
+                // Botões de LARCs - disponíveis para todas as mulheres em idade fértil
+                htmlBotoes += `<div style="margin-top:15px;padding-top:15px;border-top:1px dashed #FED7AA"><strong style="color:#9A3412;display:block;margin-bottom:8px">Métodos Contraceptivos LARCs:</strong>`;
+                htmlBotoes += `<button type="button" class="btn" style="background:#8B5CF6; color:#fff;margin-right:5px;margin-bottom:5px" onclick="abrirEsterilizacao('diu-mirena')">💊 TCLE DIU Mirena/Kyleena</button>`;
+                htmlBotoes += `<button type="button" class="btn" style="background:#8B5CF6; color:#fff;margin-right:5px;margin-bottom:5px" onclick="abrirEsterilizacao('diu-cobre')">💊 TCLE DIU Cobre</button>`;
+                htmlBotoes += `<button type="button" class="btn" style="background:#8B5CF6; color:#fff;margin-right:5px;margin-bottom:5px" onclick="abrirEsterilizacao('implante')">💊 TCLE Implante Subdérmico</button>`;
+                
+                // Se for adolescente (10-19 anos)
+                if (idade >= 10 && idade <= 19) {
+                    htmlBotoes += `<button type="button" class="btn" style="background:#EC4899; color:#fff;margin-right:5px;margin-bottom:5px" onclick="abrirEsterilizacao('implante-adolescente')">💊 TCLE Implante Adolescente</button>`;
+                }
+                htmlBotoes += `</div>`;
+            } 
+            // Se for homem
+            else if (p.sexo === 'Masculino') {
+                if (elegivel) {
+                    msg.innerHTML = `✅ Paciente <strong>ELEGÍVEL</strong> para Vasectomia (Lei 14.443/2022).<br>Idade: ${idade} anos | Filhos: ${filhos}`;
+                    acts.innerHTML = `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('vasectomia')">📄 Gerar Passaporte Vasectomia</button>`;
+                } else {
+                    msg.innerHTML = `⚠️ Paciente <strong>NÃO CUMPRE</strong> os critérios legais para Vasectomia.<br>Critério: ≥ 21 anos OU (≥ 18 anos e ≥ 2 filhos).`;
+                }
+            } else {
+                sec.style.display = 'none';
+            }
+            
+            acts.innerHTML = htmlBotoes;
+        }
+
+        function abrirEsterilizacao(tipo) {
+            const ps = JSON.parse(localStorage.getItem(KEY) || '[]');
+            const p = ps.find(x => x.id === pId);
+            if (!p) return;
+
+            const dados = {
+                nome: p.nome || '',
+                cns: p.cns || '',
+                nasc: p.nasc || '',
+                cpf: p.cpf || '',
+                end: (p.rua || '') + (p.numero ? ', ' + p.numero : ''),
+                bairro: p.bairro || '',
+                tel: p.telCelular || '',
+                mae: (p.nomeMae || ''),
+                numFilhos: p.numFilhos || 0
+            };
+
+            localStorage.setItem('dadosPaciente', JSON.stringify(dados));
+            
+            let url = '';
+            if (tipo === 'vasectomia') {
+                url = 'Passaporte_Vasectomia.html';
+            } else if (tipo === 'laqueadura-eletiva') {
+                url = 'Passaporte_Laqueadura.html';
+            } else if (tipo === 'laqueadura-parto') {
+                url = 'Passaporte_Laqueadura_Parto.html';
+            } else if (tipo === 'diu-mirena') {
+                url = 'TCLE_DIU_Mirena_Kyleena.html';
+            } else if (tipo === 'diu-cobre') {
+                url = 'TCLE_DIU_Cobre.html';
+            } else if (tipo === 'implante') {
+                url = 'TCLE_Implante.html';
+            } else if (tipo === 'implante-adolescente') {
+                url = 'TCLE_Implante_Adolescentes.html';
+            }
+            
+            if (url) window.open(url, '_blank');
+        }
+
+        function showToast(txt) {
+            const t = document.getElementById('toast');
+            if (txt) t.textContent = txt;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+
+    <script src="assets/js/app.js?v=4.2"></script>
+    <script src="assets/js/soap.js?v=4.2"></script>
+    <script>
+        // Mock do CC.idade se não estiver carregado
+        window.CC = window.CC || {
+            idade: (nasc) => {
+                if (!nasc) return null;
+                const h = new Date(), d = new Date(nasc);
+                let a = h.getFullYear() - d.getFullYear();
+                if (h.getMonth() < d.getMonth() || (h.getMonth() === d.getMonth() && h.getDate() < d.getDate())) a--;
+                return a;
+            }
+        };
+
+        load();
+    </script>
+    <script src="assets/js/ai_agent.js?v=4.2"></script>
+</body>
+
+</html>

@@ -1,0 +1,982 @@
+// ══════════════════════════════════════════════════════════════════
+//  PRENATAL.JS  –  Funções complementares do Pré-Natal ESF 26
+//  Carisma Manager  •  v1.0  •  2026
+// ══════════════════════════════════════════════════════════════════
+
+// ── STORAGE KEYS ─────────────────────────────────────────────────
+const KEYS = {
+    gestantes: 'carisma_prenatal_gestantes',
+    consultas: 'carisma_prenatal_consultas',
+    examesPn: 'carisma_prenatal_exames',
+    vacinas: 'carisma_prenatal_vacinas',
+    lembretes: 'carisma_prenatal_lembretes',
+    examesCito: 'carisma_prenatal_citologia',
+};
+
+// Migração automática de chaves legadas
+(function migrarDados() {
+    const legado = {
+        controlePrenatal: KEYS.gestantes,
+        consultasPrenatal: KEYS.consultas,
+        examesPrenatal: KEYS.examesPn,
+        vacinasPrenatal: KEYS.vacinas,
+        lembretesPrenatal: KEYS.lembretes,
+        examesCitopatologicos: KEYS.examesCito,
+    };
+    Object.entries(legado).forEach(([antiga, nova]) => {
+        const dados = localStorage.getItem(antiga);
+        if (dados && !localStorage.getItem(nova)) {
+            localStorage.setItem(nova, dados);
+            console.log(`[Prenatal] Migrado: ${antiga} → ${nova}`);
+        }
+    });
+})();
+
+// ── UTILITÁRIOS ───────────────────────────────────────────────────
+function pnGet(key) { return JSON.parse(localStorage.getItem(key) || '[]'); }
+function pnSet(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+    // Sincronização automática com Cadastro Central ao salvar gestante
+    if (key === KEYS.gestantes) {
+        sincronizarComCadastroCentral(val);
+    }
+}
+
+/** Calcula IG, DPP e trimestre a partir da DUM (string 'YYYY-MM-DD') e uma data de referência opcional */
+function calcIG(dum, dataRef = new Date()) {
+    if (!dum) return { semanas: 0, dias: 0, dpp: '--', trimestre: '--', dppISO: null };
+
+    // Normalizar datas para evitar problemas de fuso horário
+    const d = new Date(dum + (dum.includes('T') ? '' : 'T12:00:00'));
+    const ref = new Date(dataRef);
+    if (isNaN(ref.getTime())) dataRef = new Date(); // Fallback se dataRef for inválido
+
+    const diff = Math.floor((new Date(dataRef) - d) / 86400000);
+    const semanas = Math.floor(diff / 7);
+    const dias = diff % 7;
+    const dppDate = new Date(d); dppDate.setDate(dppDate.getDate() + 280);
+    const tri = semanas < 14 ? '1º Trimestre' : semanas < 28 ? '2º Trimestre' : '3º Trimestre';
+    return {
+        semanas, dias,
+        dpp: dppDate.toLocaleDateString('pt-BR'),
+        dppISO: dppDate.toISOString().split('T')[0],
+        trimestre: tri,
+        ig: `${semanas}s ${dias}d`
+    };
+}
+
+/** Número de dias até a DPP (negativo se venceu) */
+function diasAteDPP(dppISO) {
+    if (!dppISO) return null;
+    return Math.ceil((new Date(dppISO) - new Date()) / 86400000);
+}
+
+/** Toast de notificação no canto da tela */
+function toast(msg, tipo = 'success') {
+    const cores = { success: '#10B981', danger: '#EF4444', warning: '#F59E0B', info: '#3B82F6' };
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+        position: 'fixed', bottom: '80px', right: '16px', zIndex: '9999',
+        background: cores[tipo] || cores.success, color: '#fff',
+        padding: '12px 20px', borderRadius: '10px', fontWeight: '600',
+        fontSize: '14px', boxShadow: '0 4px 16px rgba(0,0,0,.25)',
+        animation: 'slideIn .3s ease-out', maxWidth: '320px'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+// ── DASHBOARD PROFISSIONAL ────────────────────────────────────────
+function loadProfissionalData() {
+    const gs = pnGet(KEYS.gestantes);
+    const cs = pnGet(KEYS.consultas);
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Stats
+    const ativas = gs.filter(g => g.situacao === 'Em Acompanhamento');
+    const altoRis = gs.filter(g => g.classificacaoRisco === 'Alto Risco');
+    const hoje_cs = cs.filter(c => c.data === hoje);
+
+    setText('totalGestantes', ativas.length);
+    setText('consultasHoje', hoje_cs.length);
+    setText('altoRisco', altoRis.length);
+    setText('badgeGestantes', ativas.length);
+
+    // Partos este mês
+    const agora = new Date();
+    const partosMes = gs.filter(g => {
+        const { dppISO } = calcIG(g.dum);
+        if (!dppISO) return false;
+        const d = new Date(dppISO);
+        return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+    }).length;
+    setText('partosMes', partosMes);
+
+    // Alertas
+    renderAlertas(gs);
+    atualizarBadgeExames();
+
+    // Limpeza automática (pacientes que já ganharam bebê)
+    limpezaAutomaticaPosParto();
+}
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+}
+
+function atualizarBadgeExames() {
+    const cito = pnGet(KEYS.examesCito);
+    const pendentes = cito.filter(e => e.resultado === 'Pendente' || !e.resultado).length;
+    setText('badgeExames', pendentes || 0);
+}
+
+function renderAlertas(gs) {
+    const el = document.getElementById('alertasList');
+    if (!el) return;
+    const alertas = [];
+
+    gs.forEach(g => {
+        const { semanas, dppISO, ig } = calcIG(g.dum);
+        const dias = diasAteDPP(dppISO);
+
+        if (dias !== null && dias >= 0 && dias <= 15)
+            alertas.push({ tipo: 'danger', icon: '🚨', nome: g.nome, msg: `DPP em ${dias} dias (${g.dpp || '--'}) — Parto Iminente!` });
+        else if (dias !== null && dias < 0)
+            alertas.push({ tipo: 'danger', icon: '⚠️', nome: g.nome, msg: `DPP vencida há ${Math.abs(dias)} dias — Verificar pós-datismo` });
+
+        if (g.classificacaoRisco === 'Alto Risco')
+            alertas.push({ tipo: 'warning', icon: '🔴', nome: g.nome, msg: `Alto Risco — ${ig}` });
+
+        // Sem consulta há 30+ dias
+        const cs = pnGet(KEYS.consultas).filter(c => c.cns === g.cns).sort((a, b) => b.data.localeCompare(a.data));
+        if (cs.length > 0) {
+            const ultima = new Date(cs[0].data);
+            const diasSem = Math.floor((new Date() - ultima) / 86400000);
+            if (diasSem > 30)
+                alertas.push({ tipo: 'warning', icon: '📅', nome: g.nome, msg: `Sem consulta há ${diasSem} dias` });
+        } else if (semanas > 8) {
+            alertas.push({ tipo: 'warning', icon: '📅', nome: g.nome, msg: `Nenhuma consulta registrada (${ig})` });
+        }
+    });
+
+    if (alertas.length === 0) {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:#6B7280">✅ Nenhum alerta pendente</div>';
+        return;
+    }
+    el.innerHTML = alertas.slice(0, 10).map(a => `
+    <div class="alert alert-${a.tipo}" style="margin-bottom:8px">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-content">
+        <h4>${a.nome}</h4>
+        <p>${a.msg}</p>
+      </div>
+    </div>`).join('');
+}
+
+// ── DASHBOARD GESTANTE ────────────────────────────────────────────
+function loadGestanteData() {
+    if (!currentUser || currentUser.type !== 'gestante') return;
+    const g = currentUser.data;
+    const { ig, dpp, trimestre } = calcIG(g.dum);
+    setText('gestanteNome', g.nome);
+    setText('gestanteIG', ig);
+    setText('gestanteDPP', dpp);
+    setText('gestanteTrimestre', trimestre);
+    const ini = g.nome.charAt(0);
+    setText('gestanteAvatar', ini);
+    setText('gestanteIdade', `${calcularIdade(g.dataNascimento)} anos | CNS: ${g.cns}`);
+    renderProximosPassos(g);
+}
+
+function renderProximosPassos(g) {
+    const el = document.getElementById('proximosPassos');
+    if (!el) return;
+    const { semanas } = calcIG(g.dum);
+    const passos = [];
+    if (semanas < 12) passos.push('🔬 Solicitar exames de 1º trimestre', '💉 Vacina dTpa e Hepatite B');
+    if (semanas >= 12 && semanas < 20) passos.push('🔬 Ultrassom morfológico (18-20s)', '🍬 Teste de tolerância à glicose (24-28s)');
+    if (semanas >= 20 && semanas < 28) passos.push('🔬 USTV morfológico', '📅 Consulta a cada 4 semanas');
+    if (semanas >= 28) passos.push('📅 Consulta a cada 2-3 semanas', '🏥 Preparação para o parto');
+    el.innerHTML = passos.map(p => `<div class="list-item"><div class="list-icon">📌</div><div class="list-content"><div class="list-title">${p}</div></div></div>`).join('');
+}
+
+// ── CALCULADORAS ──────────────────────────────────────────────────
+function calcularIGDPP() {
+    const dum = document.getElementById('calcDUM').value;
+    const dataUSG = document.getElementById('calcDataUSG').value;
+    const semanasUSG = document.getElementById('calcSemanasUSG').value;
+    const diasUSG = document.getElementById('calcDiasUSG').value;
+    const res = document.getElementById('resultIGDPP');
+
+    let r;
+    if (dataUSG && semanasUSG) {
+        const diasDesdeUSG = Math.floor((new Date() - new Date(dataUSG)) / 86400000);
+        const totalDias = (parseInt(semanasUSG) * 7) + (parseInt(diasUSG) || 0) + diasDesdeUSG;
+        const sem = Math.floor(totalDias / 7);
+        const di = totalDias % 7;
+        const dppD = new Date(dataUSG); dppD.setDate(dppD.getDate() + (280 - (parseInt(semanasUSG) * 7) - (parseInt(diasUSG) || 0)));
+        r = { semanas: sem, dias: di, dpp: dppD.toLocaleDateString('pt-BR'), trimestre: sem < 14 ? '1º' : sem < 28 ? '2º' : '3º' };
+    } else if (dum) {
+        const x = calcIG(dum); r = { semanas: x.semanas, dias: x.dias, dpp: x.dpp, trimestre: x.trimestre.replace(' Trimestre', '') };
+    } else return;
+
+    setText('igValor', `${r.semanas}s ${r.dias}d`);
+    setText('dppValor', r.dpp);
+    setText('trimestreValor', r.trimestre + (r.trimestre.length > 2 ? ' Trimestre' : ''));
+    res.style.display = 'block';
+}
+
+function calcularIMC() {
+    const p = parseFloat(document.getElementById('calcPeso').value);
+    const h = parseFloat(document.getElementById('calcAltura').value);
+    if (!p || !h || h <= 0) return;
+    const imc = (p / (h * h)).toFixed(1);
+    let cls = '';
+    if (imc < 18.5) cls = '⚠️ Baixo peso';
+    else if (imc < 25) cls = '✅ Peso adequado';
+    else if (imc < 30) cls = '⚠️ Sobrepeso';
+    else cls = '🔴 Obesidade';
+    setText('imcValor', imc);
+    setText('imcClassificacao', cls);
+    document.getElementById('resultIMC').style.display = 'block';
+}
+
+function calcularIntervalo() {
+    const dp = document.getElementById('calcDataParto').value;
+    const da = document.getElementById('calcDataAtual').value || new Date().toISOString().split('T')[0];
+    if (!dp) return;
+    const meses = Math.floor((new Date(da) - new Date(dp)) / (86400000 * 30.44));
+    const aviso = meses < 24 ? '⚠️ Intervalo recomendado: mínimo 24 meses' : '✅ Intervalo adequado';
+    setText('intervaloValor', `${meses} meses`);
+    const el = document.getElementById('resultIntervalo');
+    el.style.display = 'block';
+    el.querySelector('.calc-result-label').textContent = aviso;
+}
+
+function calcularDadosGestanteForm() {
+    const dum = document.getElementById('gestanteDUM').value;
+    if (!dum) return;
+    const { ig, dpp, semanas } = calcIG(dum);
+    // feedback visual no formulário
+    let info = document.getElementById('dumInfo');
+    if (!info) {
+        info = document.createElement('div');
+        info.id = 'dumInfo';
+        info.style.cssText = 'margin-top:4px;font-size:12px;color:#8B5CF6;font-weight:600';
+        document.getElementById('gestanteDUM').after(info);
+    }
+    info.textContent = `IG: ${ig} | DPP: ${dpp}`;
+}
+
+// ── LISTA DE GESTANTES COM IG DINÂMICA ───────────────────────────
+// Override da função original para calcular IG ao abrir
+const _carregarGestantesTabela_orig = typeof carregarGestantesTabela === 'function' ? carregarGestantesTabela : null;
+
+function carregarGestantesTabela(filtros = {}) {
+    // Recarregar a lista do storage sempre
+    gestantes = pnGet(KEYS.gestantes);
+    let lista = [...gestantes];
+
+    // Aplicar filtros
+    const busca = (document.getElementById('searchGestante') || {}).value || '';
+    if (busca) lista = lista.filter(g => g.nome.toLowerCase().includes(busca.toLowerCase()) || g.cns.includes(busca));
+
+    const fRisco = (document.getElementById('filtroRisco') || {}).value || '';
+    if (fRisco) lista = lista.filter(g => g.classificacaoRisco === fRisco);
+
+    const fTri = (document.getElementById('filtroTrimestre') || {}).value || '';
+    if (fTri) lista = lista.filter(g => calcIG(g.dum).trimestre.startsWith(fTri));
+
+    const tbody = document.getElementById('tbodyGestantes');
+    if (!tbody) return;
+
+    if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:#6B7280">Nenhuma gestante encontrada</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = lista.map((g, i) => {
+        const { ig, dpp, semanas } = calcIG(g.dum);
+        const dias = diasAteDPP(calcIG(g.dum).dppISO);
+        const riscoCor = g.classificacaoRisco === 'Alto Risco' ? 'var(--danger)' : g.classificacaoRisco === 'Risco Intermediário' ? 'var(--warning)' : 'var(--success)';
+        const dppAlerta = dias !== null && dias <= 15 ? `<span style="color:var(--danger);font-weight:700"> ⚠️</span>` : '';
+        return `<tr>
+      <td><strong>${g.nome}</strong></td>
+      <td>${g.cns}</td>
+      <td>${ig}</td>
+      <td>${dpp}${dppAlerta}</td>
+      <td><span style="color:${riscoCor};font-weight:600">${g.classificacaoRisco}</span></td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="abrirProntuario('${g.cns}')">📋</button>
+        <button class="btn btn-sm btn-danger" onclick="excluirGestante(${gestantes.indexOf(g)})" style="margin-left:4px">🗑️</button>
+      </td>
+    </tr>`;
+    }).join('');
+}
+
+function buscarGestantes() { carregarGestantesTabela(); }
+
+// Injetar filtros acima da tabela (executado quando a página carrega)
+function injetarFiltrosGestantes() {
+    const ctn = document.getElementById('searchGestante');
+    if (!ctn || document.getElementById('filtroRisco')) return;
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.style.marginTop = '8px';
+    row.innerHTML = `
+    <div class="form-group" style="margin-bottom:0">
+      <select id="filtroRisco" onchange="carregarGestantesTabela()" style="padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;width:100%">
+        <option value="">Todos os Riscos</option>
+        <option>Baixo Risco</option>
+        <option>Risco Intermediário</option>
+        <option>Alto Risco</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <select id="filtroTrimestre" onchange="carregarGestantesTabela()" style="padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;width:100%">
+        <option value="">Todos os Trimestres</option>
+        <option value="1º">1º Trimestre</option>
+        <option value="2º">2º Trimestre</option>
+        <option value="3º">3º Trimestre</option>
+      </select>
+    </div>`;
+    ctn.parentNode.insertBefore(row, ctn.nextSibling);
+}
+
+// ── EXAMES CITOPATOLÓGICOS ────────────────────────────────────────
+function abrirModalExame() {
+    document.getElementById('formExame').reset();
+    document.getElementById('exameData').valueAsDate = new Date();
+    document.getElementById('modalExame').classList.add('active');
+}
+
+function salvarExame(e) {
+    e.preventDefault();
+    const ex = {
+        id: Date.now().toString(),
+        data: document.getElementById('exameData').value,
+        nome: document.getElementById('exameNomePac').value.toUpperCase(),
+        cns: document.getElementById('exameCNS').value,
+        resultado: document.getElementById('exameResultado').value,
+        situacao: document.getElementById('exameSituacao').value,
+        dataCadastro: new Date().toISOString()
+    };
+    const lista = pnGet(KEYS.examesCito);
+    lista.push(ex);
+    pnSet(KEYS.examesCito, lista);
+    fecharModal('modalExame');
+    carregarExamesTabela();
+    toast('Exame registrado!');
+}
+
+function carregarExamesTabela() {
+    exames = pnGet(KEYS.examesCito);
+    const busca = (document.getElementById('searchExame') || {}).value || '';
+    let lista = busca ? exames.filter(e => e.nome?.toLowerCase().includes(busca.toLowerCase()) || e.cns?.includes(busca)) : [...exames];
+    const tbody = document.getElementById('tbodyExames');
+    if (!tbody) return;
+    if (lista.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#6B7280">Nenhum exame registrado</td></tr>'; return; }
+    const cor = { Pendente: 'var(--warning)', 'Resultado Normal': 'var(--success)', 'Resultado Alterado': 'var(--danger)' };
+    tbody.innerHTML = lista.map(e => `<tr>
+    <td>${new Date(e.data + 'T12:00').toLocaleDateString('pt-BR')}</td>
+    <td>${e.nome || '-'}</td>
+    <td>${e.cns || '-'}</td>
+    <td>${e.resultado || '-'}</td>
+    <td><span style="color:${cor[e.situacao] || 'inherit'};font-weight:600">${e.situacao || '-'}</span></td>
+    <td><button class="btn btn-sm btn-danger" onclick="excluirExame('${e.id}')">🗑️</button></td>
+  </tr>`).join('');
+    atualizarBadgeExames();
+}
+
+function excluirExame(id) {
+    if (!confirm('Excluir este exame?')) return;
+    pnSet(KEYS.examesCito, pnGet(KEYS.examesCito).filter(e => e.id !== id));
+    carregarExamesTabela();
+    toast('Exame excluído', 'danger');
+}
+
+function buscarExames() { carregarExamesTabela(); }
+
+// ── CARTÃO DIGITAL DA GESTANTE ────────────────────────────────────
+let corCartao = 'roxo';
+const cores = { roxo: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', verde: 'linear-gradient(135deg,#10B981,#059669)', rosa: 'linear-gradient(135deg,#EC4899,#DB2777)', azul: 'linear-gradient(135deg,#3B82F6,#2563EB)' };
+
+function carregarSelectGestantesCartao() {
+    const sel = document.getElementById('selectGestanteCartao');
+    if (!sel) return;
+    const gs = pnGet(KEYS.gestantes);
+    sel.innerHTML = '<option value="">Selecione uma gestante...</option>' + gs.map(g => `<option value="${g.cns}">${g.nome}</option>`).join('');
+}
+
+function carregarCartao() {
+    const cns = document.getElementById('selectGestanteCartao').value;
+    if (!cns) { document.getElementById('cartaoPreview').innerHTML = ''; return; }
+    const g = pnGet(KEYS.gestantes).find(x => x.cns === cns);
+    if (!g) return;
+    const { ig, dpp, trimestre, semanas } = calcIG(g.dum);
+    const cs = pnGet(KEYS.consultas).filter(c => c.cns === cns);
+    const ini = g.nome.charAt(0);
+    document.getElementById('cartaoPreview').innerHTML = `
+    <div id="cartaoImpressao" style="background:${cores[corCartao]};border-radius:20px;padding:24px;color:#fff;position:relative;overflow:hidden;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:20px;font-weight:700">🤰 Pré-Natal ESF 26</div>
+        <div style="font-size:12px;opacity:.85">Carisma · Dourados/MS</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700">${ini}</div>
+        <div>
+          <div style="font-size:18px;font-weight:700">${g.nome}</div>
+          <div style="font-size:12px;opacity:.9">CNS: ${g.cns} | Nasc.: ${g.dataNascimento ? new Date(g.dataNascimento + 'T12:00').toLocaleDateString('pt-BR') : '--'}</div>
+          <div style="font-size:12px;opacity:.9">Risco: ${g.classificacaoRisco}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="text-align:center;background:rgba(255,255,255,.15);padding:12px;border-radius:10px">
+          <div style="font-size:18px;font-weight:700">${ig}</div>
+          <div style="font-size:11px">Idade Gestacional</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,.15);padding:12px;border-radius:10px">
+          <div style="font-size:14px;font-weight:700">${dpp}</div>
+          <div style="font-size:11px">DPP</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,.15);padding:12px;border-radius:10px">
+          <div style="font-size:15px;font-weight:700">${cs.length}</div>
+          <div style="font-size:11px">Consultas</div>
+        </div>
+      </div>
+      ${g.companheiro ? `<div style="margin-top:14px;font-size:12px;opacity:.85">👤 Companheiro: ${g.companheiro}</div>` : ''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-secondary" onclick="exportarCartaoPDF()" style="width:100%">📄 Baixar PDF</button>
+      <button class="btn btn-primary" onclick="enviarAppWhatsApp('${g.cns}')" style="width:100%;background:#25D366 !important;border:none">📲 Enviar App</button>
+    </div>`;
+}
+
+function mudarCorCartao(cor) {
+    corCartao = cor;
+    const cns = document.getElementById('selectGestanteCartao').value;
+    if (cns) carregarCartao();
+}
+
+function exportarCartaoPDF() {
+    const el = document.getElementById('cartaoImpressao');
+    if (!el) { toast('Selecione uma gestante primeiro', 'warning'); return; }
+    html2canvas(el, { scale: 2 }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const w = pdf.internal.pageSize.getWidth() - 30;
+        const h = (canvas.height * w) / canvas.width;
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 15, 15, w, h);
+        pdf.save('cartao_gestante.pdf');
+        toast('Cartão exportado!');
+    });
+}
+
+// ── APP DA GESTANTE (PWA) ─────────────────────────────────────────
+
+function gerarLinkGestante(cns) {
+    const g = pnGet(KEYS.gestantes).find(x => x.cns === cns);
+    if (!g) return null;
+
+    const { ig, dpp } = calcIG(g.dum);
+    const cs = pnGet(KEYS.consultas).filter(c => c.cns === cns).slice(-5); // Ultimas 5
+
+    const data = {
+        nome: g.nome,
+        cns: g.cns,
+        nasc: g.dataNascimento,
+        ig: ig,
+        dpp: dpp,
+        consultas: cs.map(c => ({ data: c.data, profissional: c.profissional })),
+        ts: Date.now()
+    };
+
+    const base64 = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+    // O ideal seria usar o domínio real, mas para local usaremos o nome do arquivo
+    const url = window.location.href.replace(/[^/]*$/, 'gestante.html') + '?data=' + base64;
+    return url;
+}
+
+function enviarAppWhatsApp(cns) {
+    const g = pnGet(KEYS.gestantes).find(x => x.cns === cns);
+    const url = gerarLinkGestante(cns);
+    if (!url || !g) return;
+
+    const msg = encodeURIComponent(`Olá ${g.nome}! Aqui está o seu Cartão da Gestante Digital da ESF 26 Carisma. Clique no link para ver seus dados e instale no seu celular: ${url}`);
+    window.open(`https://wa.me/55${g.telCelular || ''}?text=${msg}`, '_blank');
+}
+
+
+// ── ESTERILIZAÇÃO ─────────────────────────────────────────────────
+function carregarSelectPacienteEsterilizacao() {
+    const sel = document.getElementById('selectPacienteEsterilizacao');
+    if (!sel) return;
+    const gs = pnGet(KEYS.gestantes);
+    sel.innerHTML = '<option value="">Selecione uma paciente...</option>' + gs.map(g => `<option value="${g.cns}">${g.nome}</option>`).join('');
+}
+
+function abrirFormularioEsterilizacao(tipo) {
+    const cns = document.getElementById('selectPacienteEsterilizacao').value;
+    if (!cns) { toast('Selecione uma paciente', 'warning'); return; }
+
+    const gs = pnGet(KEYS.gestantes);
+    const g = gs.find(x => x.cns === cns) || {};
+
+    const arquivos = {
+        'laqueadura-eletiva': 'Passaporte_Laqueadura.html',
+        'laqueadura-parto': 'Passaporte_Laqueadura_Parto.html',
+        'vasectomia': 'Passaporte_Vasectomia.html'
+    };
+    const arquivo = arquivos[tipo];
+    if (!arquivo) { toast('Formulário não encontrado', 'danger'); return; }
+
+    // Preparar dados padronizados
+    const dados = {
+        nome: g.nome || '',
+        cns: g.cns || '',
+        nasc: g.dataNascimento || '',
+        cpf: g.cpf || '',
+        mae: g.mae || '',
+        end: g.endereco || '',
+        bairro: g.bairro || '',
+        tel: g.telefone || '',
+        ig: g.idadeGestacional || ''
+    };
+
+    localStorage.setItem('dadosEsterilizacao', JSON.stringify(dados));
+    window.open(arquivo, '_blank');
+}
+
+// ── RELATÓRIOS PDF ────────────────────────────────────────────────
+function exportarRelatorioGestantes() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const gs = pnGet(KEYS.gestantes);
+    const w = pdf.internal.pageSize.getWidth();
+
+    pdf.setFillColor(139, 92, 246);
+    pdf.rect(0, 0, w, 25, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(14); pdf.setFont('helvetica', 'bold');
+    pdf.text('ESF 26 - Carisma | Relatório de Gestantes', 15, 16);
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
+    pdf.text(new Date().toLocaleDateString('pt-BR'), w - 30, 16);
+
+    pdf.setTextColor(0, 0, 0);
+    let y = 35;
+    const headers = ['Nome', 'CNS', 'IG', 'DPP', 'Risco'];
+    const cols = [65, 35, 22, 28, 30];
+    let x = 10;
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8);
+    pdf.setFillColor(240, 235, 255); pdf.rect(10, y - 5, w - 20, 8, 'F');
+    headers.forEach((h, i) => { pdf.text(h, x + 1, y); x += cols[i]; });
+    y += 6;
+
+    pdf.setFont('helvetica', 'normal');
+    gs.forEach((g, idx) => {
+        if (y > 270) { pdf.addPage(); y = 15; }
+        if (idx % 2 === 0) { pdf.setFillColor(249, 250, 251); pdf.rect(10, y - 5, w - 20, 7, 'F'); }
+        const { ig, dpp } = calcIG(g.dum);
+        const row = [g.nome, g.cns, ig, dpp, g.classificacaoRisco];
+        x = 10;
+        row.forEach((v, i) => { pdf.text(String(v || '-').substring(0, cols[i] / 2.2), x + 1, y); x += cols[i]; });
+        y += 7;
+    });
+
+    pdf.save(`gestantes_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('Relatório exportado!');
+}
+
+function exportarRelatorioExames() {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const ex = pnGet(KEYS.examesCito);
+    const w = pdf.internal.pageSize.getWidth();
+
+    pdf.setFillColor(236, 72, 153);
+    pdf.rect(0, 0, w, 25, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(14); pdf.setFont('helvetica', 'bold');
+    pdf.text('ESF 26 - Exames Citopatológicos', 15, 16);
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'normal');
+    pdf.text(new Date().toLocaleDateString('pt-BR'), w - 30, 16);
+
+    pdf.setTextColor(0, 0, 0);
+    let y = 35;
+    ex.forEach((e, idx) => {
+        if (y > 270) { pdf.addPage(); y = 15; }
+        if (idx % 2 === 0) { pdf.setFillColor(254, 242, 255); pdf.rect(10, y - 5, w - 20, 7, 'F'); }
+        pdf.setFontSize(8);
+        pdf.text(`${new Date(e.data + 'T12:00').toLocaleDateString('pt-BR')} | ${e.nome || '-'} | ${e.cns || '-'} | ${e.resultado || '-'} | ${e.situacao || '-'}`, 12, y);
+        y += 7;
+    });
+
+    pdf.save(`exames_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast('Relatório exportado!');
+}
+
+// ── BACKUP / RESTORE ──────────────────────────────────────────────
+function exportarBackupCompleto() {
+    const backup = {};
+    Object.values(KEYS).forEach(k => { backup[k] = pnGet(k); });
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup_prenatal_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    toast('Backup exportado!');
+}
+
+function importarBackup(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, JSON.stringify(v)));
+            // Sincronizar arrays em memória
+            gestantes = pnGet(KEYS.gestantes);
+            consultas = pnGet(KEYS.consultas);
+            examesPrenatal = pnGet(KEYS.examesPn);
+            vacinas = pnGet(KEYS.vacinas);
+            lembretes = pnGet(KEYS.lembretes);
+            exames = pnGet(KEYS.examesCito);
+            toast('Backup restaurado com sucesso!');
+            loadProfissionalData();
+        } catch (err) { toast('Arquivo inválido!', 'danger'); }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+function limparTodosDados() {
+    if (!confirm('⚠️ ATENÇÃO: Apagar TODOS os dados do Pré-Natal?\nEsta ação não pode ser desfeita!')) return;
+    Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    gestantes = []; consultas = []; examesPrenatal = []; vacinas = []; lembretes = []; exames = [];
+    toast('Dados apagados', 'danger');
+    loadProfissionalData();
+}
+
+// ── NOTIFICAÇÕES ──────────────────────────────────────────────────
+function toggleNotifications() {
+    const el = document.getElementById('notificationPanel');
+    el.classList.toggle('active');
+    if (el.classList.contains('active')) verificarNotificacoes();
+}
+
+function verificarNotificacoes() {
+    const gs = pnGet(KEYS.gestantes);
+    const notifs = [];
+
+    gs.forEach(g => {
+        const { semanas, dppISO, ig } = calcIG(g.dum);
+        const dias = diasAteDPP(dppISO);
+        if (dias !== null && dias >= 0 && dias <= 15) notifs.push({ urgente: true, titulo: 'Parto Iminente', msg: `${g.nome} — DPP em ${dias} dias` });
+        if (dias !== null && dias < 0) notifs.push({ urgente: true, titulo: 'Pós-datismo', msg: `${g.nome} — DPP há ${Math.abs(dias)} dias` });
+    });
+
+    const el = document.getElementById('notificationList');
+    if (!el) return;
+    if (notifs.length === 0) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#6B7280">Sem notificações urgentes</div>'; return; }
+    el.innerHTML = notifs.map(n => `
+    <div class="notification-item${n.urgente ? ' urgent' : ''}">
+      <strong>${n.titulo}</strong><br>
+      <span style="font-size:13px">${n.msg}</span>
+    </div>`).join('');
+}
+
+// ── INICIALIZAÇÃO ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    // Adicionar fonte Inter se não estiver
+    if (!document.querySelector('link[href*="Inter"]')) {
+        const lnk = document.createElement('link');
+        lnk.rel = 'stylesheet';
+        lnk.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+        document.head.appendChild(lnk);
+        document.body.style.fontFamily = "'Inter',system-ui,sans-serif";
+    }
+
+    // Sincronizar storage com arrays globais (compatibilidade com código existente)
+    const syncStorageToGlobals = () => {
+        if (typeof gestantes !== 'undefined') gestantes = pnGet(KEYS.gestantes);
+        if (typeof exames !== 'undefined') exames = pnGet(KEYS.examesCito);
+        if (typeof consultas !== 'undefined') consultas = pnGet(KEYS.consultas);
+        if (typeof examesPrenatal !== 'undefined') examesPrenatal = pnGet(KEYS.examesPn);
+        if (typeof vacinas !== 'undefined') vacinas = pnGet(KEYS.vacinas);
+        if (typeof lembretes !== 'undefined') lembretes = pnGet(KEYS.lembretes);
+    };
+    syncStorageToGlobals();
+
+    // Injetar estilos de alinhamento com Carisma Manager
+    const style = document.createElement('style');
+    style.textContent = `
+    body { font-family: 'Inter', system-ui, sans-serif !important; }
+    .btn-primary { background: linear-gradient(135deg,#8B5CF6,#7C3AED) !important; }
+    .header { background: linear-gradient(135deg,#4C1D95 0%,#7C3AED 60%,#DB2777 100%) !important; }
+    .stat-number { color: #8B5CF6 !important; }
+    th { background: #8B5CF6 !important; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: #8B5CF6 !important;
+      box-shadow: 0 0 0 4px rgba(139,92,246,.1) !important;
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+  `;
+    document.head.appendChild(style);
+});
+
+console.log('[prenatal.js] Módulo Pré-Natal ESF 26 carregado ✓');
+// ── SINCRONIZAÇÃO COM CADASTRO CENTRAL ──────────────────────────
+function sincronizarGestantesCadastroCentral() {
+    const pessoas = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+    const gestantesCC = pessoas.filter(p => (p.tags || []).includes('Gestante'));
+    const gs = pnGet(KEYS.gestantes);
+
+    let novas = 0;
+    gestantesCC.forEach(p => {
+        if (!gs.find(g => g.cns === p.cns || (p.cpf && g.cpf === p.cpf))) {
+            gs.push({
+                id: p.id,
+                nome: p.nome.toUpperCase(),
+                dataNascimento: p.nasc,
+                cns: p.cns,
+                cpf: p.cpf || '',
+                telCelular: p.telCelular || '',
+                dum: '',
+                dpp: '--',
+                idadeGestacional: '--',
+                trimestre: '--',
+                classificacaoRisco: 'Risco Intermediário',
+                situacao: 'Em Acompanhamento',
+                lembretes: p.anotacoes || '',
+                dataCadastro: new Date().toISOString()
+            });
+            novas++;
+        }
+    });
+
+    if (novas > 0) {
+        localStorage.setItem(KEYS.gestantes, JSON.stringify(gs)); // Usa direto para evitar loop
+        if (typeof toast === 'function') toast(`${novas} gestantes importadas do sistema!`, 'success');
+        if (typeof carregarGestantesTabela === 'function') carregarGestantesTabela();
+        if (typeof loadProfissionalData === 'function') loadProfissionalData();
+    } else {
+        if (typeof toast === 'function') toast('Nenhuma nova gestante encontrada no sistema.', 'info');
+    }
+}
+
+/** 
+ * Envia dados do Pré-Natal para o Cadastro Central 
+ */
+function sincronizarComCadastroCentral(gestantes) {
+    const pessoas = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+    let mudou = false;
+
+    gestantes.forEach(g => {
+        const pIdx = pessoas.findIndex(p => (p.cns && p.cns === g.cns) || (p.cpf && p.cpf === g.cpf) || (p.id === g.id));
+        if (pIdx > -1) {
+            const p = pessoas[pIdx];
+            const tags = p.tags || [];
+            if (!tags.includes('Gestante')) {
+                tags.push('Gestante');
+                p.tags = tags;
+                mudou = true;
+            }
+            // Atualiza telefone se estiver vazio no cadastro central
+            if (!p.telCelular && g.telCelular) {
+                p.telCelular = g.telCelular;
+                mudou = true;
+            }
+        }
+    });
+
+    if (mudou) {
+        localStorage.setItem('carisma_pessoas', JSON.stringify(pessoas));
+    }
+}
+
+/**
+ * Remove rótulo de gestante se a DPP passou de 15 dias
+ */
+function limpezaAutomaticaPosParto() {
+    const gs = pnGet(KEYS.gestantes);
+    const pessoas = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+    let mudou = false;
+
+    gs.forEach(g => {
+        if (g.situacao === 'Em Acompanhamento' && g.dum) {
+            const { dppISO } = calcIG(g.dum);
+            const dias = diasAteDPP(dppISO);
+
+            // Se DPP passou de 15 dias (-15)
+            if (dias !== null && dias < -15) {
+                // Remove Tag no Cadastro Central
+                const pIdx = pessoas.findIndex(p => (p.cns && p.cns === g.cns) || (p.id === g.id));
+                if (pIdx > -1) {
+                    const p = pessoas[pIdx];
+                    const tIdx = (p.tags || []).indexOf('Gestante');
+                    if (tIdx > -1) {
+                        p.tags.splice(tIdx, 1);
+                        mudou = true;
+                        console.log(`[Prenatal] Limpeza: Tag Gestante removida de ${p.nome} (DPP Vencida)`);
+                    }
+                }
+
+                // Opcional: Marcar como "Encerrado" no pré-natal (mas requer confirmação do usuário)
+                // g.situacao = 'Encerrado'; 
+            }
+        }
+    });
+
+    if (mudou) {
+        localStorage.setItem('carisma_pessoas', JSON.stringify(pessoas));
+    }
+}
+
+/**
+ * Importa CSV diretamente no Pré-Natal, forçando o cadastro como Gestante
+ */
+function importarCSVGestantes(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        const text = e.target.result;
+        const allLines = text.split(/\r?\n/).filter(l => l.trim());
+
+        // Detectar separador dominante
+        const sample = allLines.slice(0, 15).join('\n');
+        const sep = (sample.match(/;/g) || []).length >= (sample.match(/,/g) || []).length ? ';' : ',';
+
+        // Tenta achar cabeçalho (mais flexível)
+        let hIdx = -1;
+        for (let i = 0; i < Math.min(50, allLines.length); i++) {
+            const low = allLines[i].toLowerCase();
+            const temNome = low.includes('nome');
+            const temCns = low.includes('cns') || low.includes('cartão sus') || low.includes('c.n.s');
+            const temCpf = low.includes('cpf');
+
+            if (temNome && (temCns || temCpf)) { hIdx = i; break; }
+        }
+
+        if (hIdx === -1) {
+            alert('⚠️ Cabeçalho não encontrado no CSV. Verifique se o arquivo possui colunas de Nome e CNS/CPF.');
+            return;
+        }
+
+        const splitCSV = (line, s) => {
+            const res = []; let cur = ''; let inQ = false;
+            for (let j = 0; j < line.length; j++) {
+                const c = line[j];
+                if (c === '"') inQ = !inQ;
+                else if (c === s && !inQ) { res.push(cur.trim().replace(/^"+|"+$/g, '')); cur = ''; }
+                else cur += c;
+            }
+            res.push(cur.trim().replace(/^"+|"+$/g, ''));
+            return res;
+        };
+
+        const header = splitCSV(allLines[hIdx], sep).map(h => h.toLowerCase().trim());
+        const idxNome = header.findIndex(h => h.includes('nome'));
+        const idxCns = header.findIndex(h => h.includes('cns') || h.includes('cartão sus') || h.includes('c.n.s'));
+        const idxCpf = header.findIndex(h => h.includes('cpf'));
+        const idxNasc = header.findIndex(h => h.includes('nascimento') || h.includes('nasc'));
+        const idxTel = header.findIndex(h => h.includes('celular') || h.includes('contato') || h.includes('telefone'));
+
+        const ps = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+        const gs = pnGet(KEYS.gestantes);
+        let count = 0;
+
+        allLines.slice(hIdx + 1).forEach(line => {
+            const cols = splitCSV(line, sep);
+            if (cols.length < 2) return;
+
+            const nome = cols[idxNome];
+            const cns = cols[idxCns]?.replace(/\D/g, '');
+            const cpf = idxCpf > -1 ? cols[idxCpf]?.replace(/\D/g, '') : '';
+            const nasc = idxNasc > -1 ? cols[idxNasc] : '';
+            const tel = idxTel > -1 ? cols[idxTel] : '';
+
+            if (!nome || (!cns && !cpf)) return;
+
+            // 1. Garante que está no Cadastro Central com tag Gestante
+            let p = ps.find(x => (cns && x.cns === cns) || (cpf && x.cpf === cpf));
+            if (!p) {
+                p = {
+                    id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7),
+                    nome: nome.toUpperCase(),
+                    cns, cpf, nasc, telCelular: tel,
+                    tags: ['Gestante'],
+                    dataCadastro: new Date().toISOString()
+                };
+                ps.push(p);
+            } else {
+                if (!p.tags) p.tags = [];
+                if (!p.tags.includes('Gestante')) p.tags.push('Gestante');
+            }
+
+            // 2. Adiciona no Pré-Natal
+            if (!gs.find(x => (cns && x.cns === cns) || (cpf && x.cpf === cpf))) {
+                gs.push({
+                    id: p.id,
+                    nome: p.nome.toUpperCase(),
+                    dataNascimento: p.nasc,
+                    cns: p.cns, cpf: p.cpf,
+                    telCelular: p.telCelular,
+                    dum: '', dpp: '--', idadeGestacional: '--', trimestre: '--',
+                    classificacaoRisco: 'Risco Intermediário',
+                    situacao: 'Em Acompanhamento',
+                    dataCadastro: new Date().toISOString()
+                });
+                count++;
+            }
+        });
+
+        localStorage.setItem('carisma_pessoas', JSON.stringify(ps));
+        pnSet(KEYS.gestantes, gs);
+        toast(`${count} gestantes importadas e vinculadas!`, 'success');
+        if (typeof carregarGestantesTabela === 'function') carregarGestantesTabela();
+    };
+    reader.readAsText(file);
+}
+
+/**
+ * Injeta botões de filtro na tela de listagem de gestantes
+ */
+function injetarFiltrosGestantes() {
+    const cardHeader = document.querySelector('#page-gestantes .card-header');
+    if (!cardHeader || document.getElementById('filtros-gestantes-container')) return;
+
+    const container = document.createElement('div');
+    container.id = 'filtros-gestantes-container';
+    container.style = 'display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; width:100%';
+
+    const filtros = [
+        { label: 'Todas', situacao: 'Todas' },
+        { label: 'Em Acompanhamento', situacao: 'Em Acompanhamento' },
+        { label: 'Alto Risco', risco: 'Alto Risco' },
+        { label: 'Encerradas', situacao: 'Encerrado' }
+    ];
+
+    filtros.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary btn-sm';
+        btn.textContent = f.label;
+        btn.onclick = () => {
+            const gs = pnGet(KEYS.gestantes);
+            let filtrados = gs;
+            if (f.situacao && f.situacao !== 'Todas') filtrados = gs.filter(g => g.situacao === f.situacao);
+            if (f.risco) filtrados = gs.filter(g => g.classificacaoRisco === f.risco);
+
+            // Atualiza a tabela com os filtrados (precisamos que carregarGestantesTabela aceite parâmetro ou atualize globalmente)
+            window.gestantesFiltradas = filtrados;
+            carregarGestantesTabela(filtrados);
+        };
+        container.appendChild(btn);
+    });
+
+    cardHeader.parentNode.insertBefore(container, cardHeader.nextSibling);
+}

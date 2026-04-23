@@ -1,0 +1,12 @@
+{
+  "name": "esf26-carisma-manager",
+  "version": "4.0.0",
+  "description": "Sistema Unificado de Gestão - ESF 26 Carisma",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Build concluído!'"
+  },
+  "keywords": ["saude", "ubs", "esf", "gestao"],
+  "author": "Enf. Jackson Hardt",
+  "license": "MIT"
+}

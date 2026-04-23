@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Rede Alyne - ESF 26 Carisma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --mulher: #EC4899;
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+            --text: #111827;
+            --text2: #6B7280;
+            --border: #E5E7EB;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--mulher) 100%);
+            color: #fff;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .search-row input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+
+        .search-row input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .cat-tab {
+            padding: 10px 20px;
+            background: #fff;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .cat-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .cat-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .materials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .material-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .material-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-light);
+        }
+
+        .material-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .material-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .material-category {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .material-category.diretriz {
+            background: #059669;
+        }
+
+        .material-category.formulario {
+            background: #DC2626;
+        }
+
+        .material-category.apoio {
+            background: #7C3AED;
+        }
+
+        .material-category.legislacao {
+            background: #D97706;
+        }
+
+        .material-desc {
+            font-size: 0.82rem;
+            color: var(--text2);
+            line-height: 1.5;
+        }
+
+        .material-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .material-link:hover {
+            background: var(--primary-dark);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text2);
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .btn-voltar:hover {
+            background: var(--primary-dark);
+        }
+
+        @media print {
+            .header, .search-row, .category-tabs, .btn-voltar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📚 Biblioteca Rede Alyne</h1>
+        <p>Materiais, protocolos e diretrizes para Saúde da Mulher e Reprodutiva | ESF 26 - Carisma</p>
+    </div>
+
+    <div class="container">
+        <a href="index.html" class="btn-voltar">← Voltar ao Sistema</a>
+
+        <div class="search-row">
+            <input type="text" id="search-input" placeholder="🔍 Buscar materiais..." oninput="filterMaterials()">
+        </div>
+
+        <div class="category-tabs">
+            <button class="cat-tab active" onclick="filterCategory('all')">Todos</button>
+            <button class="cat-tab" onclick="filterCategory('planejamento-familiar')">Planejamento Familiar</button>
+            <button class="cat-tab" onclick="filterCategory('larcs')">LARCs</button>
+            <button class="cat-tab" onclick="filterCategory('prenatal')">Pré-Natal</button>
+            <button class="cat-tab" onclick="filterCategory('sifilis')">Sífilis</button>
+            <button class="cat-tab" onclick="filterCategory('toxoplasmose')">Toxoplasmose</button>
+            <button class="cat-tab" onclick="filterCategory('diabetes')">Diabetes Gestacional</button>
+            <button class="cat-tab" onclick="filterCategory('violencia')">Violência</button>
+            <button class="cat-tab" onclick="filterCategory('saude-crianca')">Saúde da Criança</button>
+            <button class="cat-tab" onclick="filterCategory('capacitacao')">Capacitação</button>
+        </div>
+
+        <div class="materials-grid" id="materials-grid">
+            <!-- Materials will be rendered by JavaScript -->
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display:none">
+            <h3>Nenhum material encontrado</h3>
+            <p> tente buscar por outro termo ou selecionar outra categoria.</p>
+        </div>
+    </div>
+
+    <script>
+        const materials = [
+            // PLANEJAMENTO FAMILIAR
+            {
+                title: "Protocolo de Planejamento Familiar 2026",
+                category: "planejamento-familiar",
+                type: "diretriz",
+                icon: "📋",
+                desc: "Protocolo estadual de Planejamento Familiar com fluxos e orientações completas.",
+                file: "rede alyne/Planejamento Familiar/Protocolo-PF-2026.pdf"
+            },
+            {
+                title: "Fluxo Geral de Planejamento Familiar",
+                category: "planejamento-familiar",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma geral de atendimento em Planejamento Familiar.",
+                file: "rede alyne/Planejamento Familiar/Fluxo-geral-Planejamento-Familiar.pdf"
+            },
+            {
+                title: "Passaporte Laqueadura Tubária Eletiva",
+                category: "planejamento-familiar",
+                type: "formulario",
+                icon: "📄",
+                desc: "Formulário completo para laqueadura tubária eletiva (Lei 14.443/2022).",
+                file: "Passaporte_Laqueadura.html"
+            },
+            {
+                title: "Passaporte Laqueadura no Parto",
+                category: "planejamento-familiar",
+                type: "formulario",
+                icon: "📄",
+                desc: "Formulário para laqueadura tubária durante o parto.",
+                file: "Passaporte_Laqueadura_Parto.html"
+            },
+            {
+                title: "Passaporte Vasectomia",
+                category: "planejamento-familiar",
+                type: "formulario",
+                icon: "📄",
+                desc: "Formulário completo para vasectomia (Lei 14.443/2022).",
+                file: "Passaporte_Vasectomia.html"
+            },
+            {
+                title: "Fluxo Laqueadura Eletiva",
+                category: "planejamento-familiar",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de encaminhamento para laqueadura tubária eletiva.",
+                file: "rede alyne/Planejamento Familiar/Fluxo-LTB-Eletiva.pdf"
+            },
+            {
+                title: "Fluxo Laqueadura no Parto",
+                category: "planejamento-familiar",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma para laqueadura tubária no momento do parto.",
+                file: "rede alyne/Planejamento Familiar/Fluxo-LTB-parto.pdf"
+            },
+            {
+                title: "Fluxo Vasectomia",
+                category: "planejamento-familiar",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de encaminhamento para vasectomia.",
+                file: "rede alyne/Planejamento Familiar/Fluxo-Vasectomia.pdf"
+            },
+            {
+                title: "Pedido de Espermograma",
+                category: "planejamento-familiar",
+                type: "formulario",
+                icon: "🔬",
+                desc: "Formulário para solicitação de espermograma.",
+                file: "rede alyne/Planejamento Familiar/Pedido-Espermograma.pdf"
+            },
+
+            // LARCS
+            {
+                title: "Protocolo Estadual de LARCS",
+                category: "larcs",
+                type: "diretriz",
+                icon: "📋",
+                desc: "Protocolo de_LONG ACTING REVERSIBLE CONTRACEPTIVES do Estado.",
+                file: "rede alyne/LARCS/Protocolo-Estadual-LARCS.pdf"
+            },
+            {
+                title: "TCLE DIU Mirena/Kyleena",
+                category: "larcs",
+                type: "formulario",
+                icon: "📝",
+                desc: "Termo de Consentimento para inserção de DIU hormonal.",
+                file: "TCLE_DIU_Mirena_Kyleena.html"
+            },
+            {
+                title: "TCLE DIU Cobre",
+                category: "larcs",
+                type: "formulario",
+                icon: "📝",
+                desc: "Termo de Consentimento para inserção de DIU de cobre.",
+                file: "TCLE_DIU_Cobre.html"
+            },
+            {
+                title: "TCLE Implante Subdérmico",
+                category: "larcs",
+                type: "formulario",
+                icon: "📝",
+                desc: "Termo de Consentimento para inserção de Implante.",
+                file: "TCLE_Implante.html"
+            },
+            {
+                title: "TCLE Implante Adolescentes",
+                category: "larcs",
+                type: "formulario",
+                icon: "📝",
+                desc: "Termo de Assentimento para adolescentes de 15-18 anos.",
+                file: "TCLE_Implante_Adolescentes.html"
+            },
+            {
+                title: "Quadro de Referência LARCS 2026",
+                category: "larcs",
+                type: "diretriz",
+                icon: "📊",
+                desc: "Quadro de referência para métodos contraceptives LARCs.",
+                file: "rede alyne/LARCS/Quadro-referencia-LARCS-2026.pdf"
+            },
+            {
+                title: "CI Implanon - Orientações",
+                category: "larcs",
+                type: "diretriz",
+                icon: "📄",
+                desc: "Comunicado informativo sobre Implanon.",
+                file: "rede alyne/LARCS/CI-27-Implanon-com-anexos_assinado.pdf"
+            },
+            {
+                title: "CI Mirena - Orientações",
+                category: "larcs",
+                type: "diretriz",
+                icon: "📄",
+                desc: "Comunicado informativo sobre Mirena.",
+                file: "rede alyne/LARCS/CI-32-Mirena-com-anexos_assinado.pdf"
+            },
+
+            // PRÉ-NATAL
+            {
+                title: "POP Pré-Natal 2023",
+                category: "prenatal",
+                type: "diretriz",
+                icon: "📋",
+                desc: "Procedimento Operacional Padrão de Pré-Natal.",
+                file: "rede alyne/Pré-natal de risco habitual/POP-PRE-NATAL-2023.pdf"
+            },
+            {
+                title: "Cartão Pré-Natal Dourados",
+                category: "prenatal",
+                type: "formulario",
+                icon: "💳",
+                desc: "Modelo de cartão de pré-natal do município.",
+                file: "rede alyne/Pré-natal de risco habitual/Cartao-Pre-natal-Dourados-2024-impressao.pdf"
+            },
+            {
+                title: "Fluxograma Cuidado Compartilhado",
+                category: "prenatal",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de cuidado compartilhado gestante.",
+                file: "rede alyne/Pré-natal de risco habitual/Fluxograma-cuidado-compartilhado-gestante.pdf"
+            },
+            {
+                title: "Ficha de Estratificação de Risco Gestacional",
+                category: "prenatal",
+                type: "formulario",
+                icon: "📝",
+                desc: "Instrumento para estratificação de risco na gestação.",
+                file: "rede alyne/Pré-natal de risco habitual/Ficha-de-estratificacao-de-risco-gestacional.pdf"
+            },
+            {
+                title: "Plano de Parto HU UFGD",
+                category: "prenatal",
+                type: "formulario",
+                icon: "📝",
+                desc: "Modelo de Plano de Parto do Hospital Universitário.",
+                file: "rede alyne/Pré-natal de risco habitual/Plano de Parto/Plano de Parto HU UFGD.pdf"
+            },
+            {
+                title: "Plano de Parto Dourados",
+                category: "prenatal",
+                type: "formulario",
+                icon: "📝",
+                desc: "Modelo de Plano de Parto do município de Dourados.",
+                file: "rede alyne/Pré-natal de risco habitual/Plano de Parto/Plano-parto-Dourados.pdf"
+            },
+            {
+                title: "Exames de USG e Laboratoriais Pré-Natal",
+                category: "prenatal",
+                type: "diretriz",
+                icon: "🔬",
+                desc: "Roteiro de exames de ultrassom e laboratoriais no pré-natal.",
+                file: "rede alyne/Pré-natal de risco habitual/Exames-de-USG-e-laboratoriais-no-pre-natal-risco-habitualnatal de risco habitual (2).pdf"
+            },
+            {
+                title: "CI Diabetes Gestacional",
+                category: "prenatal",
+                type: "diretriz",
+                icon: "📄",
+                desc: "Comunicado sobre manejo de diabetes gestacional.",
+                file: "rede alyne/Pré-natal de risco habitual/CI-Diabetes-Gestacional.pdf"
+            },
+            {
+                title: "Pedido TOTG",
+                category: "prenatal",
+                type: "formulario",
+                icon: "🔬",
+                desc: "Formulário para pedido de Teste Oral de Tolerância à Glicose.",
+                file: "rede alyne/Pré-natal de risco habitual/Pedido-TOTG.pdf"
+            },
+
+            // SÍFILIS
+            {
+                title: "Fluxo Conduta Sífilis na Gestação",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de conduta para sífilis na gestação.",
+                file: "rede alyne/Sífilis na gestação/Fluxo-Conduta-Sifilis-Gestacao-SALUS.pdf"
+            },
+            {
+                title: "Fluxo Tratamento Parceiro",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de tratamento da parceria sexual.",
+                file: "rede alyne/Sífilis na gestação/Fluxo-Tratamento-Parceria-sexual-de-Gestante-com-Sífilis.pdf"
+            },
+            {
+                title: "Fluxo Recém-Nascido com Sífilis Congênita",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de manejo do RN com sífilis congênita.",
+                file: "rede alyne/Sífilis na gestação/Fluxo-Tratamento-recém-nascido-com-Sífilis-Congênita.pdf"
+            },
+            {
+                title: "Manejo Sífilis Recém-Nascido",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "👶",
+                desc: "Protocolo de manejo da sífilis congênita em RN.",
+                file: "rede alyne/Sífilis na gestação/Manejo-Sífilis-Recém-nascido.pdf"
+            },
+            {
+                title: "Boletim Sífilis 2025",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "📊",
+                desc: "Boletim epidemiológica de sífilis.",
+                file: "rede alyne/Sífilis na gestação/Boletim-sifilis-2025.pdf"
+            },
+            {
+                title: "CI Tratamento Sífilis Congênita",
+                category: "sifilis",
+                type: "diretriz",
+                icon: "📄",
+                desc: "Comunicado sobre tratamento de sífilis congênita.",
+                file: "rede alyne/Sífilis na gestação/CI-Tratamento-sifilis-congenita.pdf"
+            },
+
+            // TOXOPLASMOSE
+            {
+                title: "Fluxograma Dispensação Toxoplasmose",
+                category: "toxoplasmose",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de dispensação de tratamento para toxoplasmose.",
+                file: "rede alyne/Toxoplasmose na gestação/Fluxograma-Dispensacao-Tratamento-Toxoplasmose-na-Gestacao.pdf"
+            },
+            {
+                title: "Ficha Notificação Toxoplasmose Gestacional",
+                category: "toxoplasmose",
+                type: "formulario",
+                icon: "📝",
+                desc: " Ficha de notificação de toxoplasmose gestacional.",
+                file: "rede alyne/Toxoplasmose na gestação/Ficha-Notificacao-Toxoplasmose-Gestacional.pdf"
+            },
+            {
+                title: "Requisição Tratamento Toxoplasmose",
+                category: "toxoplasmose",
+                type: "formulario",
+                icon: "📝",
+                desc: "Formulário para requisição de tratamento.",
+                file: "rede alyne/Toxoplasmose na gestação/Requisicao-tratamento-toxoplasmose-na-gestacao.docx"
+            },
+            {
+                title: "Boletim Toxoplasmose 2025",
+                category: "toxoplasmose",
+                type: "diretriz",
+                icon: "📊",
+                desc: "Boletim epidemiológica de toxoplasmose.",
+                file: "rede alyne/Toxoplasmose na gestação/Boletim-Toxoplasmose-2025.pdf"
+            },
+
+            // DIABETES GESTACIONAL
+            {
+                title: "CI Diagnóstico Diabetes Gestação",
+                category: "diabetes",
+                type: "diretriz",
+                icon: "📄",
+                desc: "Comunicado sobre diagnóstico de diabetes gestacional.",
+                file: "rede alyne/Diabetes gestacional/CI-29-Diagnostico-Diabetes-Gestacao.pdf"
+            },
+            {
+                title: "Pedido TOTG Diabetes",
+                category: "diabetes",
+                type: "formulario",
+                icon: "🔬",
+                desc: "Formulário para pedido de teste oral de tolerância à glicose.",
+                file: "rede alyne/Diabetes gestacional/Pedido-TOTG.pdf"
+            },
+            {
+                title: "Fluxograma Glicosímetro Gestantes",
+                category: "diabetes",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de uso de glicosímetro para gestates.",
+                file: "rede alyne/Diabetes gestacional/Fluxograma-glicosimetro-gestantes-CAM.pdf"
+            },
+            {
+                title: "Ebook Diabetes Gestacional",
+                category: "diabetes",
+                type: "apoio",
+                icon: "📖",
+                desc: "Material educativo sobre diabetes gestacional.",
+                file: "rede alyne/Diabetes gestacional/Ebook-DMG.pdf"
+            },
+
+            // VIOLÊNCIA
+            {
+                title: "Fluxo Violência",
+                category: "violencia",
+                type: "diretriz",
+                icon: "🔀",
+                desc: "Fluxograma de atendimento a vítimas de violência.",
+                file: "rede alyne/Violência contra a Mulher/Fluxo-Violencia.pdf"
+            },
+            {
+                title: "Protocolo Estadual Violência Sexual 2021",
+                category: "violencia",
+                type: "diretriz",
+                icon: "📋",
+                desc: "Protocolo de atendimento a vítimas de violência sexual.",
+                file: "rede alyne/Violência contra a Mulher/Protocolo-Estadual-2021-Vitima-Violencia-Sexual.pdf"
+            },
+            {
+                title: "Ficha Notificação Violência",
+                category: "violencia",
+                type: "formulario",
+                icon: "📝",
+                desc: " Ficha de notificação de violência.",
+                file: "rede alyne/Violência contra a Mulher/Ficha-notificacao-violencia.pdf"
+            },
+            {
+                title: "Cartilha Violência Doméstica",
+                category: "violencia",
+                type: "apoio",
+                icon: "📖",
+                desc: "Cartilha informativa sobre violência doméstica.",
+                file: "rede alyne/Violência contra a Mulher/Cartilha-Violencia-Domestica.pdf"
+            },
+
+            // SAÚDE DA CRIANÇA
+            {
+                title: "Caderno 33 - Crescimento e Desenvolvimento",
+                category: "saude-crianca",
+                type: "apoio",
+                icon: "📖",
+                desc: "Caderno de atenção básica - Crescimento e Desenvolvimento.",
+                file: "rede alyne/Saúde da Criança/Caderno-33-Crescimento-Desenvolvimento-2012.pdf"
+            },
+            {
+                title: "Caderno 23 - Aleitamento e Alimentação",
+                category: "saude-crianca",
+                type: "apoio",
+                icon: "📖",
+                desc: "Caderno de atenção básica - Aleitamento e Alimentação.",
+                file: "rede alyne/Saúde da Criança/Caderno-23-Aleitamento-Alimentacao.pdf"
+            },
+            {
+                title: "Teste da Orelhinha",
+                category: "saude-crianca",
+                type: "apoio",
+                icon: "👂",
+                desc: "Informativo sobre teste da orelhinha.",
+                file: "rede alyne/Saúde da Criança/Teste da orelhinha.png"
+            },
+
+            // CAPACITAÇÃO
+            {
+                title: "Manual Implante Rede Alyne",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "📖",
+                desc: "Manual de capacitação em Implante subdérmico.",
+                file: "rede alyne/Capacitação Implanon/Manual-Implante-contraceptivo-Rede-Alyne.pdf"
+            },
+            {
+                title: "Aula Implante Subdérmico",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "🎓",
+                desc: "Material de aula sobre Implante subdérmico.",
+                file: "rede alyne/Capacitação Implanon/Aula-Implante-Subdermico.pdf"
+            },
+            {
+                title: "Aula Direitos Reprodutivos",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "🎓",
+                desc: "Material de aula sobre direitos sexuais e reprodutivos.",
+                file: "rede alyne/Capacitação Implanon/Aula-Implanon-Direitos-sexuais-reprodutivos.pdf"
+            },
+            {
+                title: "Aula Gravidez na Adolescência",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "🎓",
+                desc: "Material de aula sobre gravidez na adolescência e mutirões.",
+                file: "rede alyne/Capacitação Implanon/Aula-Gravidez-na-adolescencia-e-Organizacao-mutiroes.pdf"
+            },
+            {
+                title: "Legislação COREN",
+                category: "capacitacao",
+                type: "legislacao",
+                icon: "⚖️",
+                desc: "Material de aula sobre legislação COREN.",
+                file: "rede alyne/Capacitação Implanon/Aula-Legislacao-COREN.pdf"
+            },
+            {
+                title: "Resolução COFEN 801/2026",
+                category: "capacitacao",
+                type: "legislacao",
+                icon: "⚖️",
+                desc: "Resolução sobre prescrição de medicamentos.",
+                file: "rede alyne/Capacitação Implanon/Resolucao-Cofen-Prescricao-Medicamentos-801-2026.pdf"
+            },
+            {
+                title: "Resolução COFEN 802/2026",
+                category: "capacitacao",
+                type: "legislacao",
+                icon: "⚖️",
+                desc: "Resolução sobre atuação de enfermeiros.",
+                file: "rede alyne/Capacitação Implanon/RESOLUÇÃO COFEN Nº 802, DE 16 DE JANEIRO DE 2026.pdf"
+            },
+            {
+                title: "Nota Técnica 419/2025",
+                category: "capacitacao",
+                type: "legislacao",
+                icon: "📄",
+                desc: "Nota técnica conjunta sobre Implante.",
+                file: "rede alyne/Capacitação Implanon/NOTA TÉCNICA CONJUNTA Nº 419 de 2025-DGCI_DESCO_SAPS_MS.pdf"
+            },
+            {
+                title: "Nota Técnica 156/2025",
+                category: "capacitacao",
+                type: "legislacao",
+                icon: "📄",
+                desc: "Nota técnica sobre Planejamento Familiar.",
+                file: "rede alyne/Capacitação Implanon/NOTA TÉCNICA CONJUNTA Nº 156 de 2025- COPAFB_CGAFB_DAF_SECTICS_CGESMU-DGCI_MS (1).pdf"
+            },
+            {
+                title: "Folder Saúde Sexual e Reprodutiva",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "📄",
+                desc: "Folder educativo sobre saúde sexual e reprodutiva.",
+                file: "rede alyne/Capacitação Implanon/Folder-saude-sexual-saude-reprodutiva.pdf"
+            },
+            {
+                title: "Lista Profissionais Capacitados",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "📋",
+                desc: "Lista de profissionais capacitados em Implanon.",
+                file: "rede alyne/Capacitação Implanon/Lista-profissionais-capacitacao-Implanon.pdf"
+            },
+            {
+                title: "Materiais para Inserção Implanon",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "📋",
+                desc: "Lista de materiais necessários para inserção.",
+                file: "rede alyne/Capacitação Implanon/Materiais-necessarios-para Insercao-Implanon.docx"
+            },
+            {
+                title: "Check-list Descartar Gestação",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "✅",
+                desc: "Check-list para descartar gestação antes de inserir método.",
+                file: "rede alyne/Capacitação Implanon/Check-list-descartar-gestacao.pdf"
+            },
+            {
+                title: "SOAP Implanon",
+                category: "capacitacao",
+                type: "apoio",
+                icon: "📝",
+                desc: "Modelo de atendimento SOAP para Implanon.",
+                file: "rede alyne/Capacitação Implanon/SOAP-Enfermeiros-Implanon.pdf"
+            },
+            {
+                title: "Comprovação Capacitação Implanon",
+                category: "capacitacao",
+                type: "formulario",
+                icon: "📝",
+                desc: "Formulário de comprovação de capacitação.",
+                file: "rede alyne/Capacitação Implanon/Comprovacao-capacitacao-Implanon.docx"
+            },
+            {
+                title: "TCLE Implante Adolescentes (PDF)",
+                category: "capacitacao",
+                type: "formulario",
+                icon: "📝",
+                desc: "Termo de Consentimento para adolescentes.",
+                file: "rede alyne/Capacitação Implanon/TCLE-Implante-Adolescentes.pdf"
+            },
+
+            // PLANEJAMENTO FAMILIAR - APOIO
+            {
+                title: "Aula Planejamento Familiar",
+                category: "planejamento-familiar",
+                type: "apoio",
+                icon: "🎓",
+                desc: "Material completo de aula sobre Planejamento Familiar.",
+                file: "rede alyne/Planejamento Familiar/Aula-completa-Planejamento-Familiar-em-pdf.pdf"
+            },
+            {
+                title: "Link Aula Canva",
+                category: "planejamento-familiar",
+                type: "apoio",
+                icon: "🎨",
+                desc: "Link para aula de Planejamento Familiar no Canva.",
+                file: "rede alyne/Planejamento Familiar/Link aula de Planejamento Familiar no Canva.pdf"
+            },
+            {
+                title: "Link Podcast Por Elas",
+                category: "planejamento-familiar",
+                type: "apoio",
+                icon: "🎧",
+                desc: "Link para Podcast Por Elas - Pré-natal.",
+                file: "rede alyne/Pré-natal de risco habitual/Links-Podcast-Por-Elas-Ensina-ai.docx"
+            },
+            {
+                title: "Link Podcast Plano de Parto",
+                category: "planejamento-familiar",
+                type: "apoio",
+                icon: "🎧",
+                desc: "Link para Podcast sobre Plano de Parto.",
+                file: "rede alyne/Pré-natal de risco habitual/Plano de Parto/Link-Podcast-Plano-de-Parto.docx"
+            }
+        ];
+
+        let currentCategory = 'all';
+
+        function renderMaterials(filter = '', category = 'all') {
+            const grid = document.getElementById('materials-grid');
+            const empty = document.getElementById('empty-state');
+            
+            let filtered = materials;
+            
+            if (category !== 'all') {
+                filtered = filtered.filter(m => m.category === category);
+            }
+            
+            if (filter) {
+                const search = filter.toLowerCase();
+                filtered = filtered.filter(m => 
+                    m.title.toLowerCase().includes(search) || 
+                    m.desc.toLowerCase().includes(search)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+            
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            
+            grid.innerHTML = filtered.map(m => `
+                <div class="material-card" onclick="openMaterial('${m.file}')">
+                    <div class="material-icon">${m.icon}</div>
+                    <span class="material-category ${m.type}">${m.type === 'diretriz' ? 'Diretriz' : m.type === 'formulario' ? 'Formulário' : m.type === 'apoio' ? 'Apoio' : 'Legislação'}</span>
+                    <div class="material-title">${m.title}</div>
+                    <div class="material-desc">${m.desc}</div>
+                    <span class="material-link">📂 Abrir / Baixar</span>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            const search = document.getElementById('search-input').value;
+            renderMaterials(search, cat);
+        }
+
+        function filterMaterials() {
+            const search = document.getElementById('search-input').value;
+            renderMaterials(search, currentCategory);
+        }
+
+        function openMaterial(file) {
+            window.open(file, '_blank');
+        }
+
+        // Initial render
+        renderMaterials();
+    </script>
+</body>
+
+</html>
