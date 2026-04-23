@@ -2093,6 +2093,15 @@
           </div>
 
           <hr style="margin:24px 0;border-color:var(--border)">
+          <h3 style="margin-bottom:16px;font-size:.95rem">☁️ Sincronização na Nuvem</h3>
+          <p style="font-size:0.8rem; color:var(--text2); margin-bottom:15px;">Sincronize seus dados com o Firebase para acessar de qualquer dispositivo.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <button class="btn btn-primary" onclick="window.FirebaseSync?.forceSync()" style="justify-content:center">☁️ Sincronizar Agora</button>
+            <button class="btn btn-outline" onclick="alert('Status: ' + (window.FirebaseSync?.isOnline ? 'Conectado' : 'Desconectado'))" style="justify-content:center">📡 Ver Status</button>
+          </div>
+          <div id="sync-status" style="margin-top:12px;font-size:0.85rem;color:var(--text2)"></div>
+
+          <hr style="margin:24px 0;border-color:var(--border)">
           <h3 style="margin-bottom:16px;font-size:.95rem">Mover para Outro Computador</h3>
           <p style="font-size:0.8rem; color:var(--text2); margin-bottom:15px;">Use estas ferramentas para levar todo o
             seu trabalho (pacientes, mapas, microáreas) para o computador da UBS ou vice-versa.</p>
