@@ -99,18 +99,26 @@
 
     // Baixar dados do Firebase para local
     syncFromCloud: async function() {
-      if (!this.isOnline || !this.db) return;
+      if (!this.isOnline || !this.db) {
+        console.log("syncFromCloud: Não conectado ou sem db");
+        return;
+      }
       
       try {
         const user = this.auth.currentUser;
         const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
         
+        console.log("Buscando dados em:", collectionName);
         const doc = await this.db.collection(collectionName).doc('backup').get();
         
         if (doc.exists) {
           const dados = doc.data();
+          console.log("Dados encontrados no Firebase:", Object.keys(dados));
           
-          if (dados.mif) window.data.db.set('mif', dados.mif);
+          if (dados.mif) {
+            window.data.db.set('mif', dados.mif);
+            console.log("✅ mif restaurado:", dados.mif.length, "pacientes");
+          }
           if (dados.contracep) window.data.db.set('contracep', dados.contracep);
           if (dados.pccu) window.data.db.set('pccu', dados.pccu);
           if (dados.ist) window.data.db.set('ist', dados.ist);
@@ -121,6 +129,8 @@
           
           console.log("✅ Dados baixados da nuvem!");
           return true;
+        } else {
+          console.log("Nenhum documento encontrado no Firebase");
         }
       } catch (e) {
         console.error("Erro ao baixar dados:", e);
@@ -160,12 +170,14 @@
     startAutoSync: function() {
       if (!window.syncConfig.autoSync) return;
       
-      setInterval(() => {
-        this.syncToCloud();
-      }, window.syncConfig.syncInterval);
-      
-      // Sincronizar ao iniciar
-      this.syncFromCloud();
+      // Sincronizar ao iniciar (baixa dados da nuvem)
+      console.log("Iniciando sincronização automática...");
+      this.syncFromCloud().then(() => {
+        // Depois de baixar, configura intervalo para enviar
+        setInterval(() => {
+          this.syncToCloud();
+        }, window.syncConfig.syncInterval);
+      });
     },
 
     // Forçar sincronização manual
