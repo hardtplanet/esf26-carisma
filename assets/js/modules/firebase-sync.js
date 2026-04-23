@@ -117,9 +117,17 @@
         return;
       }
       
+      const debugStatus = document.getElementById('sync-debug-status');
+      function log(msg) {
+        console.log(msg);
+        if (debugStatus) debugStatus.innerHTML += msg + '<br>';
+      }
+      
       try {
-        const user = this.auth.currentUser;
+        const user = this.auth?.currentUser;
         const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
+        
+        log(`📤 Enviando para: ${collectionName}`);
         
         // Pega dados do LocalStorage
         const mif = window.data.db.get('mif') || [];
@@ -127,12 +135,7 @@
         const pccu = window.data.db.get('pccu') || [];
         const ist = window.data.db.get('ist') || [];
         
-        console.log("Enviando para Firebase:", {
-          mif: mif.length,
-          contracep: contracep.length,
-          pccu: pccu.length,
-          ist: ist.length
-        });
+        log(`📊 Enviando: mif=${mif.length}, contracep=${contracep.length}, pccu=${pccu.length}, ist=${ist.length}`);
         
         const dados = {
           mif,
@@ -148,9 +151,10 @@
 
         await this.db.collection(collectionName).doc('backup').set(dados, { merge: true });
         this.lastSync = new Date();
-        console.log("✅ Dados sincronizados para a nuvem!");
+        log("✅ Dados SALVOS no Firebase!");
         
       } catch (e) {
+        log("❌ Erro ao enviar: " + e.message);
         console.error("Erro ao sincronizar:", e);
       }
     },
@@ -162,35 +166,64 @@
         return;
       }
       
+      const debugStatus = document.getElementById('sync-debug-status');
+      function log(msg) {
+        console.log(msg);
+        if (debugStatus) debugStatus.innerHTML += msg + '<br>';
+      }
+      
       try {
-        const user = this.auth.currentUser;
+        const user = this.auth?.currentUser;
         const collectionName = user ? `usuarios/${user.uid}/dados` : 'dados_publicos';
         
-        console.log("Buscando dados em:", collectionName);
+        log(`📥 Buscando em: ${collectionName}`);
+        
         const doc = await this.db.collection(collectionName).doc('backup').get();
         
         if (doc.exists) {
           const dados = doc.data();
-          console.log("Dados encontrados no Firebase:", Object.keys(dados));
+          log(`📊 Dados encontrados: ${Object.keys(dados).join(', ')}`);
           
           if (dados.mif) {
             window.data.db.set('mif', dados.mif);
-            console.log("✅ mif restaurado:", dados.mif.length, "pacientes");
+            log(`✅ mif restaurado: ${dados.mif.length} pacientes`);
           }
-          if (dados.contracep) window.data.db.set('contracep', dados.contracep);
-          if (dados.pccu) window.data.db.set('pccu', dados.pccu);
-          if (dados.ist) window.data.db.set('ist', dados.ist);
+          if (dados.contracep) {
+            window.data.db.set('contracep', dados.contracep);
+            log(`✅ contracep restaurado: ${dados.contracep.length} registros`);
+          }
+          if (dados.pccu) {
+            window.data.db.set('pccu', dados.pccu);
+            log(`✅ pccu restaurado: ${dados.pccu.length} registros`);
+          }
+          if (dados.ist) {
+            window.data.db.set('ist', dados.ist);
+            log(`✅ ist restaurado: ${dados.ist.length} registros`);
+          }
           if (dados.fila_contracep) window.data.db.set('fila_contracep', dados.fila_contracep);
           if (dados.soap_history) window.data.db.set('soap_history', dados.soap_history);
           if (dados.soap_templates) window.data.db.set('soap_templates', dados.soap_templates);
           if (dados.config) window.data.db.set('config', dados.config);
           
-          console.log("✅ Dados baixados da nuvem!");
+          log("✅ Dados baixados da nuvem!");
           return true;
         } else {
-          console.log("Nenhum documento encontrado no Firebase");
+          log("⚠️ Nenhum documento 'backup' encontrado no Firebase");
+          // Tenta buscar em dados_publicos como fallback
+          log("🔄 Tentando buscar em dados_publicos...");
+          const doc2 = await this.db.collection('dados_publicos').doc('backup').get();
+          if (doc2.exists) {
+            log("✅ Encontrou em dados_publicos!");
+            const dados = doc2.data();
+            if (dados.mif) window.data.db.set('mif', dados.mif);
+            if (dados.contracep) window.data.db.set('contracep', dados.contracep);
+            if (dados.pccu) window.data.db.set('pccu', dados.pccu);
+            if (dados.ist) window.data.db.set('ist', dados.ist);
+            return true;
+          }
         }
       } catch (e) {
+        log("❌ Erro ao baixar: " + e.message);
         console.error("Erro ao baixar dados:", e);
       }
       return false;
@@ -241,21 +274,50 @@
     // Forçar sincronização manual
     forceSync: async function() {
       const statusEl = document.getElementById('sync-status');
+      const debugStatus = document.getElementById('sync-debug-status');
+      
+      function log(msg) {
+        console.log(msg);
+        if (debugStatus) debugStatus.innerHTML += msg + '<br>';
+      }
+      
       if(statusEl) statusEl.innerHTML = '⏳ Enviando dados para a nuvem...';
+      log("🚀 forceSync iniciado...");
+      
+      // Primeiro, mostra o que vamos enviar
+      const mif = window.data.db.get('mif') || [];
+      const contracep = window.data.db.get('contracep') || [];
+      const pccu = window.data.db.get('pccu') || [];
+      
+      log(`📊 Dados locais: mif=${mif.length}, contracep=${contracep.length}, pccu=${pccu.length}`);
       
       try {
         await this.syncToCloud();
         if(statusEl) statusEl.innerHTML = '✅ Dados enviados! Baixando do Firebase...';
+        log("📤 Dados enviados para a nuvem!");
         
-        await this.syncFromCloud();
+        // Pequena pausa antes de baixar
+        await new Promise(r => setTimeout(r, 1000));
         
-        if(statusEl) {
-          statusEl.innerHTML = '✅ Sincronização completa!';
-          setTimeout(() => statusEl.innerHTML = '', 3000);
+        if(statusEl) statusEl.innerHTML = '⏳ Baixando dados...';
+        log("📥 Tentando baixar dados...");
+        
+        const sucesso = await this.syncFromCloud();
+        
+        if(sucesso) {
+          if(statusEl) {
+            statusEl.innerHTML = '✅ Sincronização completa!';
+            setTimeout(() => statusEl.innerHTML = '', 5000);
+          }
+          log("✅ Sincronização completa!");
+          alert("Sincronização concluída!");
+        } else {
+          if(statusEl) statusEl.innerHTML = '⚠️ Enviado, mas não encontrou dados para baixar';
+          log("⚠️ Enviado, mas não encontrou dados para baixar");
         }
-        alert("Sincronização concluída!");
       } catch(e) {
         if(statusEl) statusEl.innerHTML = '❌ Erro: ' + e.message;
+        log("❌ Erro: " + e.message);
         alert("Erro na sincronização: " + e.message);
       }
     }
