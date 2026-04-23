@@ -227,25 +227,40 @@
   }
 
   async function initFirebaseSync() {
+    // Mostra painel de debug
+    const debugEl = document.getElementById('sync-debug');
+    const debugStatus = document.getElementById('sync-debug-status');
+    
+    if (debugEl) debugEl.style.display = 'block';
+    
+    function log(msg) {
+      console.log(msg);
+      if (debugStatus) debugStatus.innerHTML += msg + '<br>';
+    }
+    
+    log("🔄 Iniciando Firebase...");
+    
     await window.FirebaseSync.init();
+    
+    log("📡 isOnline: " + window.FirebaseSync.isOnline);
+    log("⚙️ autoSync: " + window.syncConfig?.autoSync);
     
     // Se conectado e sincronização automática ativada, baixa dados
     if (window.FirebaseSync.isOnline && window.syncConfig?.autoSync) {
-      console.log("Auto-sync ativado, baixando dados...");
+      log("⏳ Baixando dados da nuvem...");
+      
       setTimeout(async () => {
         const sucesso = await window.FirebaseSync.syncFromCloud();
         if (sucesso) {
-          console.log("Dados baixados com sucesso!");
-          // Dispara evento para o app.js renderizar
+          log("✅ Dados baixados!");
           window.dispatchEvent(new Event('dadosSincronizados'));
-          // Recarrega a página para renderizar
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+          setTimeout(() => window.location.reload(), 2000);
         } else {
-          console.log("Nenhum dado encontrado na nuvem para baixar");
+          log("⚠️ Nenhum dado encontrado na nuvem");
         }
-      }, 2000); // Espera 2 segundos para tudo carregar
+      }, 3000);
+    } else {
+      log("❌ Firebase não conectado ou sync desativado");
     }
   }
 })();
