@@ -11,7 +11,7 @@ window.firebaseConfig = {
 };
 
 window.syncConfig = {
-  enabled: true,
-  autoSync: true,
+  enabled: false, // Desativado temporariamente - use sync manual
+  autoSync: false,
   syncInterval: 30000
 };
