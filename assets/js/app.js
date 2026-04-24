@@ -1340,11 +1340,6 @@ function salvarNovoPaciente(e) {
     alert('Erro ao salvar: ' + err.message);
   }
 }
-  atualizarBadges();
-  fecharModal('modal-novo-paciente');
-  form.reset();
-  alert('Paciente cadastrado com sucesso!');
-}
 
 function excItem(chave, id, fn) { if (!confirm('Excluir este registro?')) return; db.set(chave, db.get(chave).filter(x => x.id !== id)); fn() }
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') }));
