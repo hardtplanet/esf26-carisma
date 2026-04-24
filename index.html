@@ -396,21 +396,33 @@
       margin-bottom: 24px
     }
 
-    .dash-card {
-      background: #fff;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
-      border-left: 4px solid var(--primary);
-      transition: .2s;
-      cursor: pointer
+.dash-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
-
     .dash-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, .1)
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px var(--shadow);
     }
-
+    /* Card com valor 0 - esmaecer */
+    .dash-card[data-val="0"], .dash-card.dash-zero {
+        opacity: 0.5;
+        filter: grayscale(30%);
+    }
+    .dash-card[data-val="0"]:hover, .dash-card.dash-zero:hover {
+        opacity: 0.7;
+        filter: grayscale(0%);
+    }
+    
     .dash-card.pink {
       border-left-color: var(--mulher)
     }
@@ -1344,6 +1356,31 @@
 
         <!-- ======== DASHBOARD ======== -->
         <div id="pg-dashboard" class="page-section active">
+          
+          <!-- 🔥 PAINEL DE AÇÃO IA (TOPO) -->
+          <div id="dash-ia-board" style="margin-bottom:20px; background:linear-gradient(135deg, #fef2f2, #fee2e2); border-radius:16px; padding:24px; border:2px solid #fca5a5; box-shadow:0 4px 12px rgba(239,68,68,0.15);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:24px;">🚨</span>
+                <div>
+                  <h2 style="margin:0; color:#991b1b; font-size:1.25rem;">PAINEL DE AÇÃO</h2>
+                  <span style="font-size:0.8rem; color:#7f1d1d;">O que precisa da SUA atenção HOJE</span>
+                </div>
+              </div>
+              <button id="btn-force-ia-sweep" onclick="window.AgentIA?.runVarreduraIA(true)" style="background:#dc2626; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
+                🕵️ Atualizar Análise
+              </button>
+            </div>
+                <span id="ia-board-status" style="font-size:0.8rem; color:#7f1d1d; display:block; margin-bottom:12px;">Análise automática ativa</span>
+            <div id="ia-board-container" style="display:flex; gap:16px; overflow-x:auto; padding:8px; min-height:120px; flex-wrap:wrap;">
+              <!-- Post-its aparecem aqui -->
+              <div style="color:#7f1d1d; text-align:center; width:100%; padding:20px;">
+                <p style="font-size:0.9rem;">Clique em "Atualizar Análise" para gerar recomendações personalizadas</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards do Topo (只 não-zero) -->
           <div class="cards-grid">
             <!-- Novo cartão: Total Geral -->
             <div class="dash-card" style="background-color: var(--primary); color: white;" onclick="navTo('cadastro-central')">
@@ -1404,6 +1441,7 @@
             </div>
           </div>
 
+          <!-- 📊 Gráficos (ABAIXO - área secundária) -->
           <div class="chart-grid">
             <div class="chart-card">
               <h3>📊 Métodos Contraceptivos</h3><canvas id="chart-metodos"></canvas>
@@ -1416,22 +1454,6 @@
             </div>
             <div class="chart-card">
               <h3>📊 Status Contraceptivos</h3><canvas id="chart-status"></canvas>
-            </div>
-          </div>
-
-          <!-- IA BOARD AVISOS MÚLTIPLOS -->
-          <div id="dash-ia-board" style="margin-top:20px; background:#fff; border-radius:12px; padding:20px; border:1px solid var(--border); box-shadow:0 4px 6px -1px var(--shadow); margin-bottom: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-              <h3 style="margin:0; font-size:1.1rem; color:var(--text1); display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.5rem">🤖</span> Quadro de Avisos da IA
-              </h3>
-              <div style="display:flex; gap:10px; align-items:center;">
-                <span id="ia-board-status" style="font-size:0.8rem; color:var(--text2);">Busca diária ativada</span>
-                <button class="btn btn-sm btn-outline-primary" id="btn-force-ia-sweep" onclick="if(window.AIManager && window.AIManager.runVarreduraIA) { window.AIManager.runVarreduraIA(true) } else { alert('O Assistente não está pronto ainda') }">🔄 Forçar Varredura Agora</button>
-              </div>
-            </div>
-            <div id="ia-board-container" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; min-height:100px;">
-              <div style="color:var(--text2); font-size:0.9rem; font-style:italic;">Nenhum aviso pendente.</div>
             </div>
           </div>
 

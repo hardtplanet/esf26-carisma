@@ -57,7 +57,22 @@ function renderDashboard() {
   const ists = data.db.get('ist');
   const atrasados = calcAtrasados();
 
-  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setVal = (id, val) => { 
+    const el = document.getElementById(id); 
+    if (el) {
+      el.textContent = val;
+      // Adiciona atributo para styling de cards zeros
+      const card = el.closest('.dash-card');
+      if (card) {
+        card.setAttribute('data-val', val);
+        if (val === 0 || val === '0') {
+          card.classList.add('dash-zero');
+        } else {
+          card.classList.remove('dash-zero');
+        }
+      }
+    }
+  };
   setVal('d-total-geral', data.db.get('mif').length);
   setVal('d-total', mifs.length);
   setVal('d-atrasados', atrasados.length);
