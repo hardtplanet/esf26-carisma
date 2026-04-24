@@ -1287,31 +1287,59 @@ function abrirModalNovoPaciente() { abrirModal('modal-novo-paciente') }
 
 function salvarNovoPaciente(e) {
   e.preventDefault();
-  const form = document.getElementById('form-novo-paciente');
-  const formData = new FormData(form);
-  const novo = {
-    id: uuid(),
-    nome: document.getElementById('np-nome').value,
-    cns: document.getElementById('np-cns').value,
-    cpf: document.getElementById('np-cpf').value,
-    nasc: document.getElementById('np-nasc').value,
-    tel: document.getElementById('np-tel').value,
-    telCelular: document.getElementById('np-cel').value,
-    endereco: document.getElementById('np-end').value,
-    numero: document.getElementById('np-num').value,
-    bairro: document.getElementById('np-bairro').value,
-    cidade: document.getElementById('np-cidade').value || 'Dourados',
-    estado: document.getElementById('np-est').value || 'MS',
-    createdAt: new Date().toISOString()
-  };
+  console.log("Salvando novo paciente...");
   
-  if (!novo.nome) return alert('Nome é obrigatório!');
-  
-  const existing = db.get('mif');
-  const already = existing.find(p => p.cns === novo.cns || p.cpf === novo.cpf);
-  if (already) return alert('Já existe paciente com este CNS ou CPF!');
-  
-  db.set('mif', [...existing, novo]);
+  try {
+    const nome = document.getElementById('np-nome').value;
+    const nasc = document.getElementById('np-nasc').value;
+    const sexo = document.getElementById('np-sexo')?.value;
+    const cpf = document.getElementById('np-cpf').value;
+    const cns = document.getElementById('np-cns').value;
+    const tel = document.getElementById('np-tel').value;
+    
+    if (!nome) return alert('Nome é obrigatório!');
+    if (!nasc) return alert('Data de nascimento é obrigatória!');
+    
+    const novo = {
+      id: uuid(),
+      nome: nome,
+      nasc: nasc,
+      sexo: sexo,
+      cpf: cpf,
+      cns: cns,
+      tel: tel || document.getElementById('np-cel')?.value,
+      endereco: document.getElementById('np-rua')?.value,
+      numero: document.getElementById('np-num')?.value,
+      bairro: document.getElementById('np-bairro')?.value,
+      cidade: document.getElementById('np-cidade')?.value || 'Dourados',
+      estado: document.getElementById('np-est')?.value || 'MS',
+      micro: document.getElementById('np-micro')?.value,
+      createdAt: new Date().toISOString()
+    };
+    
+    const existing = db.get('mif') || [];
+    
+    if (cpf) {
+      const alreadyCpf = existing.find(p => p.cpf === cpf);
+      if (alreadyCpf) return alert('Já existe paciente com este CPF!');
+    }
+    if (cns) {
+      const alreadyCns = existing.find(p => p.cns === cns);
+      if (alreadyCns) return alert('Já existe paciente com este CNS!');
+    }
+    
+    db.set('mif', [...existing, novo]);
+    console.log("Paciente salvo:", novo.nome);
+    
+    atualizarBadges();
+    fecharModal('modal-novo-paciente');
+    document.getElementById('form-novo-paciente')?.reset();
+    alert('Paciente cadastrado com sucesso!');
+  } catch(err) {
+    console.error("Erro ao salvar:", err);
+    alert('Erro ao salvar: ' + err.message);
+  }
+}
   atualizarBadges();
   fecharModal('modal-novo-paciente');
   form.reset();
