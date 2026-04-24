@@ -397,19 +397,26 @@
             let idade = hoje.getFullYear() - nasc.getFullYear();
             if (hoje.getMonth() < nasc.getMonth() || (hoje.getMonth() === nasc.getMonth() && hoje.getDate() < nasc.getDate())) idade--;
 
-            const filhos = parseInt(p.numFilhos) || 0;
+const filhos = parseInt(p.numFilhos) || 0;
             const elegivel = idade >= 21 || (idade >= 18 && filhos >= 2);
-
+            const isGestante = p.tags?.includes('Gestante');
+            
             // Seção de Métodos Contraceptivos LARCs
             let htmlBotoes = '';
             
             // Verifica se é mulher
             if (p.sexo === 'Feminino') {
-                // Botões de Esterilização
+                // Botões de Esterilização - apenas um botão baseado na situação de gestação
                 if (elegivel) {
                     msg.innerHTML = `✅ Paciente <strong>ELEGÍVEL</strong> para Esterilização Cirúrgica (Lei 14.443/2022).<br>Idade: ${idade} anos | Filhos: ${filhos}`;
-                    htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-eletiva')">📄 Laqueadura Eletiva</button>`;
-                    htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-parto')">📄 Laqueadura no Parto</button>`;
+                    
+                    if (isGestante) {
+                        // Se é gestante → Laqueadura no Parto
+                        htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-parto')">📄 Gerar Passaporte Laqueadura no Parto</button>`;
+                    } else {
+                        // Se não é gestante → Laqueadura Eletiva
+                        htmlBotoes += `<button type="button" class="btn" style="background:#EA580C; color:#fff;" onclick="abrirEsterilizacao('laqueadura-eletiva')">📄 Gerar Passaporte Laqueadura Eletiva</button>`;
+                    }
                 } else {
                     msg.innerHTML = `⚠️ Paciente <strong>NÃO CUMPRE</strong> critérios para Esterilização.<br>Critério: ≥ 21 anos OU (≥ 18 anos e ≥ 2 filhos).`;
                 }

@@ -475,13 +475,16 @@ function abrirPerfilCC(id, abaAtiva = 'resumo') {
         const nasc_est = new Date(p.nasc);
         let idade_est = hoje_est.getFullYear() - nasc_est.getFullYear();
         if (hoje_est.getMonth() < nasc_est.getMonth() || (hoje_est.getMonth() === nasc_est.getMonth() && hoje_est.getDate() < nasc_est.getDate())) idade_est--;
-        const filhos_est = parseInt(p.numFilhos) || 0;
+const filhos_est = parseInt(p.numFilhos) || 0;
         const elegivel_est = idade_est >= 21 || (idade_est >= 18 && filhos_est >= 2);
-
+        const isGestante = p.tags?.includes('Gestante');
+        
         if (isMasc && elegivel_est) {
             btnEst = `<button class="btn btn-sm" style="background:#EA580C;color:#fff;grid-column: span 2" onclick="preencherFormulario('vasectomia','${p.id}')">✂️ Gerar Passaporte Vasectomia</button>`;
         } else if (!isMasc && elegivel_est) {
-            btnEst = `<button class="btn btn-sm" style="background:#EA580C;color:#fff;grid-column: span 2" onclick="preencherFormulario('laqueadura','${p.id}')">✂️ Gerar Passaporte Laqueadura</button>`;
+            // Se é gestante → Laqueadura no Parto, senão → Eletiva
+            const tipoLaq = isGestante ? 'laqueadura_parto' : 'laqueadura';
+            btnEst = `<button class="btn btn-sm" style="background:#EA580C;color:#fff;grid-column: span 2" onclick="preencherFormulario('${tipoLaq}','${p.id}')">✂️ Gerar Passaporte ${isGestante ? 'Laqueadura no Parto' : 'Laqueadura Eletiva'}</button>`;
         }
 
         corpoH += `
@@ -665,9 +668,16 @@ function preencherFormulario(modulo, pessoaId) {
             window.open('Passaporte_Vasectomia.html', '_blank');
         },
         'laqueadura': () => {
+            // Laqueadura Eletiva (não gestante)
             const d = { nome: p.nome, cns: p.cns, nasc: p.nasc, cpf: p.cpf, end: [p.rua, p.numero].filter(Boolean).join(', '), bairro: p.bairro, tel: p.telCelular || p.telResidencial, mae: p.nomeMae, numFilhos: p.numFilhos };
             localStorage.setItem('dadosEsterilizacao', JSON.stringify(d));
             window.open('Passaporte_Laqueadura.html', '_blank');
+        },
+        'laqueadura_parto': () => {
+            // Laqueadura no Parto (gestante)
+            const d = { nome: p.nome, cns: p.cns, nasc: p.nasc, cpf: p.cpf, end: [p.rua, p.numero].filter(Boolean).join(', '), bairro: p.bairro, tel: p.telCelular || p.telResidencial, mae: p.nomeMae, numFilhos: p.numFilhos };
+            localStorage.setItem('dadosEsterilizacao', JSON.stringify(d));
+            window.open('Passaporte_Laqueadura_Parto.html', '_blank');
         }
     };
     if (destinos[modulo]) destinos[modulo]();
