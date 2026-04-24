@@ -36,7 +36,13 @@ function initMap() {
 
     map.zoomControl.setPosition('topright');
 
-    // Base Layers
+    // Base Layers - usando CartoDB (mais permissivo) como padrão
+    const cartoDB = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 22,
+        maxNativeZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    });
+
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 22,
         maxNativeZoom: 19,
@@ -50,11 +56,12 @@ function initMap() {
     });
 
     const baseMaps = {
-        "Mapa de Ruas": osm,
-        "Satélite (Alta Definição)": satellite
+        "Mapa (CartoDB)": cartoDB,
+        "Mapa Ruas (OSM)": osm,
+        "Satélite (Esri)": satellite
     };
 
-    osm.addTo(map);
+    cartoDB.addTo(map);
 
     // Layer Control for switching backgrounds
     const overlayMaps = {
@@ -214,17 +221,22 @@ async function getCoordinates(address) {
     const normAddr = address.toLowerCase().trim();
     if (geocodingCache[normAddr]) return geocodingCache[normAddr];
 
-    // Respect Nominatim policy (max 1 req/sec) + safety margin
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // Delay maior para evitar rate limit (2 segundos)
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+        // Usar Nominatim com headers mais completos
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=br`;
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'ESF26-Carisma-Manager/1.1' }
+            headers: { 
+                'User-Agent': 'ESF26-Carisma-Manager/1.0 (UBS Dourados - Saúde)',
+                'Accept': 'application/json'
+            }
         });
 
         if (response.status === 403 || response.status === 429) {
             console.warn('Nominatim rate limit hit or blocked.');
+            // Tenta buscar do cache local primeiro
             return null;
         }
 
@@ -233,10 +245,9 @@ async function getCoordinates(address) {
         if (data && data.length > 0) {
             const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
             geocodingCache[normAddr] = coords;
-            saveGeoCache(); // Incremental save
+            saveGeoCache();
             return coords;
         } else {
-            // Negative caching to avoid re-searching failed addresses
             geocodingCache[normAddr] = 'NOT_FOUND';
             saveGeoCache();
             return 'NOT_FOUND';
