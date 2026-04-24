@@ -477,7 +477,11 @@ function abrirPerfilCC(id, abaAtiva = 'resumo') {
         if (hoje_est.getMonth() < nasc_est.getMonth() || (hoje_est.getMonth() === nasc_est.getMonth() && hoje_est.getDate() < nasc_est.getDate())) idade_est--;
 const filhos_est = parseInt(p.numFilhos) || 0;
         const elegivel_est = idade_est >= 21 || (idade_est >= 18 && filhos_est >= 2);
-        const isGestante = p.tags?.includes('Gestante');
+        
+        // Verifica tags de forma robusta - pode ser array ou string
+        const tags = p.tags || [];
+        const tagsStr = Array.isArray(tags) ? tags.join(' ') : String(tags);
+        const isGestante = tagsStr.includes('Gestante');
         
         if (isMasc && elegivel_est) {
             btnEst = `<button class="btn btn-sm" style="background:#EA580C;color:#fff;grid-column: span 2" onclick="preencherFormulario('vasectomia','${p.id}')">✂️ Gerar Passaporte Vasectomia</button>`;

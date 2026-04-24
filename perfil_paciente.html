@@ -399,7 +399,11 @@
 
 const filhos = parseInt(p.numFilhos) || 0;
             const elegivel = idade >= 21 || (idade >= 18 && filhos >= 2);
-            const isGestante = p.tags?.includes('Gestante');
+            
+            // Verifica tags de forma robusta - pode ser array ou string
+            const tags = p.tags || [];
+            const tagsStr = Array.isArray(tags) ? tags.join(' ') : String(tags);
+            const isGestante = tagsStr.includes('Gestante');
             
             // Seção de Métodos Contraceptivos LARCs
             let htmlBotoes = '';
