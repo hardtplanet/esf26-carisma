@@ -1283,6 +1283,41 @@ function confirmarLimpar() {
 // ── UTILS MODAL ───────────────────────────────────────────
 function abrirModal(id) { document.getElementById(id).classList.add('open') }
 function fecharModal(id) { document.getElementById(id).classList.remove('open') }
+function abrirModalNovoPaciente() { abrirModal('modal-novo-paciente') }
+
+function salvarNovoPaciente(e) {
+  e.preventDefault();
+  const form = document.getElementById('form-novo-paciente');
+  const formData = new FormData(form);
+  const novo = {
+    id: uuid(),
+    nome: document.getElementById('np-nome').value,
+    cns: document.getElementById('np-cns').value,
+    cpf: document.getElementById('np-cpf').value,
+    nasc: document.getElementById('np-nasc').value,
+    tel: document.getElementById('np-tel').value,
+    telCelular: document.getElementById('np-cel').value,
+    endereco: document.getElementById('np-end').value,
+    numero: document.getElementById('np-num').value,
+    bairro: document.getElementById('np-bairro').value,
+    cidade: document.getElementById('np-cidade').value || 'Dourados',
+    estado: document.getElementById('np-est').value || 'MS',
+    createdAt: new Date().toISOString()
+  };
+  
+  if (!novo.nome) return alert('Nome é obrigatório!');
+  
+  const existing = db.get('mif');
+  const already = existing.find(p => p.cns === novo.cns || p.cpf === novo.cpf);
+  if (already) return alert('Já existe paciente com este CNS ou CPF!');
+  
+  db.set('mif', [...existing, novo]);
+  atualizarBadges();
+  fecharModal('modal-novo-paciente');
+  form.reset();
+  alert('Paciente cadastrado com sucesso!');
+}
+
 function excItem(chave, id, fn) { if (!confirm('Excluir este registro?')) return; db.set(chave, db.get(chave).filter(x => x.id !== id)); fn() }
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open') }));
 
