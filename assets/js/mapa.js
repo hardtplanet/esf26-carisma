@@ -121,59 +121,40 @@ async function refreshMapData() {
     const validPatients = patients.filter(p => p.rua);
     let geoCount = 0;
 
+    // Mapa de agrupamento por endereço EXATO (rua + numero)
+    const addressGroups = new Map();
+
     for (let i = 0; i < validPatients.length; i++) {
         const p = validPatients[i];
-        const addrKey = `${p.rua}, ${p.numero || ''}, ${p.bairro || 'Jardim Carisma'}, Dourados, MS, Brasil`;
+        
+        // Chave de agrupamento: rua + numero EXATOS (não agrupa se numero for diferente)
+        const addrKey = `${p.rua}, ${p.numero || ''}, ${p.bairro || 'Dourados'}, Dourados, MS, Brasil`;
+        const groupKey = `${p.rua.toLowerCase().trim()}|${(p.numero || '').toLowerCase().trim()}`;
+        
         let coords = await getCoordinates(addrKey);
 
         if (coords && coords !== 'NOT_FOUND') {
-            const cKey = `${coords[0].toFixed(5)},${coords[1].toFixed(5)}`;
-            
-            let existingAtCoords = null;
-            markersLayer.eachLayer(m => {
-                const mc = m.getLatLng();
-                if (Math.abs(mc.lat - coords[0]) < 0.0001 && Math.abs(mc.lng - coords[1]) < 0.0001) {
-                    existingAtCoords = m;
-                }
-            });
-            
-            const houseNumber = parseInt(p.numero) || 0;
-            
-            if (existingAtCoords && houseNumber > 0) {
-                const offsetLat = (houseNumber % 30) * 0.000015;
-                const offsetLng = Math.floor(houseNumber / 30) * 0.000015;
-                coords = [coords[0] + offsetLat, coords[1] + offsetLng];
-            }
-            
-            const newCKey = `${coords[0].toFixed(5)},${coords[1].toFixed(5)}`;
-            
-            let marker = markersLayer.getLayers().find(l => {
-                const existingCoords = l.getLatLng();
-                return Math.abs(existingCoords.lat - coords[0]) < 0.0001 && 
-                       Math.abs(existingCoords.lng - coords[1]) < 0.0001;
-            });
-
-            if (marker) {
-                const existingPatients = marker.patientDataGroup || [];
-                existingPatients.push(p);
-                marker.patientDataGroup = existingPatients;
-                
-                const addrSet = marker.addressSet || new Set();
-                addrSet.add(`${p.rua}, ${p.numero || 'S/N'}`);
-                marker.addressSet = addrSet;
-                
-                updateMarkerPopup(marker);
+            // Se já existe alguém com MESMO endereço (rua + numero), agrupa
+            if (addressGroups.has(groupKey)) {
+                const existing = addressGroups.get(groupKey);
+                existing.patients.push(p);
             } else {
-                const addrSet = new Set();
-                addrSet.add(`${p.rua}, ${p.numero || 'S/N'}`);
-                addGroupMarker([p], coords, Array.from(addrSet));
+                addressGroups.set(groupKey, {
+                    coords: coords,
+                    patients: [p],
+                    address: addrKey
+                });
             }
-
             geoCount++;
         }
-
-        document.getElementById('map-stat-geo').textContent = `${geoCount}/${validPatients.length}`;
     }
+
+    // Adiciona todos os grupos ao mapa
+    addressGroups.forEach((groupData, groupKey) => {
+        addGroupMarker(groupData.patients, groupData.coords, [groupData.address]);
+});
+
+    document.getElementById('map-stat-geo').textContent = `${geoCount}/${validPatients.length}`;
 
     isGeocoding = false;
     saveGeoCache();
