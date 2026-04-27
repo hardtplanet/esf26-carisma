@@ -646,7 +646,7 @@
     }
 
     .btn-outline {
-      background: #fff;
+      background: var(--surface);
       border: 2px solid var(--border);
       color: var(--text)
     }
@@ -676,7 +676,7 @@
       border: 1.5px solid var(--border);
       border-radius: 8px;
       font-size: .88rem;
-      background: #fff;
+      background: var(--surface);
       transition: all 0.2s ease;
     }
 
@@ -698,9 +698,8 @@
 
     /* ===== TABLE ===== */
     .table-wrap {
-      background: #fff;
+      background: var(--surface);
       border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
       overflow: hidden;
       margin-bottom: 20px;
       border: 1px solid var(--border);
@@ -718,10 +717,20 @@
       border-bottom: 1px solid var(--border);
       font-size: .85rem;
       transition: background-color 0.15s;
+      color: var(--text);
+    }
+
+    th {
+      background: var(--surface2);
+      font-weight: 600;
+      color: var(--text2);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     tr:hover td {
-      background-color: #F9FAFB;
+      background-color: var(--surface2);
     }
 
     tr:last-child td {
@@ -762,7 +771,7 @@
 
     .b-green {
       background: #D1FAE5;
-      color: #065F46
+      color: var(--primary-dark)
     }
 
     .b-red {
@@ -777,7 +786,7 @@
 
     .b-blue {
       background: #DBEAFE;
-      color: #1E40AF
+      color: var(--info)
     }
 
     .b-pink {
@@ -787,7 +796,7 @@
 
     .b-gray {
       background: #F3F4F6;
-      color: #374151
+      color: var(--text2)
     }
 
     .b-purple {
@@ -811,7 +820,7 @@
     }
 
     .modal-box {
-      background: #fff;
+      background: var(--surface);
       border-radius: 16px;
       width: 90%;
       max-width: 780px;
@@ -884,7 +893,7 @@
       border-radius: 8px;
       font-size: .9rem;
       transition: all 0.2s ease;
-      background: #fff;
+      background: var(--surface);
     }
 
     .form-group input:focus,
@@ -949,13 +958,13 @@
 
     .alert-box.info {
       background: #DBEAFE;
-      color: #1E40AF;
+      color: var(--info);
       border: 1px solid #93C5FD
     }
 
     .alert-box.success {
       background: #D1FAE5;
-      color: #065F46;
+      color: var(--primary-dark);
       border: 1px solid #6EE7B7
     }
 
@@ -992,7 +1001,7 @@
 
     /* ===== CADASTRO CENTRAL ===== */
     .cc-card {
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 14px 16px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
@@ -1017,7 +1026,7 @@
     }
 
     .cc-stat {
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 16px;
       text-align: center;
@@ -1091,7 +1100,7 @@
     }
 
     .chart-card {
-      background: #fff;
+      background: var(--surface);
       padding: 24px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, .05);
@@ -1181,7 +1190,7 @@
 
     /* ===== ALERTAS CARD ===== */
     .alert-card {
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 16px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
@@ -1216,7 +1225,7 @@
     }
 
     .chart-card {
-      background: #fff;
+      background: var(--surface);
       border-radius: 14px;
       padding: 20px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, .06)
@@ -1993,7 +2002,7 @@
 
           <!-- Filtros de Lote (MIF) -->
           <div
-            style="margin: 20px 0; padding: 20px; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            style="margin: 20px 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
               <div style="font-size: 1.5rem;">🏷️</div>
               <div style="flex: 1; min-width: 250px;">
@@ -2001,7 +2010,7 @@
                   style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text1); margin-bottom: 6px;">Adicionar
                   Etiqueta Extra ao Lote:</label>
                 <select id="mif-batch-tag" class="form-control"
-                  style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer;">
+                  style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer;">
                   <option value="">Sem etiqueta extra (Padrão)</option>
                   <option value="MIF">👩 MIF (Mulher em Idade Fértil)</option>
                   <option value="Gestante">🤰 Gestante</option>
