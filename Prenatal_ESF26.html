@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#8B5CF6">
+    <meta name="theme-color" content="#00D1B2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Pré-Natal ESF 26 - Sistema Completo</title>
@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="assets/js/prenatal.js"></script>
 
     <style>
@@ -25,15 +26,16 @@
         }
 
         :root {
-            --primary: #8B5CF6;
-            --primary-dark: #7C3AED;
-            --primary-light: #A78BFA;
-            --secondary: #10B981;
-            --background: #F9FAFB;
-            --surface: #FFFFFF;
-            --text-primary: #111827;
-            --text-secondary: #6B7280;
-            --border: #E5E7EB;
+            --primary: #00D1B2;
+            --primary-dark: #00A88F;
+            --primary-light: #33E2C8;
+            --secondary: #0266F1;
+            --background: #0F172A;
+            --surface: #1E293B;
+            --surface2: #334155;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --border: rgba(255, 255, 255, 0.08);
             --danger: #EF4444;
             --warning: #F59E0B;
             --success: #10B981;
@@ -101,13 +103,13 @@
 
         /* HEADER */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
+            background: var(--surface);
+            color: var(--text-primary);
             padding: 16px;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+            border-bottom: 1px solid var(--border);
         }
 
         .header-top {
@@ -134,20 +136,21 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            backdrop-filter: blur(10px);
             transition: all 0.3s;
             font-size: 16px;
         }
 
         .icon-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 209, 178, 0.15);
+            color: var(--primary);
+            border-color: var(--primary);
             transform: translateY(-2px);
         }
 
@@ -156,14 +159,14 @@
             align-items: center;
             gap: 12px;
             padding-top: 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid var(--border);
         }
 
         .avatar {
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: white;
+            background: var(--surface2);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -188,13 +191,12 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: white;
+            background: var(--surface);
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
             padding: 8px 0;
             z-index: 100;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
         }
 
         .nav-item {
@@ -219,6 +221,14 @@
         }
 
         .nav-icon {
+            font-size: 22px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-icon i {
             font-size: 22px;
         }
 
@@ -259,12 +269,12 @@
 
         /* CARDS */
         .card {
-            background: white;
-            border-radius: 16px;
+            background: var(--surface);
+            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             margin-bottom: 16px;
-            border: 2px solid transparent;
+            border: 1px solid var(--border);
             transition: all 0.3s;
         }
 
@@ -300,7 +310,7 @@
         }
 
         .dashboard-card {
-            background: white;
+            background: var(--surface);
             border-radius: 12px;
             padding: 16px;
             text-align: center;
@@ -312,7 +322,8 @@
 
         .dashboard-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 209, 178, 0.15);
+            border-color: rgba(0, 209, 178, 0.3);
         }
 
         .dashboard-card-icon {
@@ -324,7 +335,13 @@
             justify-content: center;
             font-size: 24px;
             margin: 0 auto 12px;
-            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+            background: rgba(0, 209, 178, 0.1);
+            color: var(--primary);
+        }
+
+        .dashboard-card-icon i {
+            font-size: 24px;
+            color: var(--primary);
         }
 
         .dashboard-card-title {
@@ -364,11 +381,11 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--surface);
             border-radius: 12px;
             padding: 16px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .stat-number {
@@ -401,11 +418,13 @@
         .form-group textarea {
             width: 100%;
             padding: 12px 14px;
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: 10px;
             font-size: 14px;
             transition: all 0.3s;
             font-family: inherit;
+            background: rgba(0,0,0,0.1);
+            color: var(--text-primary);
         }
 
         .form-group input:focus,
@@ -441,16 +460,16 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 209, 178, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+            box-shadow: 0 6px 16px rgba(0, 209, 178, 0.45);
         }
 
         .btn-secondary {
-            background: white;
+            background: transparent;
             color: var(--primary);
             border: 2px solid var(--primary);
         }
@@ -479,9 +498,9 @@
         /* TABELAS */
         .table-container {
             overflow-x: auto;
-            background: white;
+            background: var(--surface);
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         table {
@@ -506,7 +525,7 @@
         }
 
         tr:hover {
-            background: #F9FAFB;
+            background: rgba(255,255,255,0.05);
         }
 
         /* CALCULADORAS */
@@ -520,14 +539,15 @@
 
         .calc-tab {
             padding: 10px 16px;
-            background: white;
-            border: 2px solid var(--border);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.3s;
+            color: var(--text-primary);
         }
 
         .calc-tab.active {
@@ -537,7 +557,7 @@
         }
 
         .calc-result {
-            background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+            background: rgba(0, 209, 178, 0.1);
             border-radius: 12px;
             padding: 16px;
             margin-top: 16px;
@@ -593,7 +613,7 @@
         .card-qr {
             width: 80px;
             height: 80px;
-            background: white;
+            background: var(--surface);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -638,7 +658,7 @@
 
         .card-stat {
             text-align: center;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.15);
             padding: 12px;
             border-radius: 10px;
         }
@@ -678,18 +698,21 @@
         }
 
         .alert-warning {
-            background: #FFFBEB;
+            background: rgba(245, 158, 11, 0.1);
             border-left: 4px solid var(--warning);
+            color: var(--text-primary);
         }
 
         .alert-danger {
-            background: #FEF2F2;
+            background: rgba(239, 68, 68, 0.1);
             border-left: 4px solid var(--danger);
+            color: var(--text-primary);
         }
 
         .alert-success {
-            background: #F0FDF4;
+            background: rgba(16, 185, 129, 0.1);
             border-left: 4px solid var(--success);
+            color: var(--text-primary);
         }
 
         .alert-icon {
@@ -714,7 +737,7 @@
             gap: 12px;
             padding: 14px;
             border-bottom: 1px solid var(--border);
-            background: white;
+            background: var(--surface);
             transition: all 0.3s;
         }
 
@@ -723,7 +746,7 @@
         }
 
         .list-item:hover {
-            background: #F9FAFB;
+            background: rgba(255,255,255,0.05);
         }
 
         .list-icon {
@@ -734,7 +757,8 @@
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            background: #EDE9FE;
+            background: rgba(0, 209, 178, 0.1);
+            color: var(--primary);
             flex-shrink: 0;
         }
 
@@ -766,16 +790,17 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--background);
         }
 
         .login-card {
-            background: white;
+            background: var(--surface);
             border-radius: 24px;
             padding: 32px;
             width: 100%;
             max-width: 400px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
         }
 
         .login-header {
@@ -824,7 +849,7 @@
 
         .user-type.active {
             border-color: var(--primary);
-            background: #EDE9FE;
+            background: rgba(0, 209, 178, 0.1);
         }
 
         .user-type-icon {
@@ -857,8 +882,9 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--surface);
             border-radius: 20px;
+            border: 1px solid var(--border);
             padding: 24px;
             width: 90%;
             max-width: 600px;
@@ -914,8 +940,8 @@
             width: 400px;
             max-width: 90%;
             height: 100vh;
-            background: white;
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+            background: var(--surface);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
             z-index: 1001;
             transition: right 0.3s ease-out;
             overflow-y: auto;
@@ -939,7 +965,7 @@
         }
 
         .notification-item {
-            background: #F9FAFB;
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 12px;
@@ -948,7 +974,7 @@
 
         .notification-item.urgent {
             border-left-color: var(--danger);
-            background: #FEF2F2;
+            background: rgba(239, 68, 68, 0.1);
         }
 
         .notification-time {
@@ -1056,11 +1082,12 @@
 
         /* GRÁFICOS */
         .chart-container {
-            background: white;
+            background: var(--surface);
             border-radius: 12px;
             padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             margin-bottom: 16px;
+            border: 1px solid var(--border);
         }
 
         .chart-title {
@@ -1080,10 +1107,10 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px;
-            background: white;
+            background: var(--surface);
             border-radius: 12px;
             margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .settings-item-info h4 {
@@ -1214,7 +1241,7 @@
         }
 
         .patient-stat {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.15);
             padding: 12px;
             border-radius: 10px;
             text-align: center;
@@ -1241,14 +1268,15 @@
 
         .tab {
             padding: 10px 16px;
-            background: white;
-            border: 2px solid var(--border);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.3s;
+            color: var(--text-primary);
         }
 
         .tab.active {
@@ -1321,18 +1349,18 @@
     <div id="loginScreen" class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <div class="login-logo">🤰</div>
+                <div class="login-logo"><i class="ph-fill ph-baby" style="color: white"></i></div>
                 <h1>Pré-Natal ESF 26</h1>
                 <p>Carisma - Dourados/MS</p>
             </div>
 
             <div class="user-type-selector">
                 <div class="user-type active" onclick="selectUserType('profissional')">
-                    <div class="user-type-icon">👨‍⚕️</div>
+                    <div class="user-type-icon"><i class="ph ph-user-circle"></i></div>
                     <div class="user-type-label">Profissional</div>
                 </div>
                 <div class="user-type" onclick="selectUserType('gestante')">
-                    <div class="user-type-icon">🤰</div>
+                    <div class="user-type-icon"><i class="ph ph-baby"></i></div>
                     <div class="user-type-label">Gestante</div>
                 </div>
             </div>
@@ -1347,7 +1375,7 @@
                     <input type="password" id="loginSenha" placeholder="Digite sua senha" required>
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    🔐 Entrar no Sistema
+                    <i class="ph ph-lock-key"></i> Entrar no Sistema
                 </button>
             </form>
 
@@ -1366,13 +1394,13 @@
         <header class="header">
             <div class="header-top">
                 <div class="logo">
-                    <span>🤰</span>
+                    <span><i class="ph ph-baby"></i></span>
                     <span>Pré-Natal ESF 26 - Carisma</span>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" onclick="toggleNotifications()" title="Notificações">🔔</button>
-                    <button class="icon-btn" onclick="navigateTo('configuracoes')" title="Configurações">⚙️</button>
-                    <button class="icon-btn" onclick="logout()" title="Sair">🚪</button>
+                    <button class="icon-btn" onclick="toggleNotifications()" title="Notificações"><i class="ph ph-bell"></i></button>
+                    <button class="icon-btn" onclick="navigateTo('configuracoes')" title="Configurações"><i class="ph ph-gear"></i></button>
+                    <button class="icon-btn" onclick="logout()" title="Sair"><i class="ph ph-sign-out"></i></button>
                 </div>
             </div>
             <div class="user-info">
@@ -1412,48 +1440,48 @@
                         </div>
                     </div>
 
-                    <h3 style="margin-bottom: 12px; font-size: 16px;">⚡ Acesso Rápido</h3>
+                    <h3 style="margin-bottom: 12px; font-size: 16px;"><i class="ph-fill ph-lightning" style="color: var(--warning)"></i> Acesso Rápido</h3>
                     <div class="dashboard-grid">
                         <div class="dashboard-card" onclick="navigateTo('gestantes')">
                             <div class="badge" id="badgeGestantes">0</div>
-                            <div class="dashboard-card-icon">🤰</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-baby"></i></div>
                             <div class="dashboard-card-title">Gestantes</div>
                             <div class="dashboard-card-subtitle">Acompanhamento</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('exames')">
                             <div class="badge" id="badgeExames">0</div>
-                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-microscope"></i></div>
                             <div class="dashboard-card-title">Exames</div>
                             <div class="dashboard-card-subtitle">Citopatológicos</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('calculadoras')">
-                            <div class="dashboard-card-icon">🧮</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-calculator"></i></div>
                             <div class="dashboard-card-title">Calculadoras</div>
                             <div class="dashboard-card-subtitle">IG, DPP, IMC</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('esterilizacao')">
-                            <div class="dashboard-card-icon">📋</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-clipboard-text"></i></div>
                             <div class="dashboard-card-title">Esterilização</div>
                             <div class="dashboard-card-subtitle">Laqueadura/Vasectomia</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('cartao')">
-                            <div class="dashboard-card-icon">💳</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-identification-card"></i></div>
                             <div class="dashboard-card-title">Cartão Digital</div>
                             <div class="dashboard-card-subtitle">Gestante</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('relatorios')">
-                            <div class="dashboard-card-icon">📊</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-chart-bar"></i></div>
                             <div class="dashboard-card-title">Relatórios</div>
                             <div class="dashboard-card-subtitle">PDF/Exportar</div>
                         </div>
                     </div>
 
-                    <h3 style="margin-bottom: 12px; font-size: 16px;">⚠️ Alertas Importantes</h3>
+                    <h3 style="margin-bottom: 12px; font-size: 16px;"><i class="ph-fill ph-warning" style="color: var(--warning)"></i> Alertas Importantes</h3>
                     <div class="card" id="alertasList">
                         <!-- Alertas serão inseridos aqui -->
                     </div>
@@ -1463,8 +1491,8 @@
                 <div id="dashboardGestante" class="hidden">
                     <div class="prenatal-card">
                         <div class="card-top">
-                            <div class="card-logo">🤰 Meu Pré-Natal</div>
-                            <div class="card-qr">📱</div>
+                            <div class="card-logo"><i class="ph ph-baby"></i> Meu Pré-Natal</div>
+                            <div class="card-qr"><i class="ph ph-qr-code" style="color: var(--surface2)"></i></div>
                         </div>
                         <div class="card-patient">
                             <div class="card-avatar" id="gestanteAvatar">G</div>
@@ -1489,34 +1517,34 @@
                         </div>
                     </div>
 
-                    <h3 style="margin-bottom: 12px; font-size: 16px;">📱 Meu Acompanhamento</h3>
+                    <h3 style="margin-bottom: 12px; font-size: 16px;"><i class="ph ph-device-mobile"></i> Meu Acompanhamento</h3>
                     <div class="dashboard-grid">
                         <div class="dashboard-card" onclick="navigateTo('meus-exames')">
-                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-microscope"></i></div>
                             <div class="dashboard-card-title">Meus Exames</div>
                             <div class="dashboard-card-subtitle">Resultados</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('vacinas')">
-                            <div class="dashboard-card-icon">💉</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-syringe"></i></div>
                             <div class="dashboard-card-title">Vacinas</div>
                             <div class="dashboard-card-subtitle">Calendário</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('consultas-gestante')">
-                            <div class="dashboard-card-icon">📅</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-calendar"></i></div>
                             <div class="dashboard-card-title">Consultas</div>
                             <div class="dashboard-card-subtitle">Agendamentos</div>
                         </div>
 
                         <div class="dashboard-card" onclick="navigateTo('orientacoes')">
-                            <div class="dashboard-card-icon">📖</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-book-open"></i></div>
                             <div class="dashboard-card-title">Orientações</div>
                             <div class="dashboard-card-subtitle">Por trimestre</div>
                         </div>
                     </div>
 
-                    <h3 style="margin-bottom: 12px; font-size: 16px;">📋 Próximos Passos</h3>
+                    <h3 style="margin-bottom: 12px; font-size: 16px;"><i class="ph ph-list-checks"></i> Próximos Passos</h3>
                     <div class="card" id="proximosPassos">
                         <!-- Próximos passos serão inseridos aqui -->
                     </div>
@@ -1527,14 +1555,14 @@
             <div id="page-gestantes" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🤰 Gestantes Cadastradas</div>
+                        <div class="card-title"><i class="ph ph-baby"></i> Gestantes Cadastradas</div>
                         <div style="display:flex; gap:8px">
                             <button class="btn btn-secondary btn-sm" onclick="sincronizarGestantesCadastroCentral()"
-                                title="Busca gestantes já cadastradas no sistema">📥
+                                title="Busca gestantes já cadastradas no sistema"><i class="ph ph-download-simple"></i>
                                 Importar do Sistema</button>
                             <label class="btn btn-secondary btn-sm" style="cursor:pointer"
                                 title="Importa CSV direto e marca como gestante">
-                                📥 Importar CSV e-SUS
+                                <i class="ph ph-download-simple"></i> Importar CSV e-SUS
                                 <input type="file" accept=".csv" onchange="importarCSVGestantes(event)"
                                     style="display:none">
                             </label>
@@ -1542,7 +1570,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <input type="text" id="searchGestante" placeholder="🔍 Buscar por nome ou CNS..."
+                        <input type="text" id="searchGestante" placeholder="Buscar por nome ou CNS..."
                             onkeyup="buscarGestantes()">
                     </div>
                     <div class="table-container">
@@ -1565,7 +1593,7 @@
 
             <!-- PÁGINA: PRONTUÁRIO INDIVIDUAL -->
             <div id="page-prontuario" class="page">
-                <button class="btn btn-secondary btn-sm mb-4" onclick="navigateTo('gestantes')">← Voltar para
+                <button class="btn btn-secondary btn-sm mb-4" onclick="navigateTo('gestantes')"><i class="ph ph-arrow-left"></i> Voltar para
                     Lista</button>
 
                 <div class="patient-profile" id="patientProfile">
@@ -1573,18 +1601,18 @@
                 </div>
 
                 <div class="tabs">
-                    <div class="tab active" onclick="switchTab('consultas')">📅 Consultas</div>
-                    <div class="tab" onclick="switchTab('exames')">🔬 Exames</div>
-                    <div class="tab" onclick="switchTab('vacinas')">💉 Vacinas</div>
-                    <div class="tab" onclick="switchTab('lembretes')">📝 Lembretes</div>
-                    <div class="tab" onclick="switchTab('graficos')">📈 Gráficos</div>
+                    <div class="tab active" onclick="switchTab('consultas')"><i class="ph ph-calendar"></i> Consultas</div>
+                    <div class="tab" onclick="switchTab('exames')"><i class="ph ph-microscope"></i> Exames</div>
+                    <div class="tab" onclick="switchTab('vacinas')"><i class="ph ph-syringe"></i> Vacinas</div>
+                    <div class="tab" onclick="switchTab('lembretes')"><i class="ph ph-note"></i> Lembretes</div>
+                    <div class="tab" onclick="switchTab('graficos')"><i class="ph ph-chart-line-up"></i> Gráficos</div>
                 </div>
 
                 <!-- CONSULTAS -->
                 <div id="tab-consultas" class="tab-content active">
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">📅 Histórico de Consultas</div>
+                            <div class="card-title"><i class="ph ph-calendar"></i> Histórico de Consultas</div>
                             <button class="btn btn-primary btn-sm" onclick="abrirModalConsulta()">+ Nova
                                 Consulta</button>
                         </div>
@@ -1598,7 +1626,7 @@
                 <div id="tab-exames" class="tab-content">
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">🔬 Exames Solicitados</div>
+                            <div class="card-title"><i class="ph ph-microscope"></i> Exames Solicitados</div>
                             <button class="btn btn-primary btn-sm" onclick="abrirModalExamePrenatal()">+ Novo
                                 Exame</button>
                         </div>
@@ -1622,7 +1650,7 @@
                 <div id="tab-vacinas" class="tab-content">
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">💉 Vacinas Administradas</div>
+                            <div class="card-title"><i class="ph ph-syringe"></i> Vacinas Administradas</div>
                             <button class="btn btn-primary btn-sm" onclick="abrirModalVacina()">+ Nova Vacina</button>
                         </div>
                         <div class="table-container">
@@ -1645,7 +1673,7 @@
                 <div id="tab-lembretes" class="tab-content">
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">📝 Lembretes e Observações</div>
+                            <div class="card-title"><i class="ph ph-note"></i> Lembretes e Observações</div>
                             <button class="btn btn-primary btn-sm" onclick="abrirModalLembrete()">+ Novo
                                 Lembrete</button>
                         </div>
@@ -1672,11 +1700,11 @@
             <div id="page-exames" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🔬 Exames Citopatológicos</div>
+                        <div class="card-title"><i class="ph ph-microscope"></i> Exames Citopatológicos</div>
                         <button class="btn btn-primary btn-sm" onclick="abrirModalExame()">+ Novo</button>
                     </div>
                     <div class="form-group">
-                        <input type="text" id="searchExame" placeholder="🔍 Buscar por nome ou CNS..."
+                        <input type="text" id="searchExame" placeholder="Buscar por nome ou CNS..."
                             onkeyup="buscarExames()">
                     </div>
                     <div class="table-container">
@@ -1701,7 +1729,7 @@
             <div id="page-calculadoras" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🧮 Calculadoras Obstétricas</div>
+                        <div class="card-title"><i class="ph ph-calculator"></i> Calculadoras Obstétricas</div>
                     </div>
 
                     <div class="calculator-tabs">
@@ -1789,8 +1817,8 @@
             <div id="page-cartao" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">💳 Cartão da Gestante</div>
-                        <button class="btn btn-secondary btn-sm" onclick="exportarCartaoPDF()">📄 PDF</button>
+                        <div class="card-title"><i class="ph ph-identification-card"></i> Cartão da Gestante</div>
+                        <button class="btn btn-secondary btn-sm" onclick="exportarCartaoPDF()"><i class="ph ph-file-pdf"></i> PDF</button>
                     </div>
 
                     <div class="form-group">
@@ -1828,30 +1856,30 @@
             <div id="page-relatorios" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">📊 Relatórios e Exportação</div>
+                        <div class="card-title"><i class="ph ph-clipboard-text"></i> Relatórios e Exportação</div>
                     </div>
 
                     <div class="dashboard-grid">
                         <div class="dashboard-card" onclick="exportarRelatorioGestantes()">
-                            <div class="dashboard-card-icon">📋</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-clipboard-text"></i></div>
                             <div class="dashboard-card-title">Lista de Gestantes</div>
                             <div class="dashboard-card-subtitle">Exportar PDF</div>
                         </div>
 
                         <div class="dashboard-card" onclick="exportarRelatorioExames()">
-                            <div class="dashboard-card-icon">🔬</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-microscope"></i></div>
                             <div class="dashboard-card-title">Exames Citopatológicos</div>
                             <div class="dashboard-card-subtitle">Exportar PDF</div>
                         </div>
 
                         <div class="dashboard-card" onclick="exportarBackupCompleto()">
-                            <div class="dashboard-card-icon">💾</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-floppy-disk"></i></div>
                             <div class="dashboard-card-title">Backup Completo</div>
                             <div class="dashboard-card-subtitle">JSON (Todos os dados)</div>
                         </div>
 
                         <div class="dashboard-card" onclick="document.getElementById('importBackup').click()">
-                            <div class="dashboard-card-icon">📥</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-download-simple"></i></div>
                             <div class="dashboard-card-title">Importar Backup</div>
                             <div class="dashboard-card-subtitle">Restaurar dados</div>
                         </div>
@@ -1860,7 +1888,7 @@
                     </div>
 
                     <div class="alert alert-warning mt-4">
-                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-icon"><i class="ph ph-warning"></i></div>
                         <div class="alert-content">
                             <h4>Importante</h4>
                             <p>Faça backup regularmente dos dados. Os dados ficam armazenados apenas neste dispositivo.
@@ -1874,7 +1902,7 @@
             <div id="page-esterilizacao" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">📋 Esterilização Cirúrgica</div>
+                        <div class="card-title"><i class="ph ph-clipboard-text"></i> Esterilização Cirúrgica</div>
                     </div>
 
                     <div class="form-group">
@@ -1886,26 +1914,26 @@
 
                     <div class="dashboard-grid">
                         <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('laqueadura-eletiva')">
-                            <div class="dashboard-card-icon">👩</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-user"></i></div>
                             <div class="dashboard-card-title">Laqueadura Eletiva</div>
                             <div class="dashboard-card-subtitle">Fora do parto</div>
                         </div>
 
                         <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('laqueadura-parto')">
-                            <div class="dashboard-card-icon">🤰</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-baby"></i></div>
                             <div class="dashboard-card-title">Laqueadura no Parto</div>
                             <div class="dashboard-card-subtitle">Pós-parto imediato</div>
                         </div>
 
                         <div class="dashboard-card" onclick="abrirFormularioEsterilizacao('vasectomia')">
-                            <div class="dashboard-card-icon">👨</div>
+                            <div class="dashboard-card-icon"><i class="ph ph-user"></i></div>
                             <div class="dashboard-card-title">Vasectomia</div>
                             <div class="dashboard-card-subtitle">Esterilização masculina</div>
                         </div>
                     </div>
 
                     <div class="alert alert-warning mt-4">
-                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-icon"><i class="ph ph-warning"></i></div>
                         <div class="alert-content">
                             <h4>Importante</h4>
                             <p>Todos os formulários de esterilização devem seguir a Lei nº 14.443/2022 com prazo mínimo
@@ -1914,7 +1942,7 @@
                     </div>
 
                     <div class="alert alert-success mt-4">
-                        <div class="alert-icon">✅</div>
+                        <div class="alert-icon"><i class="ph ph-check-circle"></i></div>
                         <div class="alert-content">
                             <h4>Integração Automática</h4>
                             <p>Selecione uma paciente acima e os dados serão automaticamente preenchidos no formulário!
@@ -1928,7 +1956,7 @@
             <div id="page-configuracoes" class="page">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">⚙️ Configurações</div>
+                        <div class="card-title"><i class="ph ph-gear"></i> Configurações</div>
                     </div>
 
                     <div class="settings-section">
@@ -2009,19 +2037,19 @@
         <!-- NAVEGAÇÃO INFERIOR -->
         <nav class="bottom-nav">
             <a href="#" class="nav-item active" onclick="navigateTo('dashboard')">
-                <span class="nav-icon">🏠</span>
+                <span class="nav-icon"><i class="ph ph-house"></i></span>
                 <span class="nav-label">Início</span>
             </a>
             <a href="#" class="nav-item" onclick="navigateTo('gestantes')">
-                <span class="nav-icon">🤰</span>
+                <span class="nav-icon"><i class="ph ph-baby"></i></span>
                 <span class="nav-label">Gestantes</span>
             </a>
             <a href="#" class="nav-item" onclick="navigateTo('calculadoras')">
-                <span class="nav-icon">🧮</span>
+                <span class="nav-icon"><i class="ph ph-calculator"></i></span>
                 <span class="nav-label">Calc</span>
             </a>
             <a href="#" class="nav-item" onclick="navigateTo('relatorios')">
-                <span class="nav-icon">📊</span>
+                <span class="nav-icon"><i class="ph ph-clipboard-text"></i></span>
                 <span class="nav-label">Relatórios</span>
             </a>
         </nav>
@@ -2029,7 +2057,7 @@
         <!-- PAINEL DE NOTIFICAÇÕES -->
         <div class="notification-panel" id="notificationPanel">
             <div class="notification-header">
-                <h3>🔔 Notificações</h3>
+                <h3><i class="ph ph-bell"></i> Notificações</h3>
                 <button class="icon-btn" onclick="toggleNotifications()"
                     style="background: rgba(255,255,255,0.2);">✕</button>
             </div>
@@ -2040,7 +2068,7 @@
 
         <!-- BOTÃO PWA INSTALL -->
         <div class="pwa-install" id="pwaInstall" onclick="installPWA()">
-            <span>📲</span>
+            <span><i class="ph ph-device-mobile"></i></span>
             <span>Instalar Aplicativo</span>
         </div>
     </div>
@@ -2049,7 +2077,7 @@
     <div id="modalGestante" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">🤰 Cadastrar Gestante</div>
+                <div class="modal-title"><i class="ph ph-baby"></i> Cadastrar Gestante</div>
                 <button class="modal-close" onclick="fecharModal('modalGestante')">×</button>
             </div>
             <form id="formGestante" onsubmit="salvarGestante(event)">
@@ -2096,7 +2124,7 @@
                     <label>Lembretes / Observações</label>
                     <textarea id="gestanteLembretes" rows="3" placeholder="Alergias, comorbidades, etc."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar</button>
             </form>
         </div>
     </div>
@@ -2105,7 +2133,7 @@
     <div id="modalConsulta" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">📅 Registrar Consulta</div>
+                <div class="modal-title"><i class="ph ph-calendar"></i> Registrar Consulta</div>
                 <button class="modal-close" onclick="fecharModal('modalConsulta')">×</button>
             </div>
             <form id="formConsulta" onsubmit="salvarConsulta(event)">
@@ -2141,7 +2169,7 @@
                     </div>
                     <textarea id="consultaObservacoes" rows="6" placeholder="Relato livre da consulta... (A IA irá organizar como SOAP)"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar Consulta</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Consulta</button>
             </form>
         </div>
     </div>
@@ -2150,7 +2178,7 @@
     <div id="modalExamePrenatal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">🔬 Solicitar Exame</div>
+                <div class="modal-title"><i class="ph ph-microscope"></i> Solicitar Exame</div>
                 <button class="modal-close" onclick="fecharModal('modalExamePrenatal')">×</button>
             </div>
             <form id="formExamePrenatal" onsubmit="salvarExamePrenatal(event)">
@@ -2189,7 +2217,7 @@
                         <option value="Resultado Recebido">Resultado Recebido</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar Exame</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Exame</button>
             </form>
         </div>
     </div>
@@ -2198,7 +2226,7 @@
     <div id="modalVacina" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">💉 Registrar Vacina</div>
+                <div class="modal-title"><i class="ph ph-syringe"></i> Registrar Vacina</div>
                 <button class="modal-close" onclick="fecharModal('modalVacina')">×</button>
             </div>
             <form id="formVacina" onsubmit="salvarVacina(event)">
@@ -2227,7 +2255,7 @@
                     <label>Próxima Dose</label>
                     <input type="date" id="vacinaProximaDose">
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar Vacina</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Vacina</button>
             </form>
         </div>
     </div>
@@ -2236,7 +2264,7 @@
     <div id="modalLembrete" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title">📝 Adicionar Lembrete</div>
+                <div class="modal-title"><i class="ph ph-note"></i> Adicionar Lembrete</div>
                 <button class="modal-close" onclick="fecharModal('modalLembrete')">×</button>
             </div>
             <form id="formLembrete" onsubmit="salvarLembrete(event)">
@@ -2261,7 +2289,7 @@
                     <label>Data Limite</label>
                     <input type="date" id="lembreteDataLimite">
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Salvar Lembrete</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Lembrete</button>
             </form>
         </div>
     </div>
@@ -2280,7 +2308,7 @@
     <div id="modalPosicaoEtiqueta" class="modal">
         <div class="modal-content" style="max-width: 400px">
             <div class="modal-header">
-                <div class="modal-title">📍 Posição na Folha</div>
+                <div class="modal-title"><i class="ph ph-map-pin"></i> Posição na Folha</div>
                 <button class="modal-close" onclick="fecharModal('modalPosicaoEtiqueta')">×</button>
             </div>
             <div style="padding: 20px; text-align: center;">

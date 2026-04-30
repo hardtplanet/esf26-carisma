@@ -10,8 +10,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
   <!-- Leaflet.js for Smart Map -->
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Marker Cluster for overlapping markers -->
@@ -28,28 +30,30 @@
   <style>
     /* PULSE - Radar Inteligente da UBS - Dark Theme */
     :root {
-      /* Fundo - Azul escuro profissional */
-      --bg: #0B1C24;
-      --surface: #102A34;
-      --surface2: #153542;
-      --border: rgba(255, 255, 255, 0.06);
+      /* Fundo - Neutro 1 */
+      --bg: #0F172A;
+      /* Surface - Neutro 2 */
+      --surface: #1E293B;
+      /* Surface Hover - Neutro 3 */
+      --surface2: #334155;
+      --border: rgba(255, 255, 255, 0.08); /* Aumentar um pouco no surface escuro para dar depth */
       
-      /* Primary - Verde-azulado */
-      --primary: #00C2A8;
-      --primary-dark: #00A392;
-      --primary-light: #00E5C4;
+      /* Primary */
+      --primary: #00D1B2;
+      --primary-dark: #00A88F;
+      --primary-light: #33E2C8;
       
-      /* Secondary - Roxo suave */
-      --secondary: #6C63FF;
-      --secondary-dark: #5A52E0;
+      /* Secondary */
+      --secondary: #0266F1;
+      --secondary-dark: #0252C2;
       
-      /* Mulher - Rosa */
-      --mulher: #EC4899;
-      --mulher-dark: #DB2777;
+      /* Mulher - usando a nova paleta ou mantendo roxo pra compatibilidade de botões */
+      --mulher: #9333EA;
+      --mulher-dark: #7E22CE;
       
       /* Texto */
-      --text: #F1F5F9;
-      --text2: #94A3B8;
+      --text: #F8FAFC;
+      --text2: #94A3B8; /* Neutro 4 */
       --text3: #64748B;
       
       /* Estados */
@@ -358,10 +362,9 @@
     }
 
     .topbar {
-      background: var(--surface);
+      background: var(--bg);
       border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      height: 60px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -372,8 +375,10 @@
 
     .topbar-left {
       display: flex;
-      align-items: center;
-      gap: 12px
+      gap: 12px;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 4px;
     }
 
     .menu-toggle {
@@ -386,9 +391,13 @@
     }
 
     #page-title {
-      font-size: 1.2rem;
+      font-size: 1.6rem;
       font-weight: 700;
-      color: var(--primary)
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.5px;
     }
 
     .topbar-right {
@@ -1357,39 +1366,38 @@
       </div>
 
       <div class="nav-section-label">Principal</div>
-      <a class="nav-link active" data-page="dashboard" onclick="navTo('dashboard')"><span class="ni">📊</span>
-        Dashboard</a>
-      <a class="nav-link" data-page="mapa" onclick="navTo('mapa')"><span class="ni">🗺️</span> Mapa Inteligente</a>
+      <a class="nav-link active" data-page="dashboard" onclick="navTo('dashboard')"><span class="ni"><i class="ph ph-squares-four"></i></span> Dashboard</a>
+      <a class="nav-link" data-page="mapa" onclick="navTo('mapa')"><span class="ni"><i class="ph ph-map-pin"></i></span> Mapa Inteligente</a>
 
-      <div class="nav-section-label">🌸 Saúde da Mulher</div>
-      <a class="nav-link" data-page="mif"><span class="ni">👩</span> Cadastro MIF</a>
-      <a class="nav-link" data-page="contraceptivos"><span class="ni">💊</span> Contraceptivos <span class="badge-alert"
+      <div class="nav-section-label">Saúde da Mulher</div>
+      <a class="nav-link" data-page="mif"><span class="ni"><i class="ph ph-user"></i></span> Cadastro MIF</a>
+      <a class="nav-link" data-page="contraceptivos"><span class="ni"><i class="ph ph-pill"></i></span> Contraceptivos <span class="badge-alert"
           id="badge-atrasados" style="display:none">0</span></a>
-      <a class="nav-link" data-page="pccu"><span class="ni">📋</span> Citopatológico</a>
-      <a class="nav-link" data-page="ists"><span class="ni">🦠</span> ISTs / Vaginoses</a>
-      <a class="nav-link" data-page="alertas"><span class="ni">🔔</span> Alertas <span class="badge-alert"
+      <a class="nav-link" data-page="pccu"><span class="ni"><i class="ph ph-clipboard-text"></i></span> Citopatológico</a>
+      <a class="nav-link" data-page="ists"><span class="ni"><i class="ph ph-bug"></i></span> ISTs / Vaginoses</a>
+      <a class="nav-link" data-page="alertas"><span class="ni"><i class="ph ph-bell"></i></span> Alertas <span class="badge-alert"
           id="badge-alertas" style="display:none">0</span></a>
 
-      <div class="nav-section-label">🤰 Pré-Natal</div>
-      <a class="nav-link" href="Prenatal_ESF26.html" target="_blank"><span class="ni">🤰</span> Módulo Pré-Natal ↗</a>
+      <div class="nav-section-label">Pré-Natal</div>
+      <a class="nav-link" href="Prenatal_ESF26.html" target="_blank"><span class="ni"><i class="ph ph-baby"></i></span> Módulo Pré-Natal ↗</a>
 
-      <div class="nav-section-label">👥 Cadastro</div>
-      <a class="nav-link" data-page="cadastro-central"><span class="ni">👥</span> Cadastro Central <span
+      <div class="nav-section-label">Cadastro</div>
+      <a class="nav-link" data-page="cadastro-central"><span class="ni"><i class="ph ph-users"></i></span> Cadastro Central <span
           class="badge-alert" id="badge-cc" style="display:none">0</span></a>
-      <a class="nav-link" data-page="puericultura"><span class="ni">👶</span> Puericultura</a>
-      <a class="nav-link" data-page="painel-saude"><span class="ni">📊</span> Painel de Saúde</a>
+      <a class="nav-link" data-page="puericultura"><span class="ni"><i class="ph ph-smiley"></i></span> Puericultura</a>
+      <a class="nav-link" data-page="painel-saude"><span class="ni"><i class="ph ph-chart-line-up"></i></span> Painel de Saúde</a>
 
-      <div class="nav-section-label">📄 Laudos e Fichas</div>
-      <a class="nav-link" onclick="window.location.href='laudos.html'"><span class="ni">🖨️</span> Gerador de Laudos</a>
-      <a class="nav-link" onclick="window.location.href='biblioteca_alyne.html'"><span class="ni">📚</span> Biblioteca Rede Alyne</a>
+      <div class="nav-section-label">Laudos e Fichas</div>
+      <a class="nav-link" onclick="window.location.href='laudos.html'"><span class="ni"><i class="ph ph-file-text"></i></span> Gerador de Laudos</a>
+      <a class="nav-link" onclick="window.location.href='biblioteca_alyne.html'"><span class="ni"><i class="ph ph-book-open"></i></span> Biblioteca Rede Alyne</a>
 
       <div class="nav-section-label">Gestão</div>
-      <a class="nav-link" data-page="administrativo" onclick="navTo('administrativo')"><span class="ni">🚜</span> Administrativo</a>
-      <a class="nav-link" data-page="relatorios" onclick="navTo('relatorios')"><span class="ni">📄</span> Relatórios</a>
+      <a class="nav-link" data-page="administrativo" onclick="navTo('administrativo')"><span class="ni"><i class="ph ph-gear"></i></span> Administrativo</a>
+      <a class="nav-link" data-page="relatorios" onclick="navTo('relatorios')"><span class="ni"><i class="ph ph-files"></i></span> Relatórios</a>
 
-      <a class="nav-link" data-page="importar"><span class="ni">📥</span> Importar e-SUS</a>
-      <a class="nav-link" data-page="configuracoes"><span class="ni">⚙️</span> Configurações</a>
-      <a class="nav-link" onclick="logout()" style="margin-top:20px;opacity:.8"><span class="ni">🚪</span> Sair</a>
+      <a class="nav-link" data-page="importar"><span class="ni"><i class="ph ph-download-simple"></i></span> Importar e-SUS</a>
+      <a class="nav-link" data-page="configuracoes"><span class="ni"><i class="ph ph-gear-six"></i></span> Configurações</a>
+      <a class="nav-link" onclick="logout()" style="margin-top:20px;opacity:.8"><span class="ni"><i class="ph ph-sign-out"></i></span> Sair</a>
     </aside>
 
     <!-- MAIN -->
@@ -1397,11 +1405,18 @@
       <header class="topbar">
         <div class="topbar-left">
           <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-          <span id="page-title">Dashboard</span>
+          <div style="display: flex; flex-direction: column;">
+            <span id="page-title">Bom dia, Jackson! <i class="ph-fill ph-hand-waving" style="color: #FBBF24"></i></span>
+            <span style="font-size: 0.85rem; color: var(--text2); display: block; margin-top: 4px;">Aqui está o panorama da sua UBS hoje, <span id="topbar-date-text">24 de abril de 2026</span>.</span>
+          </div>
         </div>
-        <div class="topbar-right">
-          <span style="font-size:.82rem;color:var(--text2)" id="topbar-date"></span>
-          <button class="btn-sair" onclick="logout()">Sair</button>
+        <div class="topbar-right" style="gap: 16px;">
+          <button style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;" onclick="alert('Notificações')"><i class="ph ph-bell"></i></button>
+          <button style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;" onclick="document.body.classList.toggle('light-mode')"><i class="ph ph-moon"></i></button>
+          <div style="display:flex; align-items:center; gap:8px; border:1px solid var(--border); padding:6px 12px; border-radius:8px; font-size:0.8rem; font-weight:600; color:var(--text); white-space:nowrap; background: var(--surface);">
+             <span id="topbar-date-badge">Sex, 24 de abr. de 2026</span>
+             <span style="font-size:1.1rem; color:var(--text2);"><i class="ph ph-calendar-blank"></i></span>
+          </div>
         </div>
       </header>
 
@@ -1410,130 +1425,217 @@
         <!-- ======== DASHBOARD ======== -->
         <div id="pg-dashboard" class="page-section active">
           
-          <!-- 🔥 PAINEL DE AÇÃO IA (TOPO) -->
-          <div id="dash-ia-board" style="margin-bottom:24px; background:var(--surface); border-radius:16px; padding:24px; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-              <div style="display:flex; align-items:center; gap:12px;">
-                <span style="font-size:24px;">🚨</span>
-                <div>
-                  <h2 style="margin:0; color:#991b1b; font-size:1.25rem;">PAINEL DE AÇÃO</h2>
-                  <span style="font-size:0.8rem; color:#7f1d1d;">O que precisa da SUA atenção HOJE</span>
-                </div>
-              </div>
-              <button id="btn-force-ia-sweep" onclick="window.AgentIA?.runVarreduraIA(true)" style="background:#dc2626; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
-                🕵️ Atualizar Análise
-              </button>
-            </div>
-                <span id="ia-board-status" style="font-size:0.8rem; color:#7f1d1d; display:block; margin-bottom:12px;">Análise automática ativa</span>
-            <div id="ia-board-container" style="display:flex; gap:16px; overflow-x:auto; padding:8px; min-height:120px; flex-wrap:wrap;">
-              <!-- Post-its aparecem aqui -->
-              <div style="color:#7f1d1d; text-align:center; width:100%; padding:20px;">
-                <p style="font-size:0.9rem;">Clique em "Atualizar Análise" para gerar recomendações personalizadas</p>
-              </div>
-            </div>
+          <!-- Hidden old elements to avoid JS errors -->
+          <div style="display:none;">
+             <tbody id="tb-prioridades"></tbody>
+             <div id="dash-ia-board"></div>
+             <div id="dash-alertas-box"></div>
+             <span id="dash-alerta-n"></span>
           </div>
 
-          <!-- Cards do Topo (只 não-zero) -->
-          <div class="cards-grid">
-            <!-- Novo cartão: Total Geral -->
-            <div class="dash-card" style="background-color: var(--primary); color: white;" onclick="navTo('cadastro-central')">
-              <div class="icon-big">👥</div>
-              <h3 style="color:white">Total Geral Cadastrado</h3>
-              <div class="val" id="d-total-geral" style="color:white">0</div>
+          <!-- Row 1: 5 Cards Principais -->
+          <div class="cards-grid top-row" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="dash-card" style="background-color: var(--primary); color: white; border-color: var(--primary);" onclick="navTo('cadastro-central')">
+              <div class="icon-big"><i class="ph ph-users"></i></div>
+              <h3 style="color:white; font-size: 0.8rem; letter-spacing: 0;">Total Geral Cadastrado</h3>
+              <div class="val" id="d-total-geral" style="color:white">2930</div>
               <div class="sub" style="color:rgba(255,255,255,0.8)">Pacientes na UBS</div>
             </div>
 
-            <div class="dash-card pink" onclick="navTo('mif')">
-              <div class="icon-big">👩</div>
+            <div class="dash-card" onclick="navTo('mif')">
+              <div class="icon-big" style="color: #A855F7"><i class="ph ph-user"></i></div>
               <h3>Mulheres Cadastradas (MIF)</h3>
-              <div class="val" id="d-total">0</div>
+              <div class="val" id="d-total">1113</div>
               <div class="sub">10 a 49 anos na área</div>
             </div>
-            <div class="dash-card red" onclick="navTo('alertas')">
-              <div class="icon-big">⚠️</div>
+
+            <div class="dash-card" onclick="navTo('alertas')">
+              <div class="icon-big" style="color: var(--warning)"><i class="ph ph-warning"></i></div>
               <h3>Contraceptivo Atrasado</h3>
-              <div class="val" id="d-atrasados" style="color:var(--danger)">0</div>
+              <div class="val" id="d-atrasados" style="color:var(--text)">0</div>
               <div class="sub">Busca ativa necessária</div>
             </div>
-            <div class="dash-card yellow" onclick="navTo('pccu')">
-              <div class="icon-big">📋</div>
+
+            <div class="dash-card" onclick="navTo('pccu')">
+              <div class="icon-big" style="color: var(--info)"><i class="ph ph-clipboard-text"></i></div>
               <h3>PCCU Pendente / Vencido</h3>
-              <div class="val" id="d-pccu">0</div>
+              <div class="val" id="d-pccu">1110</div>
               <div class="sub">Exame em atraso (&gt;1 ano)</div>
             </div>
+
             <div class="dash-card" onclick="navTo('puericultura')">
-              <div class="icon-big">👶</div>
+              <div class="icon-big" style="color: var(--warning)"><i class="ph ph-smiley"></i></div>
               <h3>Puericultura</h3>
-              <div class="val" id="d-pueri">0</div>
-              <div class="sub">Crianças &le; 18 meses</div>
+              <div class="val" id="d-pueri">49</div>
+              <div class="sub">Crianças ≤ 18 meses</div>
             </div>
-            <div class="dash-card green" onclick="navTo('ists')">
-              <div class="icon-big">🦠</div>
+          </div>
+          </div>
+
+          <!-- Row 2: 4 Cards Secundários -->
+          <div class="cards-grid bot-row" style="grid-template-columns: repeat(4, 1fr); margin-top: 16px;">
+            <div class="dash-card" onclick="navTo('ists')">
+              <div class="icon-big" style="color: var(--success)"><i class="ph ph-bug"></i></div>
               <h3>IST em Acompanhamento</h3>
               <div class="val" id="d-ist">0</div>
               <div class="sub">Casos ativos</div>
             </div>
+
             <div class="dash-card" onclick="navTo('mif')">
-              <div class="icon-big">🎯</div>
+              <div class="icon-big" style="color: var(--danger)"><i class="ph ph-target"></i></div>
               <h3>Adolescentes s/ Método</h3>
-              <div class="val" id="d-adol" style="color:var(--mulher)">0</div>
+              <div class="val" id="d-adol" style="color:var(--text)">303</div>
               <div class="sub">10 a 19 anos – alto risco</div>
             </div>
-            <div class="dash-card blue" onclick="window.open('Prenatal_ESF26.html', '_blank')">
-              <div class="icon-big">🤰</div>
-              <h3>Gestantes em Acompanhamento</h3>
-              <div class="val" id="d-gestantes">0</div>
-              <div class="sub">Ver pré-natal completo ↗</div>
-            </div>
+
+             <div class="dash-card" onclick="window.open('Prenatal_ESF26.html', '_blank')">
+               <div class="icon-big" style="color: var(--info)"><i class="ph ph-baby"></i></div>
+               <h3>Gestantes em Acompanhamento</h3>
+               <div class="val" id="d-gestantes" style="color:var(--text)">35</div>
+               <div class="sub">Ver pré-natal completo ↗</div>
+             </div>
+
+             <div class="dash-card" onclick="window.open('UNEI.html', '_blank')" style="border-color:rgba(245,158,11,0.3)">
+               <div class="icon-big" style="color: #F59E0B"><i class="ph ph-shield-checkered"></i></div>
+               <h3>UNEI – Internados</h3>
+               <div class="val" id="d-unei" style="color:#F59E0B">0</div>
+               <div class="sub">Adolescentes em acompanhamento ↗</div>
+             </div>
+           </div>
+
+          <!-- Main Layout: Radar (Left) + Panorama (Right) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;">
+             
+             <!-- Col 1: Radar de Ação -->
+             <div class="radar-box" style="background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px;">
+               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                 <div>
+                   <h2 style="font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                     <span style="color: var(--primary); font-size: 1.5rem;"><i class="ph ph-target"></i></span> Radar de Ação
+                   </h2>
+                   <p style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Inteligência que aponta onde você deve agir agora.</p>
+                 </div>
+                 <a href="#" onclick="navTo('alertas')" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 600;">Ver todos os avisos →</a>
+               </div>
+
+               <div id="radar-list" style="display: flex; flex-direction: column; gap: 12px;">
+                 <div style="border: 1px solid var(--danger); border-left: 3px solid var(--danger); padding: 20px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.03);">
+                    <div style="display:flex; gap: 16px;">
+                       <span style="font-size: 1.6rem; color: var(--danger);"><i class="ph ph-pill"></i></span>
+                       <div>
+                         <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">Contraceptivo Atrasado: Risco Gestacional</div>
+                         <div style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Avaliar paciente imediatamente. Oferecer contracepção de emergência (CE) se indicada.</div>
+                       </div>
+                    </div>
+                    <div style="text-align: right;">
+                       <span style="font-size: 0.7rem; font-weight: 700; color: var(--danger); text-transform: uppercase;">ALTA PRIORIDADE</span>
+                       <br>
+                       <button style="background: none; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 8px; font-weight: 600;">Resolver agora →</button>
+                    </div>
+                 </div>
+
+                 <div style="border: 1px solid var(--danger); border-left: 3px solid var(--danger); padding: 20px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.03);">
+                    <div style="display:flex; gap: 16px;">
+                       <span style="font-size: 1.6rem; color: var(--danger);"><i class="ph ph-target"></i></span>
+                       <div>
+                         <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">IST em Tratamento: Adesão e Resposta</div>
+                         <div style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Confirmar adesão medicamentos do paciente. Avaliar melhora de sintomas.</div>
+                       </div>
+                    </div>
+                    <div style="text-align: right;">
+                       <span style="font-size: 0.7rem; font-weight: 700; color: var(--danger); text-transform: uppercase;">ALTA PRIORIDADE</span>
+                       <br>
+                       <button style="background: none; border: 1px solid var(--danger); color: var(--danger); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 8px; font-weight: 600;">Resolver agora →</button>
+                    </div>
+                 </div>
+
+                 <div style="border: 1px solid var(--warning); border-left: 3px solid var(--warning); padding: 20px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(245,158,11,0.03);">
+                    <div style="display:flex; gap: 16px;">
+                       <span style="font-size: 1.6rem; color: var(--warning);"><i class="ph ph-smiley"></i></span>
+                       <div>
+                         <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">IST: Notificação e Tratamento de Parceiros</div>
+                         <div style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Revisar com o paciente a notificação e tratamento dos parceiros sexuais.</div>
+                       </div>
+                    </div>
+                    <div style="text-align: right;">
+                       <span style="font-size: 0.7rem; font-weight: 700; color: var(--warning); text-transform: uppercase;">MÉDIA PRIORIDADE</span>
+                       <br>
+                       <button style="background: none; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 8px;">Acompanhar →</button>
+                    </div>
+                 </div>
+
+                 <div style="border: 1px solid var(--warning); border-left: 3px solid var(--warning); padding: 20px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(245,158,11,0.03);">
+                    <div style="display:flex; gap: 16px;">
+                       <span style="font-size: 1.6rem; color: var(--warning);"><i class="ph ph-house"></i></span>
+                       <div>
+                         <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">Contraceptivo Atrasado: Agendamento e Educação</div>
+                         <div style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Agendar retorno para acompanhamento do método contraceptivo.</div>
+                       </div>
+                    </div>
+                    <div style="text-align: right;">
+                       <span style="font-size: 0.7rem; font-weight: 700; color: var(--warning); text-transform: uppercase;">MÉDIA PRIORIDADE</span>
+                       <br>
+                       <button style="background: none; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 8px;">Acompanhar →</button>
+                    </div>
+                 </div>
+
+                 <div style="border: 1px solid var(--success); border-left: 3px solid var(--success); padding: 20px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(34,197,94,0.03);">
+                    <div style="display:flex; gap: 16px;">
+                       <span style="font-size: 1.6rem; color: var(--success);"><i class="ph ph-clipboard-text"></i></span>
+                       <div>
+                         <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">IST: Teste de Cura Pendente</div>
+                         <div style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Verificar se testes de cura (se aplicável ao tipo de IST) estão agendados.</div>
+                       </div>
+                    </div>
+                    <div style="text-align: right;">
+                       <span style="font-size: 0.7rem; font-weight: 700; color: var(--success); text-transform: uppercase;">BAIXA PRIORIDADE</span>
+                       <br>
+                       <button style="background: none; border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-top: 8px;">Acompanhar →</button>
+                    </div>
+                 </div>
+               </div>
+             </div>
+
+             <!-- Col 2: Panorama Inteligente -->
+             <div class="panorama-box" style="background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px;">
+               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                 <div>
+                   <h2 style="font-size: 1.1rem; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                     <span style="color: var(--primary); font-size: 1.5rem;"><i class="ph ph-chart-polar"></i></span> Panorama Inteligente
+                   </h2>
+                   <p style="font-size: 0.8rem; color: var(--text2); margin-top: 4px;">Indicadores atualizados em tempo real.</p>
+                 </div>
+                 <div style="font-size: 0.8rem; color: var(--text2); display: flex; align-items: center; gap: 8px;">
+                   Última atualização: <span id="panorama-time">17:11</span>
+                   <button onclick="renderDashboardCharts()" style="background:none; border:none; color:var(--text); cursor:pointer;"><i class="ph ph-arrows-clockwise"></i></button>
+                 </div>
+               </div>
+
+               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px; background: rgba(255,255,255,0.01);">
+                    <h3 style="font-size: 0.85rem; color: var(--text2); margin-bottom: 12px; display:flex; align-items:center; gap:6px;"><span style="color:var(--primary)"><i class="ph ph-chart-bar"></i></span> Métodos Contraceptivos</h3>
+                    <canvas id="chart-metodos"></canvas>
+                  </div>
+                  <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px; background: rgba(255,255,255,0.01);">
+                    <h3 style="font-size: 0.85rem; color: var(--text2); margin-bottom: 12px; display:flex; align-items:center; gap:6px;"><span style="color:var(--primary)"><i class="ph ph-chart-bar"></i></span> Faixa Etária MIF</h3>
+                    <canvas id="chart-faixa"></canvas>
+                  </div>
+                  <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px; background: rgba(255,255,255,0.01);">
+                    <h3 style="font-size: 0.85rem; color: var(--text2); margin-bottom: 12px; display:flex; align-items:center; gap:6px;"><span style="color:var(--primary)"><i class="ph ph-chart-bar"></i></span> Risco de Gravidez</h3>
+                    <canvas id="chart-risco"></canvas>
+                  </div>
+                  <div style="border: 1px solid var(--border); padding: 16px; border-radius: 8px; background: rgba(255,255,255,0.01);">
+                    <h3 style="font-size: 0.85rem; color: var(--text2); margin-bottom: 12px; display:flex; align-items:center; gap:6px;"><span style="color:var(--primary)"><i class="ph ph-chart-pie-slice"></i></span> Status Contraceptivos</h3>
+                    <canvas id="chart-status"></canvas>
+                  </div>
+               </div>
+             </div>
+             
           </div>
 
-          <div id="dash-alertas-box" style="display:none" class="alert-box danger">
-            <span class="alert-icon">🚨</span>
-            <div><strong>Atenção!</strong> Existem <span id="dash-alerta-n">0</span> mulheres com contraceptivo
-              atrasado. <a href="#" onclick="navTo('alertas')" style="color:inherit;font-weight:700">Ver lista →</a>
-            </div>
-          </div>
-
-          <!-- 📊 Gráficos (ABAIXO - área secundária) -->
-          <div class="chart-grid">
-            <div class="chart-card">
-              <h3>📊 Métodos Contraceptivos</h3><canvas id="chart-metodos"></canvas>
-            </div>
-            <div class="chart-card">
-              <h3>📊 Faixa Etária MIF</h3><canvas id="chart-faixa"></canvas>
-            </div>
-            <div class="chart-card">
-              <h3>📊 Risco de Gravidez</h3><canvas id="chart-risco"></canvas>
-            </div>
-            <div class="chart-card">
-              <h3>📊 Status Contraceptivos</h3><canvas id="chart-status"></canvas>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <div
-              style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-              <strong>🚨 Prioridades do Dia</strong>
-              <button class="btn btn-danger btn-sm" onclick="exportarPrioridades()">📄 Exportar PDF</button>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Idade</th>
-                  <th>Motivo</th>
-                  <th>Dias Atraso</th>
-                  <th>Telefone</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="tb-prioridades">
-                <tr>
-                  <td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Carregando...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <button style="position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: #0F172A; border: none; padding: 12px 24px; border-radius: 20px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,209,178,0.4); z-index: 1000; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+             <i class="ph-fill ph-sparkle"></i> Chave IA
+          </button>
         </div>
 
         <!-- ======== MIF ======== -->
@@ -3142,6 +3244,51 @@
   </div>
   
   <script src="assets/js/ai_agent.js?v=5.3"></script>
+  <script>
+    // Atualizar contador UNEI no dashboard
+    function atualizarContadorUNEI() {
+      const pessoas = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+      const uneiCount = pessoas.filter(p => (p.tags || []).includes('UNEI')).length;
+      const el = document.getElementById('d-unei');
+      if (el) el.textContent = uneiCount;
+    }
+
+    // Função para renderizar gráficos do Panorama Inteligente
+    function renderDashboardCharts() {
+      try {
+        // Obter dados do localStorage (formato usado pelo app.js)
+        const data = JSON.parse(localStorage.getItem('carisma_data') || '{}');
+        const mifs = data.mif || JSON.parse(localStorage.getItem('carisma_mif') || '[]');
+
+        if (typeof renderCharts === 'function') {
+          renderCharts(mifs);
+        } else {
+          // Tentar chamar via app.js se disponível
+          if (window.app && typeof window.app.renderCharts === 'function') {
+            window.app.renderCharts(mifs);
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao renderizar gráficos:', e);
+      }
+    }
+
+    // Chamar quando a página carregar
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(atualizarContadorUNEI, 1000);
+      setTimeout(renderDashboardCharts, 1500);
+    });
+
+    // Hook no renderDashboard se existir
+    if (typeof renderDashboard === 'function') {
+      const originalRender = renderDashboard;
+      renderDashboard = function() {
+        originalRender();
+        atualizarContadorUNEI();
+        renderDashboardCharts();
+      };
+    }
+  </script>
 </body>
 
 </html>

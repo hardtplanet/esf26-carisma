@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#00D1B2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>UNEI – Unidade de Internação | PULSE</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="assets/js/unei.js"></script>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    :root {
+      --primary: #00D1B2;
+      --primary-dark: #00A88F;
+      --secondary: #0266F1;
+      --background: #0F172A;
+      --surface: #1E293B;
+      --surface2: #334155;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --border: rgba(255,255,255,0.08);
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --success: #10B981;
+      --info: #3B82F6;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-top { display:flex; justify-content:space-between; align-items:center; }
+    .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:1rem; }
+    .logo-badge {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      width:36px; height:36px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.2rem; color:#0F172A;
+    }
+    .header-actions { display:flex; gap:8px; align-items:center; }
+
+    .icon-btn {
+      width:36px; height:36px; border-radius:50%;
+      background:var(--surface2); border:1px solid var(--border);
+      color:var(--text-primary); display:flex; align-items:center;
+      justify-content:center; cursor:pointer; transition:all 0.2s;
+      font-size:1rem; position:relative;
+    }
+    .icon-btn:hover { background:rgba(0,209,178,0.15); color:var(--primary); border-color:var(--primary); }
+    .icon-btn .badge-dot {
+      position:absolute; top:-2px; right:-2px;
+      width:10px; height:10px; border-radius:50%;
+      background:var(--danger); border:2px solid var(--surface);
+      display:none;
+    }
+    .icon-btn .badge-dot.ativo { display:block; }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position:fixed; bottom:0; left:0; right:0;
+      background:var(--surface); border-top:1px solid var(--border);
+      display:flex; justify-content:space-around;
+      padding:8px 0 calc(8px + env(safe-area-inset-bottom)); z-index:100;
+    }
+    .nav-item {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; gap:3px; padding:4px 8px;
+      cursor:pointer; transition:all 0.2s;
+      color:var(--text-secondary); text-decoration:none;
+      position:relative;
+    }
+    .nav-item.active { color:var(--primary); }
+    .nav-item:hover { color:var(--primary); }
+    .nav-item i { font-size:22px; }
+    .nav-label { font-size:10px; font-weight:500; }
+    .nav-badge {
+      position:absolute; top:2px; right:14px;
+      background:var(--danger); color:#fff;
+      font-size:9px; font-weight:700; min-width:16px; height:16px;
+      border-radius:8px; display:flex; align-items:center;
+      justify-content:center; padding:0 4px;
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      padding:16px;
+      padding-bottom:calc(80px + env(safe-area-inset-bottom));
+      max-width:900px; margin:0 auto;
+    }
+
+    /* PAGES */
+    .page { display:none; animation:fadeIn 0.25s ease; }
+    .page.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* CARDS */
+    .card {
+      background:var(--surface); border-radius:12px;
+      border:1px solid var(--border); padding:20px;
+      margin-bottom:16px; transition:border-color 0.2s;
+    }
+    .card:hover { border-color:rgba(0,209,178,0.2); }
+    .card-header {
+      display:flex; justify-content:space-between;
+      align-items:center; margin-bottom:16px;
+      padding-bottom:12px; border-bottom:1px solid var(--border);
+    }
+    .card-title { font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px; }
+
+    /* STATS GRID */
+    .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+    .stat-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:16px; text-align:center;
+    }
+    .stat-number { font-size:2rem; font-weight:700; color:var(--primary); }
+    .stat-label { font-size:11px; color:var(--text-secondary); margin-top:4px; }
+    .stat-card.danger .stat-number { color:var(--danger); }
+    .stat-card.warning .stat-number { color:var(--warning); }
+    .stat-card.success .stat-number { color:var(--success); }
+
+    /* BUTTONS */
+    .btn {
+      padding:10px 18px; border:none; border-radius:10px;
+      font-size:13px; font-weight:600; cursor:pointer;
+      transition:all 0.2s; display:inline-flex;
+      align-items:center; gap:6px; font-family:inherit;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+      color:#0F172A; box-shadow:0 4px 12px rgba(0,209,178,0.3);
+    }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(0,209,178,0.4); }
+    .btn-secondary { background:var(--surface2); color:var(--text-primary); border:1px solid var(--border); }
+    .btn-secondary:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-warning { background:var(--warning); color:#fff; }
+    .btn-outline { background:transparent; color:var(--primary); border:1px solid var(--primary); }
+    .btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; }
+    .btn-full { width:100%; justify-content:center; }
+
+    /* FORM */
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width:100%; padding:10px 12px;
+      border:1px solid var(--border); border-radius:8px;
+      font-size:14px; background:rgba(0,0,0,0.2);
+      color:var(--text-primary); font-family:inherit; transition:all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline:none; border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(0,209,178,0.1);
+    }
+    .form-group select option { background:var(--surface2); }
+    .form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+
+    /* SEARCH */
+    .search-bar {
+      display:flex; gap:8px; margin-bottom:16px; align-items:center;
+    }
+    .search-bar input { flex:1; }
+
+    /* ADOLESCENTE CARD na lista */
+    .adol-item {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:16px; margin-bottom:12px;
+      cursor:pointer; transition:all 0.2s;
+      display:flex; align-items:center; gap:14px;
+    }
+    .adol-item:hover { border-color:rgba(0,209,178,0.3); transform:translateY(-1px); }
+    .adol-avatar {
+      width:48px; height:48px; border-radius:50%;
+      background:rgba(0,209,178,0.1); display:flex;
+      align-items:center; justify-content:center;
+      font-weight:700; font-size:1.1rem; color:var(--primary);
+      flex-shrink:0;
+    }
+    .adol-avatar.f { background:rgba(236,72,153,0.1); color:#EC4899; }
+    .adol-info { flex:1; }
+    .adol-nome { font-weight:600; font-size:14px; margin-bottom:3px; }
+    .adol-meta { font-size:12px; color:var(--text-secondary); }
+    .adol-badges { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+
+    /* BADGES */
+    .badge {
+      font-size:10px; font-weight:700; padding:2px 8px;
+      border-radius:20px; display:inline-flex; align-items:center; gap:4px;
+    }
+    .badge-danger { background:rgba(239,68,68,0.15); color:var(--danger); }
+    .badge-warning { background:rgba(245,158,11,0.15); color:var(--warning); }
+    .badge-success { background:rgba(16,185,129,0.15); color:var(--success); }
+    .badge-info { background:rgba(59,130,246,0.15); color:var(--info); }
+    .badge-teal { background:rgba(0,209,178,0.1); color:var(--primary); }
+
+    /* TABS */
+    .tabs {
+      display:flex; gap:6px; margin-bottom:16px;
+      overflow-x:auto; padding-bottom:4px; border-bottom:1px solid var(--border);
+    }
+    .tab-btn {
+      padding:8px 14px; background:transparent;
+      border:none; border-bottom:2px solid transparent;
+      font-size:13px; font-weight:600; color:var(--text-secondary);
+      cursor:pointer; white-space:nowrap; transition:all 0.2s;
+      display:flex; align-items:center; gap:6px; margin-bottom:-1px;
+    }
+    .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; animation:fadeIn 0.2s; }
+
+    /* PRONTUÁRIO PROFILE CARD */
+    .profile-card {
+      background:linear-gradient(135deg,rgba(0,209,178,0.15),rgba(0,168,143,0.08));
+      border:1px solid rgba(0,209,178,0.2);
+      border-radius:16px; padding:20px; margin-bottom:20px;
+    }
+    .profile-header { display:flex; align-items:center; gap:16px; }
+    .profile-avatar {
+      width:64px; height:64px; border-radius:50%;
+      background:rgba(0,209,178,0.2); display:flex;
+      align-items:center; justify-content:center;
+      font-weight:700; font-size:1.5rem; color:var(--primary);
+      flex-shrink:0;
+    }
+    .profile-avatar.f { background:rgba(236,72,153,0.2); color:#EC4899; }
+    .profile-nome { font-size:1.1rem; font-weight:700; margin-bottom:3px; }
+    .profile-meta { font-size:12px; color:var(--text-secondary); }
+    .profile-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+    .profile-stat { background:rgba(0,0,0,0.2); border-radius:8px; padding:10px; text-align:center; }
+    .profile-stat-value { font-size:1rem; font-weight:700; color:var(--primary); }
+    .profile-stat-label { font-size:10px; color:var(--text-secondary); margin-top:2px; }
+
+    /* VACINA CARD */
+    .vacina-grupo { margin-bottom:20px; }
+    .vacina-grupo-title {
+      font-size:11px; font-weight:700; color:var(--text-secondary);
+      text-transform:uppercase; letter-spacing:1px;
+      margin-bottom:10px; padding-bottom:8px;
+      border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .vacina-item {
+      background:var(--surface2); border-radius:10px;
+      padding:14px; margin-bottom:8px; transition:all 0.2s;
+      border:1px solid var(--border);
+    }
+    .vacina-item:hover { border-color:rgba(0,209,178,0.2); }
+    .vacina-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+    .vacina-nome { font-weight:600; font-size:13px; }
+    .vacina-desc { font-size:11px; color:var(--text-secondary); margin-top:2px; }
+    .vacina-doses { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .dose-tag {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:11px; font-weight:600; padding:4px 10px;
+      border-radius:20px; cursor:pointer; transition:all 0.2s;
+      border:1px solid;
+    }
+    .dose-tag.pendente { background:rgba(148,163,184,0.1); color:var(--text-secondary); border-color:var(--border); }
+    .dose-tag.registrada { background:rgba(16,185,129,0.1); color:var(--success); border-color:rgba(16,185,129,0.3); }
+    .dose-tag.atrasada { background:rgba(239,68,68,0.1); color:var(--danger); border-color:rgba(239,68,68,0.3); }
+    .dose-tag.nao-aplicavel { background:rgba(148,163,184,0.05); color:var(--text-secondary); border-color:var(--border); text-decoration:line-through; opacity:0.5; }
+
+    /* TESTE RAPIDO */
+    .teste-resultado-tag { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+    .resultado-reagente { background:rgba(239,68,68,0.15); color:var(--danger); }
+    .resultado-nao-reagente { background:rgba(16,185,129,0.15); color:var(--success); }
+    .resultado-indeterminado { background:rgba(245,158,11,0.15); color:var(--warning); }
+    .resultado-aguardando { background:rgba(59,130,246,0.15); color:var(--info); }
+
+    /* ALERTA VACINAL */
+    .alert-vacinal {
+      background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25);
+      border-left:4px solid var(--danger); border-radius:10px;
+      padding:14px 16px; margin-bottom:12px;
+      display:flex; gap:12px; align-items:flex-start;
+    }
+    .alert-vacinal.warning {
+      background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.25);
+      border-left-color:var(--warning);
+    }
+    .alert-vacinal i { font-size:20px; flex-shrink:0; margin-top:1px; }
+    .alert-vacinal h4 { font-size:13px; font-weight:600; margin-bottom:2px; }
+    .alert-vacinal p { font-size:12px; color:var(--text-secondary); }
+
+    /* ANOTACOES */
+    .nota-item {
+      background:var(--surface2); border-radius:10px;
+      padding:14px; margin-bottom:8px; border:1px solid var(--border);
+    }
+    .nota-meta { font-size:11px; color:var(--text-secondary); margin-bottom:8px; }
+    .nota-texto { font-size:13px; line-height:1.6; }
+
+    /* MODAL */
+    .modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); padding:16px; overflow-y:auto; }
+    .modal.active { display:flex; align-items:flex-start; justify-content:center; padding-top:40px; }
+    .modal-content {
+      background:var(--surface); border-radius:16px;
+      border:1px solid var(--border); padding:24px;
+      width:100%; max-width:560px;
+      animation:modalSlide 0.25s ease;
+    }
+    @keyframes modalSlide { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+    .modal-header {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid var(--border);
+    }
+    .modal-title { font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .modal-close {
+      width:30px; height:30px; border-radius:50%;
+      background:var(--surface2); border:none; color:var(--text-primary);
+      cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center;
+    }
+
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:48px 24px; color:var(--text-secondary); }
+    .empty-state i { font-size:48px; margin-bottom:16px; opacity:0.4; }
+    .empty-state h3 { font-size:16px; font-weight:600; margin-bottom:8px; color:var(--text-primary); }
+    .empty-state p { font-size:13px; }
+
+    /* TABLE */
+    .table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { background:var(--surface2); color:var(--text-primary); font-weight:600; padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); }
+    td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(255,255,255,0.02); }
+
+    /* TOAST */
+    #toast {
+      position:fixed; bottom:calc(80px + 16px + env(safe-area-inset-bottom));
+      left:50%; transform:translateX(-50%) translateY(10px);
+      background:var(--surface2); color:var(--text-primary);
+      padding:10px 20px; border-radius:24px; font-size:13px; font-weight:500;
+      box-shadow:0 4px 20px rgba(0,0,0,0.4); opacity:0;
+      transition:all 0.3s; z-index:9999; white-space:nowrap;
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* RESPONSIVE */
+    @media(max-width:480px) {
+      .profile-stats { grid-template-columns:repeat(3,1fr); }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+    }
+
+    /* PRINT */
+    @media print {
+      .header, .bottom-nav, .modal, #toast, .btn { display:none !important; }
+      body { background:white; color:#000; }
+      .card { border:1px solid #ddd; box-shadow:none; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="loginScreen" class="login-container">
+  <div style="text-align:center;margin-bottom:30px;">
+    <div class="logo-badge" style="margin:0 auto 15px;width:60px;height:60px;font-size:28px;border-radius:14px;"><i class="ph-fill ph-shield-checkered"></i></div>
+    <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:4px;">UNEI – Login</h2>
+    <p style="font-size:12px;color:var(--text-secondary);">Unidade de Internação</p>
+  </div>
+  <form onsubmit="doLogin(event)">
+    <div class="form-group" style="margin-bottom:18px;">
+      <label>Matrícula / CPF</label>
+      <input type="text" id="loginUser" placeholder="Digite sua matrícula" required style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(0,0,0,0.2);color:var(--text-primary);font-size:14px;">
+    </div>
+    <div class="form-group" style="margin-bottom:24px;">
+      <label>Senha</label>
+      <input type="password" id="loginPass" placeholder="Digite sua senha" required style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(0,0,0,0.2);color:var(--text-primary);font-size:14px;">
+    </div>
+    <button type="submit" class="btn btn-primary btn-full" style="padding:12px;font-size:14px;">
+      <i class="ph ph-sign-in"></i> Entrar
+    </button>
+  </form>
+  <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--text-secondary);">Acesso restrito a profissionais da unidade</p>
+</div>
+
+<!-- ═══════════ MAIN APP ═══════════ -->
+<div id="app" style="display:none;">
+  <header class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-badge"><i class="ph-fill ph-shield-checkered"></i></div>
+        <div>
+          <div style="font-size:0.95rem; font-weight:700; line-height:1.2;">UNEI</div>
+          <div style="font-size:0.7rem; color:var(--text-secondary); font-weight:400;">Unidade de Internação – ESF 26</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="btn-alertas-header" onclick="navTo('alertas')" title="Alertas">
+          <i class="ph ph-bell"></i>
+          <span class="badge-dot" id="alertas-dot"></span>
+        </button>
+        <a href="index.html" class="icon-btn" title="Voltar ao PULSE">
+          <i class="ph ph-arrow-square-out"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="pg-dashboard" class="page active">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div>
+          <h1 style="font-size:1.1rem;font-weight:700;">Visão Geral</h1>
+          <p style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Adolescentes em acompanhamento</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalAdolescente()">
+          <i class="ph ph-plus"></i> Novo
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="d-total">0</div>
+          <div class="stat-label">Total Internados</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-number" id="d-vacinados">0</div>
+          <div class="stat-label">Vacinação em Dia</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-number" id="d-atraso">0</div>
+          <div class="stat-label">Atraso Vacinal ⚠️</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-number" id="d-reagentes">0</div>
+          <div class="stat-label">Testes Reagentes</div>
+        </div>
+      </div>
+
+      <!-- Alertas críticos no dashboard -->
+      <div id="dash-alertas-criticos"></div>
+
+      <!-- Lista resumida -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ph ph-users"></i> Adolescentes</div>
+          <button class="btn btn-outline btn-sm" onclick="navTo('adolescentes')">Ver todos →</button>
+        </div>
+        <div id="dash-lista-resumida">
+          <div class="empty-state"><i class="ph ph-user-plus"></i><h3>Nenhum adolescente cadastrado</h3><p>Use o botão "+ Novo" para começar</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ADOLESCENTES ══ -->
+    <div id="pg-adolescentes" class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:1rem;font-weight:700;">Adolescentes Internados</h2>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalAdolescente()">
+          <i class="ph ph-plus"></i> Novo
+        </button>
+      </div>
+      <div class="search-bar">
+        <div class="form-group" style="flex:1;margin:0;">
+          <input type="text" id="s-adol" placeholder="Buscar por nome, CNS ou CPF..." oninput="renderAdolescentes()">
+        </div>
+      </div>
+      <div id="lista-adolescentes"></div>
+    </div>
+
+    <!-- ══ PRONTUÁRIO INDIVIDUAL ══ -->
+    <div id="pg-prontuario" class="page">
+      <button class="btn btn-secondary btn-sm" onclick="voltarDeLista()" style="margin-bottom:16px;">
+        <i class="ph ph-arrow-left"></i> Voltar
+      </button>
+      <div id="profile-container"></div>
+      <div class="tabs" id="prontuario-tabs">
+        <button class="tab-btn active" onclick="switchTab('vacinas')"><i class="ph ph-syringe"></i> Vacinas</button>
+        <button class="tab-btn" onclick="switchTab('testes')"><i class="ph ph-test-tube"></i> Testes Rápidos</button>
+        <button class="tab-btn" onclick="switchTab('anotacoes')"><i class="ph ph-note-pencil"></i> Anotações</button>
+      </div>
+      <div id="tab-vacinas" class="tab-content active"></div>
+      <div id="tab-testes" class="tab-content"></div>
+      <div id="tab-anotacoes" class="tab-content"></div>
+    </div>
+
+    <!-- ══ ALERTAS ══ -->
+    <div id="pg-alertas" class="page">
+      <div style="margin-bottom:18px;">
+        <h2 style="font-size:1.1rem;font-weight:700;"><i class="ph ph-warning-circle" style="color:var(--warning)"></i> Central de Alertas Vacinais</h2>
+        <p style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Adolescentes com vacinação pendente ou resultado reagente</p>
+      </div>
+      <div id="alertas-container"></div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════ BOTTOM NAV ═══════════ -->
+  <nav class="bottom-nav">
+    <a class="nav-item active" onclick="navTo('dashboard')">
+      <i class="ph ph-house"></i>
+      <span class="nav-label">Início</span>
+    </a>
+    <a class="nav-item" onclick="navTo('adolescentes')">
+      <i class="ph ph-users"></i>
+      <span class="nav-label">Internados</span>
+    </a>
+    <a class="nav-item" onclick="navTo('alertas')" id="nav-alertas-btn">
+      <i class="ph ph-warning"></i>
+      <span class="nav-label">Alertas</span>
+      <span class="nav-badge" id="nav-badge-alertas" style="display:none"></span>
+    </a>
+  </nav>
+
+</div><!-- #app -->
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div id="toast"></div>
+
+<!-- ═══════════ MODAL ADOLESCENTE ═══════════ -->
+<div id="modal-adol" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ph ph-user-plus"></i> Cadastrar Adolescente</div>
+      <button class="modal-close" onclick="fecharModal('modal-adol')">×</button>
+    </div>
+    <form id="form-adol" onsubmit="salvarAdolescente(event)">
+      <input type="hidden" id="adol-id-edit" value="">
+      <div class="form-row">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Nome Completo *</label>
+          <input type="text" id="adol-nome" placeholder="Digite o nome completo" required style="text-transform:uppercase">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data de Nascimento *</label>
+          <input type="date" id="adol-nasc" required>
+        </div>
+        <div class="form-group">
+          <label>Sexo *</label>
+          <select id="adol-sexo" required>
+            <option value="">Selecione...</option>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>CNS</label>
+          <input type="text" id="adol-cns" placeholder="Cartão Nac. de Saúde" maxlength="15">
+        </div>
+        <div class="form-group">
+          <label>CPF</label>
+          <input type="text" id="adol-cpf" placeholder="000.000.000-00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Data de Entrada na UNEI</label>
+        <input type="date" id="adol-entrada">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">
+        <i class="ph ph-floppy-disk"></i> Salvar
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL VACINA ═══════════ -->
+<div id="modal-vacina" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ph ph-syringe"></i> Registrar Vacina</div>
+      <button class="modal-close" onclick="fecharModal('modal-vacina')">×</button>
+    </div>
+    <form id="form-vacina" onsubmit="salvarVacinaModal(event)">
+      <input type="hidden" id="vac-adol-id">
+      <input type="hidden" id="vac-vacina-id">
+      <input type="hidden" id="vac-dose-id">
+      <div id="vac-info" style="background:rgba(0,209,178,0.08);border:1px solid rgba(0,209,178,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data de Aplicação *</label>
+          <input type="date" id="vac-data" required>
+        </div>
+        <div class="form-group">
+          <label>Lote *</label>
+          <input type="text" id="vac-lote" placeholder="Ex: AB12345" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Validade do Lote *</label>
+          <input type="date" id="vac-validade" required>
+        </div>
+        <div class="form-group">
+          <label>Laboratório *</label>
+          <input type="text" id="vac-lab" placeholder="Ex: Bio-Manguinhos" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Profissional Responsável</label>
+        <input type="text" id="vac-prof" placeholder="Nome do profissional">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary" style="flex:1">
+          <i class="ph ph-check"></i> Registrar
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="marcarNaoAplicavel()" style="font-size:11px;">
+          Não Aplicável
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL TESTE RÁPIDO ═══════════ -->
+<div id="modal-teste" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ph ph-test-tube"></i> Registrar Teste Rápido</div>
+      <button class="modal-close" onclick="fecharModal('modal-teste')">×</button>
+    </div>
+    <form id="form-teste" onsubmit="salvarTeste(event)">
+      <input type="hidden" id="teste-adol-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de Teste *</label>
+          <select id="teste-tipo" required>
+            <option value="">Selecione...</option>
+            <option>HIV</option>
+            <option>Sífilis</option>
+            <option>Hepatite B</option>
+            <option>Hepatite C</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Data da Coleta *</label>
+          <input type="date" id="teste-data" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Resultado *</label>
+          <select id="teste-resultado" required>
+            <option value="">Selecione...</option>
+            <option value="Não Reagente">Não Reagente</option>
+            <option value="Reagente">Reagente</option>
+            <option value="Indeterminado">Indeterminado</option>
+            <option value="Aguardando">Aguardando</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Lote do Teste</label>
+          <input type="text" id="teste-lote" placeholder="Ex: TR2024-01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Profissional Responsável</label>
+        <input type="text" id="teste-prof" placeholder="Nome do profissional">
+      </div>
+      <div class="form-group">
+        <label>Observações / Conduta</label>
+        <textarea id="teste-obs" rows="3" placeholder="Registre conduta, encaminhamentos, etc."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">
+        <i class="ph ph-floppy-disk"></i> Salvar Teste
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL ANOTAÇÃO ═══════════ -->
+<div id="modal-nota" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title"><i class="ph ph-note-pencil"></i> Nova Anotação</div>
+      <button class="modal-close" onclick="fecharModal('modal-nota')">×</button>
+    </div>
+    <form id="form-nota" onsubmit="salvarNota(event)">
+      <input type="hidden" id="nota-adol-id">
+      <div class="form-group">
+        <label>Profissional</label>
+        <input type="text" id="nota-prof" placeholder="Seu nome">
+      </div>
+      <div class="form-group">
+        <label>Anotação / Evolução *</label>
+        <textarea id="nota-texto" rows="5" placeholder="Registre observações, evolução clínica, intercorrências..." required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">
+        <i class="ph ph-floppy-disk"></i> Salvar Anotação
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════ JAVASCRIPT ═══════════ -->
+<script>
+'use strict';
+
+// ── CONSTANTES ────────────────────────────────────────────────────
+const STORAGE_KEY = 'carisma_unei_adolescentes';
+const PESSOAS_KEY = 'carisma_pessoas';
+const SESSION_KEY = 'unei_session';
+
+// ── LOGIN ────────────────────────────────────────────────────────
+function doLogin(e) {
+  if(e) e.preventDefault();
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if(!u || !p) { toast('Preencha todos os campos', 'warning'); return; }
+  const session = { user: u, name: 'Prof. ' + u, time: Date.now() };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  initApp();
+}
+
+function doLogout() {
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+function initApp() {
+  const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+  if(!session) return;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Update header with user info
+  const headerActions = document.querySelector('.header-actions');
+  if(headerActions && !document.getElementById('user-info')) {
+    const userInfo = document.createElement('div');
+    userInfo.id = 'user-info';
+    userInfo.innerHTML = `
+      <span style="font-size:12px;color:var(--text-secondary);margin-right:8px;">${session.name}</span>
+      <button class="icon-btn" onclick="doLogout()" title="Sair">
+        <i class="ph ph-sign-out"></i>
+      </button>
+    `;
+    headerActions.appendChild(userInfo);
+  }
+  renderDashboard();
+}
+
+// Check session on load
+if(JSON.parse(localStorage.getItem(SESSION_KEY))) {
+  document.addEventListener('DOMContentLoaded', initApp);
+}
+
+// Calendário Vacinal PNI 2024 – Adolescentes / Recuperação
+const VACINAS = {
+  bcg:       { nome:'BCG', desc:'Verificar cicatriz. Aplicar se ausente.', grupo:'Básicas – Infância', cor:'#A855F7', doses:['Dose Única'] },
+  hepb:      { nome:'Hepatite B', desc:'Série de 3 doses (0, 1, 6 meses).', grupo:'Básicas – Infância', cor:'#3B82F6', doses:['1ª Dose','2ª Dose','3ª Dose'] },
+  dtp:       { nome:'DTP / Pentavalente', desc:'Tríplice bacteriana + Hib + HepB.', grupo:'Básicas – Infância', cor:'#10B981', doses:['1ª Dose','2ª Dose','3ª Dose','1º Reforço','2º Reforço'] },
+  polio:     { nome:'Poliomielite (VIP/VOP)', desc:'Verificar histórico. Completar série se incompleto.', grupo:'Básicas – Infância', cor:'#F59E0B', doses:['1ª Dose','2ª Dose','3ª Dose','1º Reforço','2º Reforço'] },
+  pneumo:    { nome:'Pneumocócica 10v', desc:'Válida até 4 anos. Registrar se histórico disponível.', grupo:'Básicas – Infância', cor:'#EF4444', doses:['1ª Dose','2ª Dose','Reforço'] },
+  menc:      { nome:'Meningocócica C', desc:'Conjugada. Completar série conforme histórico.', grupo:'Básicas – Infância', cor:'#EC4899', doses:['1ª Dose','2ª Dose','Reforço'] },
+  rota:      { nome:'Rotavírus', desc:'Válida até 7 meses de vida. Registrar se histórico disponível.', grupo:'Básicas – Infância', cor:'#6366F1', doses:['1ª Dose','2ª Dose'] },
+  fa:        { nome:'Febre Amarela', desc:'A partir de 9 meses. Uma dose = proteção vitalícia.', grupo:'Infância / Adolescência', cor:'#F97316', doses:['Dose Única'] },
+  scr:       { nome:'SCR – Tríplice Viral', desc:'Sarampo, Caxumba, Rubéola. 2 doses obrigatórias.', grupo:'Infância / Adolescência', cor:'#14B8A6', doses:['1ª Dose','2ª Dose'] },
+  varicel:   { nome:'Varicela', desc:'A partir de 12 meses. 2 doses obrigatórias.', grupo:'Infância / Adolescência', cor:'#84CC16', doses:['1ª Dose','2ª Dose'] },
+  hepa:      { nome:'Hepatite A', desc:'Dose única a partir de 15 meses.', grupo:'Infância / Adolescência', cor:'#22D3EE', doses:['Dose Única'] },
+  hpv:       { nome:'HPV Quadrivalente', desc:'Dose única. Grupo prioritário: adolescentes em privação de liberdade.', grupo:'Adolescente – Prioritárias', cor:'#A855F7', doses:['Dose Única'] },
+  menacwy:   { nome:'Meningocócica ACWY', desc:'A partir de 11 anos. Reforço 1 ano após 1ª dose.', grupo:'Adolescente – Prioritárias', cor:'#F43F5E', doses:['1ª Dose','Reforço'] },
+  dtpa:      { nome:'dTpa (Reforço Adolescente)', desc:'Reforço aos 11 anos. Tríplice bacteriana acelular.', grupo:'Adolescente – Prioritárias', cor:'#0EA5E9', doses:['Dose Única'] },
+  dt:        { nome:'dT (Dupla Adulto)', desc:'Reforço a cada 10 anos após dTpa.', grupo:'Adolescente – Prioritárias', cor:'#64748B', doses:['Reforço'] },
+  influenza: { nome:'Influenza (Gripe)', desc:'Vacinação anual. Grupo prioritário de internação.', grupo:'Adolescente – Prioritárias', cor:'#06B6D4', doses:['Dose Anual'] },
+};
+
+// ── DADOS ─────────────────────────────────────────────────────────
+function getAdolescentes() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function setAdolescentes(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function getPessoas() { return JSON.parse(localStorage.getItem(PESSOAS_KEY) || '[]'); }
+function setPessoas(data) { localStorage.setItem(PESSOAS_KEY, JSON.stringify(data)); }
+
+let _adol_atual = null; // prontuário aberto
+let _pagina_anterior = 'dashboard';
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────────
+function navTo(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('pg-' + pg)?.classList.add('active');
+  const navMap = { dashboard:0, adolescentes:1, alertas:2 };
+  if (navMap[pg] !== undefined) document.querySelectorAll('.nav-item')[navMap[pg]]?.classList.add('active');
+  if (pg === 'dashboard') renderDashboard();
+  if (pg === 'adolescentes') renderAdolescentes();
+  if (pg === 'alertas') renderAlertas();
+  window.scrollTo(0,0);
+}
+
+function voltarDeLista() { navTo(_pagina_anterior); }
+function abrirProntuario(id, origem) {
+  _pagina_anterior = origem || 'adolescentes';
+  const lista = getAdolescentes();
+  _adol_atual = lista.find(a => a.id === id);
+  if (!_adol_atual) return;
+  renderProntuario(_adol_atual);
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-prontuario').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  window.scrollTo(0,0);
+  // Reset tabs
+  switchTab('vacinas');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab)?.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick')?.includes(tab)) b.classList.add('active');
+  });
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────
+function toast(msg, tipo = 'success') {
+  const el = document.getElementById('toast');
+  const cores = { success:'#10B981', danger:'#EF4444', warning:'#F59E0B', info:'#3B82F6' };
+  el.style.borderLeft = `3px solid ${cores[tipo] || cores.success}`;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── MODAIS ────────────────────────────────────────────────────────
+function abrirModal(id) { document.getElementById(id).classList.add('active'); }
+function fecharModal(id) { document.getElementById(id).classList.remove('active'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal')) e.target.classList.remove('active');
+});
+
+// ── CRUD ADOLESCENTES ─────────────────────────────────────────────
+function abrirModalAdolescente(id = null) {
+  document.getElementById('form-adol').reset();
+  document.getElementById('adol-id-edit').value = '';
+  if (id) {
+    const a = getAdolescentes().find(x => x.id === id);
+    if (a) {
+      document.getElementById('adol-id-edit').value = a.id;
+      document.getElementById('adol-nome').value = a.nome;
+      document.getElementById('adol-nasc').value = a.dataNasc;
+      document.getElementById('adol-sexo').value = a.sexo;
+      document.getElementById('adol-cns').value = a.cns || '';
+      document.getElementById('adol-cpf').value = a.cpf || '';
+      document.getElementById('adol-entrada').value = a.dataEntrada || '';
+    }
+  }
+  document.getElementById('adol-entrada').value = document.getElementById('adol-entrada').value || new Date().toISOString().split('T')[0];
+  abrirModal('modal-adol');
+}
+
+function salvarAdolescente(e) {
+  e.preventDefault();
+  const lista = getAdolescentes();
+  const idEdit = document.getElementById('adol-id-edit').value;
+  const adol = {
+    id: idEdit || 'unei_' + Date.now(),
+    nome: document.getElementById('adol-nome').value.toUpperCase().trim(),
+    dataNasc: document.getElementById('adol-nasc').value,
+    sexo: document.getElementById('adol-sexo').value,
+    cns: document.getElementById('adol-cns').value.replace(/\D/g,''),
+    cpf: document.getElementById('adol-cpf').value.replace(/\D/g,''),
+    dataEntrada: document.getElementById('adol-entrada').value,
+    vacinas: {},
+    testesRapidos: [],
+    anotacoes: [],
+    ativo: true,
+    cadastradoEm: new Date().toISOString()
+  };
+
+  if (idEdit) {
+    const idx = lista.findIndex(a => a.id === idEdit);
+    if (idx > -1) {
+      // Preserve existing clinical data
+      adol.vacinas = lista[idx].vacinas;
+      adol.testesRapidos = lista[idx].testesRapidos;
+      adol.anotacoes = lista[idx].anotacoes;
+      adol.cadastradoEm = lista[idx].cadastradoEm;
+      lista[idx] = adol;
+    }
+  } else {
+    lista.push(adol);
+  }
+
+  setAdolescentes(lista);
+  sincronizarComPessoas(adol);
+  fecharModal('modal-adol');
+  toast(idEdit ? 'Dados atualizados!' : 'Adolescente cadastrado!');
+  renderDashboard();
+  renderAdolescentes();
+}
+
+function excluirAdolescente(id) {
+  if (!confirm('Excluir este registro? Esta ação não pode ser desfeita.')) return;
+  let lista = getAdolescentes();
+  lista = lista.filter(a => a.id !== id);
+  setAdolescentes(lista);
+  // Remove UNEI tag from pessoas
+  const pessoas = getPessoas();
+  const p = pessoas.find(x => x.uneiId === id);
+  if (p) { p.tags = (p.tags || []).filter(t => t !== 'UNEI'); setPessoas(pessoas); }
+  toast('Registro excluído', 'danger');
+  navTo('adolescentes');
+}
+
+// ── SINCRONIZAR COM BANCO GERAL ────────────────────────────────────
+function sincronizarComPessoas(adol) {
+  const pessoas = getPessoas();
+  let p = pessoas.find(x =>
+    (adol.cns && x.cns === adol.cns) ||
+    (adol.cpf && x.cpf === adol.cpf) ||
+    x.uneiId === adol.id
+  );
+
+  if (p) {
+    if (!p.tags) p.tags = [];
+    if (!p.tags.includes('UNEI')) p.tags.push('UNEI');
+    p.uneiId = adol.id;
+    p.nome = adol.nome;
+  } else {
+    pessoas.push({
+      id: 'p_unei_' + adol.id,
+      uneiId: adol.id,
+      nome: adol.nome,
+      nasc: adol.dataNasc,
+      sexo: adol.sexo,
+      cns: adol.cns || '',
+      cpf: adol.cpf || '',
+      tags: ['UNEI'],
+      dataCadastro: new Date().toISOString()
+    });
+  }
+  setPessoas(pessoas);
+}
+
+// ── UTILITÁRIOS ───────────────────────────────────────────────────
+function calcIdade(dataNasc) {
+  if (!dataNasc) return null;
+  const hoje = new Date();
+  const nasc = new Date(dataNasc + 'T12:00');
+  let anos = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) anos--;
+  return anos;
+}
+
+function formatDate(iso) {
+  if (!iso) return '–';
+  return new Date(iso + 'T12:00').toLocaleDateString('pt-BR');
+}
+
+function sexoLabel(s) { return s === 'F' ? 'Feminino' : 'Masculino'; }
+
+// ── STATUS VACINAL ─────────────────────────────────────────────────
+function calcularStatusVacinal(adol) {
+  let totalDoses = 0, registradas = 0, atrasadas = 0;
+  const idade = calcIdade(adol.dataNasc);
+
+  Object.entries(VACINAS).forEach(([vid, vac]) => {
+    const vacinasAdol = adol.vacinas || {};
+    vac.doses.forEach((_, di) => {
+      const doseKey = 'dose_' + di;
+      const reg = vacinasAdol[vid]?.[doseKey];
+      totalDoses++;
+      if (reg?.status === 'registrada') {
+        registradas++;
+      } else if (reg?.status === 'nao_aplicavel') {
+        // Don't count
+        totalDoses--;
+      } else {
+        // Check if overdue based on age
+        // If adolescent is >= 10 years and dose not registered = atrasada for priority vaccines
+        const prioritarios = ['hpv','menacwy','dtpa','influenza','scr','varicel','hepb','fa'];
+        if (prioritarios.includes(vid) && idade >= 10) atrasadas++;
+      }
+    });
+  });
+
+  const pendentes = totalDoses - registradas;
+  return { totalDoses, registradas, pendentes, atrasadas, emDia: pendentes === 0 };
+}
+
+function temTesteReagente(adol) {
+  return (adol.testesRapidos || []).some(t => t.resultado === 'Reagente');
+}
+
+// ── RENDER DASHBOARD ───────────────────────────────────────────────
+function renderDashboard() {
+  const lista = getAdolescentes().filter(a => a.ativo);
+  let vacinados = 0, atraso = 0, reagentes = 0;
+
+  lista.forEach(a => {
+    const sv = calcularStatusVacinal(a);
+    if (sv.emDia) vacinados++;
+    if (sv.atrasadas > 0) atraso++;
+    if (temTesteReagente(a)) reagentes++;
+  });
+
+  document.getElementById('d-total').textContent = lista.length;
+  document.getElementById('d-vacinados').textContent = vacinados;
+  document.getElementById('d-atraso').textContent = atraso;
+  document.getElementById('d-reagentes').textContent = reagentes;
+
+  // Alertas críticos
+  const alertasEl = document.getElementById('dash-alertas-criticos');
+  const comAtraso = lista.filter(a => calcularStatusVacinal(a).atrasadas > 0);
+  const comReagente = lista.filter(a => temTesteReagente(a));
+
+  let html = '';
+  if (comReagente.length > 0) {
+    html += `<div class="alert-vacinal" style="margin-bottom:12px">
+      <i class="ph ph-virus" style="color:var(--danger)"></i>
+      <div><h4 style="color:var(--danger)">${comReagente.length} ${comReagente.length === 1 ? 'adolescente' : 'adolescentes'} com teste reagente</h4>
+      <p>Verificar conduta e encaminhamentos: ${comReagente.map(a => a.nome.split(' ')[0]).join(', ')}</p></div>
+    </div>`;
+  }
+  if (comAtraso.length > 0) {
+    html += `<div class="alert-vacinal warning" style="margin-bottom:12px">
+      <i class="ph ph-warning" style="color:var(--warning)"></i>
+      <div><h4 style="color:var(--warning)">${comAtraso.length} ${comAtraso.length === 1 ? 'adolescente' : 'adolescentes'} com atraso vacinal</h4>
+      <p>Vacinas prioritárias pendentes. <a href="#" onclick="navTo('alertas')" style="color:var(--primary)">Ver alertas →</a></p></div>
+    </div>`;
+  }
+  alertasEl.innerHTML = html;
+
+  // Update badge
+  const total = comAtraso.length + comReagente.length;
+  const badge = document.getElementById('nav-badge-alertas');
+  const dot = document.getElementById('alertas-dot');
+  if (total > 0) {
+    badge.textContent = total; badge.style.display = 'flex';
+    dot.classList.add('ativo');
+  } else {
+    badge.style.display = 'none'; dot.classList.remove('ativo');
+  }
+
+  // Lista resumida (até 4)
+  const listaEl = document.getElementById('dash-lista-resumida');
+  if (lista.length === 0) {
+    listaEl.innerHTML = '<div class="empty-state"><i class="ph ph-user-plus"></i><h3>Nenhum adolescente cadastrado</h3><p>Use o botão "+ Novo" para começar</p></div>';
+    return;
+  }
+  listaEl.innerHTML = lista.slice(0,4).map(a => renderAdolCard(a, 'dashboard')).join('') +
+    (lista.length > 4 ? `<div style="text-align:center;padding:10px;"><button class="btn btn-outline btn-sm" onclick="navTo('adolescentes')">Ver todos (${lista.length}) →</button></div>` : '');
+}
+
+// ── RENDER LISTA ADOLESCENTES ──────────────────────────────────────
+function renderAdolescentes() {
+  const busca = (document.getElementById('s-adol')?.value || '').toLowerCase();
+  let lista = getAdolescentes().filter(a => a.ativo);
+  if (busca) lista = lista.filter(a =>
+    a.nome.toLowerCase().includes(busca) ||
+    (a.cns || '').includes(busca) ||
+    (a.cpf || '').includes(busca)
+  );
+
+  const el = document.getElementById('lista-adolescentes');
+  if (lista.length === 0) {
+    el.innerHTML = '<div class="empty-state"><i class="ph ph-users"></i><h3>Nenhum adolescente encontrado</h3><p>Tente ajustar a busca</p></div>';
+    return;
+  }
+  el.innerHTML = lista.map(a => renderAdolCard(a, 'adolescentes')).join('');
+}
+
+function renderAdolCard(a, origem) {
+  const idade = calcIdade(a.dataNasc);
+  const sv = calcularStatusVacinal(a);
+  const reagente = temTesteReagente(a);
+  const ini = a.nome.charAt(0);
+  const avatarClass = a.sexo === 'F' ? 'f' : '';
+
+  let badges = '';
+  if (reagente) badges += `<span class="badge badge-danger"><i class="ph ph-virus"></i> Teste Reagente</span>`;
+  if (sv.atrasadas > 0) badges += `<span class="badge badge-warning"><i class="ph ph-warning"></i> ${sv.atrasadas} vacinações atrasadas</span>`;
+  else if (sv.emDia) badges += `<span class="badge badge-success"><i class="ph ph-check-circle"></i> Vacinação em dia</span>`;
+  if (sv.pendentes > 0 && !sv.emDia) badges += `<span class="badge badge-info">${sv.pendentes} doses pendentes</span>`;
+
+  return `<div class="adol-item" onclick="abrirProntuario('${a.id}','${origem}')">
+    <div class="adol-avatar ${avatarClass}">${ini}</div>
+    <div class="adol-info">
+      <div class="adol-nome">${a.nome}</div>
+      <div class="adol-meta">${idade !== null ? idade + ' anos' : '–'} • ${sexoLabel(a.sexo)} • Entrada: ${formatDate(a.dataEntrada)}</div>
+      <div class="adol-badges">${badges}</div>
+    </div>
+    <i class="ph ph-caret-right" style="color:var(--text-secondary);font-size:1.1rem;flex-shrink:0"></i>
+  </div>`;
+}
+
+// ── RENDER PRONTUÁRIO ──────────────────────────────────────────────
+function renderProntuario(adol) {
+  const idade = calcIdade(adol.dataNasc);
+  const sv = calcularStatusVacinal(adol);
+  const reagentes = (adol.testesRapidos || []).filter(t => t.resultado === 'Reagente').length;
+  const ini = adol.nome.charAt(0);
+  const avatarClass = adol.sexo === 'F' ? 'f' : '';
+
+  document.getElementById('profile-container').innerHTML = `
+    <div class="profile-card">
+      <div class="profile-header">
+        <div class="profile-avatar ${avatarClass}">${ini}</div>
+        <div>
+          <div class="profile-nome">${adol.nome}</div>
+          <div class="profile-meta">${idade !== null ? idade + ' anos' : ''} • ${sexoLabel(adol.sexo)} • ${formatDate(adol.dataNasc)} ${adol.cns ? '<br>CNS: ' + adol.cns : ''}</div>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-value" style="color:${sv.emDia ? 'var(--success)' : 'var(--warning)'}">${sv.registradas}/${sv.totalDoses}</div>
+          <div class="profile-stat-label">Doses Registradas</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" style="color:${sv.atrasadas > 0 ? 'var(--danger)' : 'var(--success)'}">${sv.atrasadas}</div>
+          <div class="profile-stat-label">Atrasadas</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" style="color:${reagentes > 0 ? 'var(--danger)' : 'var(--success)'}">${reagentes}</div>
+          <div class="profile-stat-label">Testes Reagentes</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="abrirModalAdolescente('${adol.id}')">
+          <i class="ph ph-pencil"></i> Editar
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="excluirAdolescente('${adol.id}')">
+          <i class="ph ph-trash"></i> Excluir
+        </button>
+      </div>
+    </div>`;
+
+  renderTabVacinas(adol);
+  renderTabTestes(adol);
+  renderTabAnotacoes(adol);
+}
+
+// ── TAB VACINAS ────────────────────────────────────────────────────
+function renderTabVacinas(adol) {
+  const gruposOrdem = [
+    'Básicas – Infância',
+    'Infância / Adolescência',
+    'Adolescente – Prioritárias'
+  ];
+
+  const vacinasByGrupo = {};
+  gruposOrdem.forEach(g => vacinasByGrupo[g] = []);
+  Object.entries(VACINAS).forEach(([vid, vac]) => {
+    if (vacinasByGrupo[vac.grupo]) vacinasByGrupo[vac.grupo].push({ vid, ...vac });
+  });
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3 style="font-size:14px;font-weight:600"><i class="ph ph-syringe" style="color:var(--primary)"></i> Carteira de Vacinação</h3>
+  </div>`;
+
+  gruposOrdem.forEach(grupo => {
+    const vacinas = vacinasByGrupo[grupo];
+    if (!vacinas.length) return;
+
+    const total = vacinas.reduce((acc, v) => acc + v.doses.length, 0);
+    const registradas = vacinas.reduce((acc, v) => {
+      return acc + v.doses.filter((_, di) => adol.vacinas?.[v.vid]?.['dose_' + di]?.status === 'registrada').length;
+    }, 0);
+
+    html += `<div class="vacina-grupo">
+      <div class="vacina-grupo-title">
+        <span>${grupo}</span>
+        <span class="badge ${registradas >= total ? 'badge-success' : 'badge-warning'}">${registradas}/${total}</span>
+      </div>`;
+
+    vacinas.forEach(v => {
+      html += `<div class="vacina-item">
+        <div class="vacina-header">
+          <div>
+            <div class="vacina-nome" style="color:${v.cor}">${v.nome}</div>
+            <div class="vacina-desc">${v.desc}</div>
+          </div>
+        </div>
+        <div class="vacina-doses">`;
+
+      v.doses.forEach((doseLabel, di) => {
+        const doseKey = 'dose_' + di;
+        const reg = adol.vacinas?.[v.vid]?.[doseKey];
+        let status = 'pendente';
+        let statusLabel = doseLabel;
+        let statusInfo = '';
+
+        if (reg?.status === 'registrada') {
+          status = 'registrada';
+          statusInfo = ` title="Data: ${formatDate(reg.data)} | Lote: ${reg.lote} | Lab: ${reg.laboratorio}"`;
+        } else if (reg?.status === 'nao_aplicavel') {
+          status = 'nao-aplicavel';
+        } else {
+          // Check if overdue
+          const idade = calcIdade(adol.dataNasc);
+          const prioritarios = ['hpv','menacwy','dtpa','influenza','scr','varicel','hepb','fa','bcg'];
+          if (prioritarios.includes(v.vid) && idade >= 10) status = 'atrasada';
+        }
+
+        const icon = {
+          registrada: 'ph-check-circle',
+          atrasada: 'ph-warning',
+          pendente: 'ph-circle',
+          'nao-aplicavel': 'ph-minus-circle'
+        }[status];
+
+        html += `<span class="dose-tag ${status}" ${statusInfo}
+          onclick="clicouDose('${adol.id}','${v.vid}','${doseKey}','${v.nome}','${doseLabel}')">
+          <i class="ph ${icon}"></i>${doseLabel}
+        </span>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  document.getElementById('tab-vacinas').innerHTML = html;
+}
+
+function clicouDose(adolId, vacinaId, doseKey, vacinaNome, doseLabel) {
+  const lista = getAdolescentes();
+  const adol = lista.find(a => a.id === adolId);
+  if (!adol) return;
+
+  const reg = adol.vacinas?.[vacinaId]?.[doseKey];
+
+  if (reg?.status === 'registrada') {
+    // Show info
+    toast(`${vacinaNome} – ${doseLabel}: ${formatDate(reg.data)} | Lote: ${reg.lote} | ${reg.laboratorio}`, 'info');
+    return;
+  }
+
+  // Open modal to register
+  document.getElementById('vac-adol-id').value = adolId;
+  document.getElementById('vac-vacina-id').value = vacinaId;
+  document.getElementById('vac-dose-id').value = doseKey;
+  document.getElementById('vac-info').textContent = `${vacinaNome} – ${doseLabel}`;
+  document.getElementById('form-vacina').reset();
+  document.getElementById('vac-adol-id').value = adolId;
+  document.getElementById('vac-vacina-id').value = vacinaId;
+  document.getElementById('vac-dose-id').value = doseKey;
+  document.getElementById('vac-info').textContent = `${vacinaNome} – ${doseLabel}`;
+  document.getElementById('vac-data').value = new Date().toISOString().split('T')[0];
+  abrirModal('modal-vacina');
+}
+
+function salvarVacinaModal(e) {
+  e.preventDefault();
+  const adolId = document.getElementById('vac-adol-id').value;
+  const vacinaId = document.getElementById('vac-vacina-id').value;
+  const doseKey = document.getElementById('vac-dose-id').value;
+
+  const lista = getAdolescentes();
+  const idx = lista.findIndex(a => a.id === adolId);
+  if (idx < 0) return;
+
+  if (!lista[idx].vacinas) lista[idx].vacinas = {};
+  if (!lista[idx].vacinas[vacinaId]) lista[idx].vacinas[vacinaId] = {};
+
+  lista[idx].vacinas[vacinaId][doseKey] = {
+    status: 'registrada',
+    data: document.getElementById('vac-data').value,
+    lote: document.getElementById('vac-lote').value,
+    validade: document.getElementById('vac-validade').value,
+    laboratorio: document.getElementById('vac-lab').value,
+    profissional: document.getElementById('vac-prof').value,
+    registradoEm: new Date().toISOString()
+  };
+
+  setAdolescentes(lista);
+  _adol_atual = lista[idx];
+  fecharModal('modal-vacina');
+  toast('Vacina registrada!');
+  renderProntuario(_adol_atual);
+  renderDashboard();
+}
+
+function marcarNaoAplicavel() {
+  const adolId = document.getElementById('vac-adol-id').value;
+  const vacinaId = document.getElementById('vac-vacina-id').value;
+  const doseKey = document.getElementById('vac-dose-id').value;
+
+  const lista = getAdolescentes();
+  const idx = lista.findIndex(a => a.id === adolId);
+  if (idx < 0) return;
+  if (!lista[idx].vacinas) lista[idx].vacinas = {};
+  if (!lista[idx].vacinas[vacinaId]) lista[idx].vacinas[vacinaId] = {};
+
+  lista[idx].vacinas[vacinaId][doseKey] = { status: 'nao_aplicavel', registradoEm: new Date().toISOString() };
+
+  setAdolescentes(lista);
+  _adol_atual = lista[idx];
+  fecharModal('modal-vacina');
+  toast('Marcado como não aplicável', 'info');
+  renderProntuario(_adol_atual);
+}
+
+// ── TAB TESTES RÁPIDOS ─────────────────────────────────────────────
+function renderTabTestes(adol) {
+  const testes = adol.testesRapidos || [];
+
+  const corResultado = {
+    'Reagente': 'resultado-reagente',
+    'Não Reagente': 'resultado-nao-reagente',
+    'Indeterminado': 'resultado-indeterminado',
+    'Aguardando': 'resultado-aguardando'
+  };
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3 style="font-size:14px;font-weight:600"><i class="ph ph-test-tube" style="color:var(--primary)"></i> Testes Rápidos</h3>
+    <button class="btn btn-primary btn-sm" onclick="abrirModalTeste('${adol.id}')">
+      <i class="ph ph-plus"></i> Novo Teste
+    </button>
+  </div>`;
+
+  // Alert for reagent tests
+  const reagentes = testes.filter(t => t.resultado === 'Reagente');
+  if (reagentes.length > 0) {
+    html += `<div class="alert-vacinal" style="margin-bottom:16px">
+      <i class="ph ph-virus" style="color:var(--danger)"></i>
+      <div><h4 style="color:var(--danger)">Atenção: ${reagentes.length} teste(s) reagente(s)</h4>
+      <p>Verificar conduta clínica, notificação compulsória e encaminhamentos necessários.</p></div>
+    </div>`;
+  }
+
+  const indeterminados = testes.filter(t => t.resultado === 'Indeterminado');
+  if (indeterminados.length > 0) {
+    html += `<div class="alert-vacinal warning" style="margin-bottom:16px">
+      <i class="ph ph-question" style="color:var(--warning)"></i>
+      <div><h4 style="color:var(--warning)">${indeterminados.length} teste(s) com resultado indeterminado</h4>
+      <p>Recomendado repetir o teste após 30 dias.</p></div>
+    </div>`;
+  }
+
+  if (testes.length === 0) {
+    html += '<div class="empty-state"><i class="ph ph-test-tube"></i><h3>Nenhum teste registrado</h3><p>Clique em "+ Novo Teste" para registrar</p></div>';
+  } else {
+    html += `<div class="table-wrap"><table>
+      <thead><tr><th>Tipo</th><th>Data</th><th>Resultado</th><th>Lote</th><th>Profissional</th><th></th></tr></thead>
+      <tbody>`;
+    testes.slice().reverse().forEach((t, i) => {
+      const realIdx = testes.length - 1 - i;
+      html += `<tr>
+        <td><strong>${t.tipo}</strong></td>
+        <td>${formatDate(t.data)}</td>
+        <td><span class="teste-resultado-tag ${corResultado[t.resultado] || ''}">${t.resultado}</span></td>
+        <td>${t.lote || '–'}</td>
+        <td>${t.profissional || '–'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="excluirTeste('${adol.id}',${realIdx})"><i class="ph ph-trash"></i></button></td>
+      </tr>`;
+      if (t.obs) html += `<tr><td colspan="6" style="color:var(--text-secondary);font-size:12px;padding-top:4px;padding-left:12px;"><i class="ph ph-note"></i> ${t.obs}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+
+  document.getElementById('tab-testes').innerHTML = html;
+}
+
+function abrirModalTeste(adolId) {
+  document.getElementById('form-teste').reset();
+  document.getElementById('teste-adol-id').value = adolId;
+  document.getElementById('teste-data').value = new Date().toISOString().split('T')[0];
+  abrirModal('modal-teste');
+}
+
+function salvarTeste(e) {
+  e.preventDefault();
+  const adolId = document.getElementById('teste-adol-id').value;
+  const lista = getAdolescentes();
+  const idx = lista.findIndex(a => a.id === adolId);
+  if (idx < 0) return;
+
+  const teste = {
+    id: 'tr_' + Date.now(),
+    tipo: document.getElementById('teste-tipo').value,
+    data: document.getElementById('teste-data').value,
+    resultado: document.getElementById('teste-resultado').value,
+    lote: document.getElementById('teste-lote').value,
+    profissional: document.getElementById('teste-prof').value,
+    obs: document.getElementById('teste-obs').value,
+    registradoEm: new Date().toISOString()
+  };
+
+  lista[idx].testesRapidos.push(teste);
+  setAdolescentes(lista);
+  _adol_atual = lista[idx];
+  fecharModal('modal-teste');
+  toast('Teste registrado!');
+  renderProntuario(_adol_atual);
+  renderDashboard();
+}
+
+function excluirTeste(adolId, idx) {
+  if (!confirm('Excluir este teste?')) return;
+  const lista = getAdolescentes();
+  const ai = lista.findIndex(a => a.id === adolId);
+  if (ai < 0) return;
+  lista[ai].testesRapidos.splice(idx, 1);
+  setAdolescentes(lista);
+  _adol_atual = lista[ai];
+  toast('Teste excluído', 'danger');
+  renderProntuario(_adol_atual);
+}
+
+// ── TAB ANOTAÇÕES ──────────────────────────────────────────────────
+function renderTabAnotacoes(adol) {
+  const notas = adol.anotacoes || [];
+
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h3 style="font-size:14px;font-weight:600"><i class="ph ph-note-pencil" style="color:var(--primary)"></i> Anotações Gerais</h3>
+    <button class="btn btn-primary btn-sm" onclick="abrirModalNota('${adol.id}')">
+      <i class="ph ph-plus"></i> Nova
+    </button>
+  </div>`;
+
+  if (notas.length === 0) {
+    html += '<div class="empty-state"><i class="ph ph-note"></i><h3>Nenhuma anotação</h3><p>Registre observações e evolução clínica</p></div>';
+  } else {
+    html += notas.slice().reverse().map((n, i) => {
+      const realIdx = notas.length - 1 - i;
+      return `<div class="nota-item">
+        <div class="nota-meta">
+          <i class="ph ph-clock"></i> ${new Date(n.data).toLocaleDateString('pt-BR')} às ${new Date(n.data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+          ${n.profissional ? ` · <i class="ph ph-user"></i> ${n.profissional}` : ''}
+          <button class="btn btn-sm" onclick="excluirNota('${adol.id}',${realIdx})" style="float:right;background:none;color:var(--danger);padding:0;font-size:12px;">
+            <i class="ph ph-trash"></i>
+          </button>
+        </div>
+        <div class="nota-texto">${n.texto.replace(/\n/g,'<br>')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('tab-anotacoes').innerHTML = html;
+}
+
+function abrirModalNota(adolId) {
+  document.getElementById('form-nota').reset();
+  document.getElementById('nota-adol-id').value = adolId;
+  abrirModal('modal-nota');
+}
+
+function salvarNota(e) {
+  e.preventDefault();
+  const adolId = document.getElementById('nota-adol-id').value;
+  const lista = getAdolescentes();
+  const idx = lista.findIndex(a => a.id === adolId);
+  if (idx < 0) return;
+
+  lista[idx].anotacoes.push({
+    id: 'nota_' + Date.now(),
+    data: new Date().toISOString(),
+    profissional: document.getElementById('nota-prof').value,
+    texto: document.getElementById('nota-texto').value
+  });
+
+  setAdolescentes(lista);
+  _adol_atual = lista[idx];
+  fecharModal('modal-nota');
+  toast('Anotação registrada!');
+  renderProntuario(_adol_atual);
+}
+
+function excluirNota(adolId, idx) {
+  if (!confirm('Excluir esta anotação?')) return;
+  const lista = getAdolescentes();
+  const ai = lista.findIndex(a => a.id === adolId);
+  if (ai < 0) return;
+  lista[ai].anotacoes.splice(idx, 1);
+  setAdolescentes(lista);
+  _adol_atual = lista[ai];
+  toast('Anotação excluída', 'danger');
+  renderProntuario(_adol_atual);
+}
+
+// ── ALERTAS ────────────────────────────────────────────────────────
+function renderAlertas() {
+  const lista = getAdolescentes().filter(a => a.ativo);
+  const el = document.getElementById('alertas-container');
+
+  let html = '';
+  let temAlerta = false;
+
+  lista.forEach(adol => {
+    const sv = calcularStatusVacinal(adol);
+    const reagentes = (adol.testesRapidos || []).filter(t => t.resultado === 'Reagente');
+    const indeterminados = (adol.testesRapidos || []).filter(t => t.resultado === 'Indeterminado');
+
+    if (sv.atrasadas === 0 && reagentes.length === 0 && indeterminados.length === 0) return;
+    temAlerta = true;
+
+    const idade = calcIdade(adol.dataNasc);
+    const ini = adol.nome.charAt(0);
+    const avatarClass = adol.sexo === 'F' ? 'f' : '';
+
+    html += `<div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;cursor:pointer" onclick="abrirProntuario('${adol.id}','alertas')">
+        <div class="adol-avatar ${avatarClass}" style="width:40px;height:40px;font-size:0.95rem">${ini}</div>
+        <div>
+          <div style="font-weight:600;font-size:14px">${adol.nome}</div>
+          <div style="font-size:12px;color:var(--text-secondary)">${idade} anos · ${sexoLabel(adol.sexo)}</div>
+        </div>
+        <i class="ph ph-arrow-right" style="margin-left:auto;color:var(--text-secondary)"></i>
+      </div>`;
+
+    if (reagentes.length > 0) {
+      reagentes.forEach(t => {
+        html += `<div class="alert-vacinal" style="margin-bottom:8px">
+          <i class="ph ph-virus" style="color:var(--danger)"></i>
+          <div><h4 style="color:var(--danger)">Teste ${t.tipo}: Reagente</h4>
+          <p>Data: ${formatDate(t.data)} · Verificar conduta e notificação compulsória.</p></div>
+        </div>`;
+      });
+    }
+
+    if (indeterminados.length > 0) {
+      indeterminados.forEach(t => {
+        html += `<div class="alert-vacinal warning" style="margin-bottom:8px">
+          <i class="ph ph-question" style="color:var(--warning)"></i>
+          <div><h4 style="color:var(--warning)">Teste ${t.tipo}: Indeterminado</h4>
+          <p>Data: ${formatDate(t.data)} · Repetir teste em 30 dias.</p></div>
+        </div>`;
+      });
+    }
+
+    if (sv.atrasadas > 0) {
+      // List which vaccines are overdue
+      const vacAtrasadas = [];
+      Object.entries(VACINAS).forEach(([vid, vac]) => {
+        const prioritarios = ['hpv','menacwy','dtpa','influenza','scr','varicel','hepb','fa','bcg'];
+        if (!prioritarios.includes(vid)) return;
+        vac.doses.forEach((doseLabel, di) => {
+          const doseKey = 'dose_' + di;
+          const reg = adol.vacinas?.[vid]?.[doseKey];
+          if (!reg || reg.status === 'pendente') vacAtrasadas.push(`${vac.nome} (${doseLabel})`);
+        });
+      });
+
+      html += `<div class="alert-vacinal warning" style="margin-bottom:8px">
+        <i class="ph ph-warning" style="color:var(--warning)"></i>
+        <div><h4 style="color:var(--warning)">${sv.atrasadas} vacina(s) prioritária(s) pendente(s)</h4>
+        <p>${vacAtrasadas.slice(0,4).join(', ')}${vacAtrasadas.length > 4 ? ` e mais ${vacAtrasadas.length - 4}...` : ''}.</p></div>
+      </div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  if (!temAlerta) {
+    el.innerHTML = `<div class="empty-state"><i class="ph ph-check-circle" style="color:var(--success)"></i><h3 style="color:var(--success)">Todos os alertas resolvidos</h3><p>Nenhum adolescente com vacinação atrasada ou teste reagente.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = html;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderDashboard();
+});
+
+</script>
+</body>
+</html>

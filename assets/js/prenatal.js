@@ -710,17 +710,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     syncStorageToGlobals();
 
-    // Injetar estilos de alinhamento com Carisma Manager
+    // Injetar estilos de alinhamento com Carisma Manager (Dark Mode PULSE)
     const style = document.createElement('style');
     style.textContent = `
     body { font-family: 'Inter', system-ui, sans-serif !important; }
-    .btn-primary { background: linear-gradient(135deg,#8B5CF6,#7C3AED) !important; }
-    .header { background: linear-gradient(135deg,#4C1D95 0%,#7C3AED 60%,#DB2777 100%) !important; }
-    .stat-number { color: #8B5CF6 !important; }
-    th { background: #8B5CF6 !important; }
+    .btn-primary { background: linear-gradient(135deg,#00D1B2,#00A88F) !important; box-shadow: 0 4px 12px rgba(0,209,178,0.3) !important; }
+    .header { background: #1E293B !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+    .stat-number { color: #00D1B2 !important; }
+    th { background: #1E293B !important; color: #F8FAFC !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      border-color: #8B5CF6 !important;
-      box-shadow: 0 0 0 4px rgba(139,92,246,.1) !important;
+      border-color: #00D1B2 !important;
+      box-shadow: 0 0 0 4px rgba(0,209,178,.1) !important;
     }
     @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
   `;

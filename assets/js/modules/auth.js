@@ -25,13 +25,18 @@ const checarSessao = () => {
 };
 
 const iniciarApp = () => {
-  document.getElementById('login-page').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-  carregarConfig();
-  navTo(location.hash.slice(1) || 'dashboard');
-  atualizarBadges();
-  setInterval(atualizarBadges, 60000);
+  const loginPage = document.getElementById('login-page');
+  const app = document.getElementById('app');
+  const topbarDate = document.getElementById('topbar-date');
+  
+  if (loginPage) loginPage.style.display = 'none';
+  if (app) app.style.display = 'block';
+  if (topbarDate) topbarDate.textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+  
+  if (typeof carregarConfig === 'function') carregarConfig();
+  if (typeof navTo === 'function') navTo(location.hash.slice(1) || 'dashboard');
+  if (typeof atualizarBadges === 'function') atualizarBadges();
+  if (typeof atualizarBadges === 'function') setInterval(atualizarBadges, 60000);
 };
 
 // Export for use in other modules

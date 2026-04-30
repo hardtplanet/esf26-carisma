@@ -112,6 +112,10 @@ function renderDashboard() {
   });
   setVal('d-gestantes', mapG.size);
 
+  // UNEI
+  const uCC = (data.db.get('pessoas') || JSON.parse(localStorage.getItem('carisma_pessoas') || '[]')).filter(p => (p.tags || []).includes('UNEI'));
+  setVal('d-unei', uCC.length);
+
   if (typeof atualizarCCStats === 'function') { try { atualizarCCStats(); } catch (e) { } }
 
   const ab = document.getElementById('dash-alertas-box');
