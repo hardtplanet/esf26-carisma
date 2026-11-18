@@ -313,6 +313,7 @@
 }
 
 .map-canvas-stack > #map-container,
+.mymaps-panel,
 .croqui-panel {
     position: absolute;
     inset: 0;
@@ -323,6 +324,7 @@
     display: none;
 }
 
+.mymaps-panel,
 .croqui-panel {
     display: flex;
     flex-direction: column;
@@ -330,6 +332,39 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     background: #e8edf1;
+}
+
+.mymaps-panel iframe {
+    display: block;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: #e8edf1;
+}
+
+.mymaps-caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    margin: 0;
+    padding: 8px 12px;
+    color: #334155;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.mymaps-caption a {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.mymaps-panel[hidden] {
+    display: none;
 }
 
 .croqui-toolbar {

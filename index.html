@@ -2151,7 +2151,8 @@
           <div class="sec-header">
             <h2>🗺️ Mapa Inteligente ESF 28</h2>
             <div class="btn-group map-view-switch" role="group" aria-label="Visualização do mapa">
-              <button class="btn btn-primary" id="btn-map-croqui" aria-pressed="true" onclick="setMapView('croqui')">Croqui territorial</button>
+              <button class="btn btn-primary" id="btn-map-google" aria-pressed="true" onclick="setMapView('google')">Google My Maps · ESF 28</button>
+              <button class="btn btn-outline" id="btn-map-croqui" aria-pressed="false" onclick="setMapView('croqui')">Croqui local · fallback</button>
               <button class="btn btn-outline" id="btn-map-operacional" aria-pressed="false" onclick="setMapView('operacional')">Camadas antigas (ESF 26)</button>
             </div>
             <div class="btn-group" id="operational-map-actions" hidden>
@@ -2168,7 +2169,15 @@
 
           <div class="map-layout">
             <div class="map-canvas-stack">
-              <section id="croqui-panel" class="croqui-panel" aria-label="Croqui territorial interativo">
+              <section id="mymaps-panel" class="mymaps-panel" aria-label="Google My Maps da UBS Vila Hilda, eSF 28">
+                <iframe id="mymaps-frame" title="Mapa territorial ESF 28 - Vila Hilda no Google My Maps"
+                  src="https://www.google.com/maps/d/embed?mid=125TLKIVPB6cDlLnkXEyCfWoSxGFo2Xk"
+                  loading="eager" allowfullscreen></iframe>
+                <p class="mymaps-caption">Mapa territorial ESF 28 · UBS Vila Hilda. Se o mapa não carregar ou pedir acesso, use o croqui local como alternativa ou abra o mapa no Google.
+                  <a href="https://www.google.com/maps/d/viewer?mid=125TLKIVPB6cDlLnkXEyCfWoSxGFo2Xk" target="_blank" rel="noopener noreferrer">Abrir Google My Maps</a>
+                </p>
+              </section>
+              <section id="croqui-panel" class="croqui-panel" aria-label="Croqui territorial interativo" hidden>
                 <div class="croqui-toolbar" role="group" aria-label="Controles do croqui">
                   <button type="button" class="btn btn-sm btn-outline" onclick="zoomCroqui(0.8)" aria-label="Diminuir zoom">−</button>
                   <button type="button" class="btn btn-sm btn-outline" onclick="zoomCroqui(1.25)" aria-label="Aumentar zoom">+</button>
@@ -2186,7 +2195,14 @@
               <div id="map-container" hidden></div>
             </div>
             <div class="map-sidebar">
-              <div id="croqui-map-sidebar-tools">
+              <div id="mymaps-map-sidebar-tools">
+                <div class="map-filter-group">
+                  <h4>Mapa territorial ESF 28</h4>
+                  <p>Este mapa do Google é incorporado sem enviar dados do Cadastro Central.</p>
+                  <p>O Google My Maps incorporado não permite que o app sobreponha marcadores técnicos de pacientes. Para posições confirmadas e armazenadas localmente, use o croqui de fallback.</p>
+                </div>
+              </div>
+              <div id="croqui-map-sidebar-tools" hidden>
               <div class="map-filter-group">
                 <h4>Filtrar Camadas</h4>
                 <label><input type="checkbox" id="map-filter-all" checked onchange="toggleLayer('domicilios')"> Todos os pacientes vinculados à eSF 28</label>

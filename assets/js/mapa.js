@@ -30,7 +30,7 @@ let croquiTranslateX = 0;
 let croquiTranslateY = 0;
 let croquiPlacementPatientId = null;
 let croquiPointer = null;
-let currentMapView = 'croqui';
+let currentMapView = 'google';
 
 function isValidCroquiCoordinate(position) {
     return position && Number.isFinite(position.x) && Number.isFinite(position.y) &&
@@ -571,27 +571,39 @@ function initCroquiMap() {
 }
 
 function setMapView(view) {
-    currentMapView = view === 'operacional' ? 'operacional' : 'croqui';
+    currentMapView = view === 'operacional'
+        ? 'operacional'
+        : view === 'croqui' ? 'croqui' : 'google';
+    const showGoogle = currentMapView === 'google';
     const showCroqui = currentMapView === 'croqui';
+    const showLegacy = currentMapView === 'operacional';
+    document.getElementById('mymaps-panel').hidden = !showGoogle;
     document.getElementById('croqui-panel').hidden = !showCroqui;
-    document.getElementById('map-container').hidden = showCroqui;
+    document.getElementById('map-container').hidden = !showLegacy;
+    document.getElementById('mymaps-map-sidebar-tools').hidden = !showGoogle;
     document.getElementById('croqui-map-sidebar-tools').hidden = !showCroqui;
-    document.getElementById('operational-map-actions').hidden = showCroqui;
-    document.getElementById('operational-map-sidebar-tools').hidden = showCroqui;
-    document.getElementById('map-legacy-notice').hidden = showCroqui;
+    document.getElementById('operational-map-actions').hidden = !showLegacy;
+    document.getElementById('operational-map-sidebar-tools').hidden = !showLegacy;
+    document.getElementById('map-legacy-notice').hidden = !showLegacy;
     document.getElementById('croqui-map-legend').hidden = !showCroqui;
-    document.getElementById('legacy-map-legend').hidden = showCroqui;
-    document.getElementById('btn-map-croqui').setAttribute('aria-pressed', String(showCroqui));
-    document.getElementById('btn-map-operacional').setAttribute('aria-pressed', String(!showCroqui));
-    document.getElementById('btn-map-croqui').classList.toggle('btn-primary', showCroqui);
-    document.getElementById('btn-map-croqui').classList.toggle('btn-outline', !showCroqui);
-    document.getElementById('btn-map-operacional').classList.toggle('btn-primary', !showCroqui);
-    document.getElementById('btn-map-operacional').classList.toggle('btn-outline', showCroqui);
+    document.getElementById('legacy-map-legend').hidden = !showLegacy;
+
+    [
+        ['google', 'btn-map-google'],
+        ['croqui', 'btn-map-croqui'],
+        ['operacional', 'btn-map-operacional']
+    ].forEach(([mapView, buttonId]) => {
+        const selected = currentMapView === mapView;
+        const button = document.getElementById(buttonId);
+        button.setAttribute('aria-pressed', String(selected));
+        button.classList.toggle('btn-primary', selected);
+        button.classList.toggle('btn-outline', !selected);
+    });
 
     if (showCroqui) {
         initCroquiMap();
         refreshMapData();
-    } else {
+    } else if (showLegacy) {
         setTimeout(() => {
             if (currentMapView !== 'operacional') return;
             initMap();
@@ -1112,18 +1124,14 @@ function renderMicroAreas() {
 
 // Integration with navigation
 const originalNavTo = window.navTo;
-window.addEventListener('dadosSincronizados', refreshMapData);
+window.addEventListener('dadosSincronizados', () => {
+    if (currentMapView === 'croqui') refreshMapData();
+});
 window.navTo = function (pg) {
     if (typeof originalNavTo === 'function') originalNavTo(pg);
     if (pg === 'mapa') {
         setTimeout(() => {
-            if (currentMapView === 'croqui') {
-                initCroquiMap();
-                refreshMapData();
-            } else {
-                initMap();
-                map.invalidateSize();
-            }
+            setMapView(currentMapView);
         }, 100);
     }
 };

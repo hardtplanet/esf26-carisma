@@ -20,11 +20,13 @@ O sistema é construído totalmente através de **"Client-Side Storage"** puro c
 
 ## 🗺️ Mapa Territorial Interativo (eSF 28)
 
-A visualização **Croqui territorial** usa a imagem local `assets/img/croqui-esf28.jpg`, derivada do croqui da UBS Vila Hilda. Ela permite zoom, deslocamento e camadas por etiquetas de pacientes vinculados localmente à eSF 28, sem geocodificar. O Cadastro Central deste sistema não informa a UBS de cada pessoa; por isso, nomes e perfis do cadastro compartilhado não entram no croqui automaticamente. A equipe deve confirmar explicitamente o vínculo territorial antes de incluir alguém.
+A visualização padrão **Google My Maps · ESF 28** incorpora o mapa compartilhado da UBS Vila Hilda. O app envia ao Google somente o identificador do mapa e não encaminha o Cadastro Central. O conteúdo incorporado é de outra origem e não permite que o app leia suas camadas ou desenhe marcadores de pacientes dentro dele; por isso, nenhum dado ou overlay de paciente é enviado ao Google.
 
-Os marcadores aparecem somente depois que a equipe confirma o vínculo de um paciente à eSF 28 e posiciona seu domicílio no desenho. Os vínculos (`carisma_map_esf28_patient_ids`) e posições relativas à imagem (`carisma_map_croqui_coords`) ficam em chaves próprias e são incluídos no backup completo, sem alterar o cadastro. Não são coordenadas GPS; nomes e endereços de pacientes não são enviados a serviços externos. POIs, microáreas, camadas importadas e cache do mapa antigo permanecem intactos e não são exibidos no croqui. A opção **Camadas antigas (ESF 26)** mantém acessível o mapa geográfico anterior.
+Use **Croqui local · fallback** se o mapa incorporado não carregar ou pedir acesso. Essa visualização usa `assets/img/croqui-esf28.jpg`, permite zoom/deslocamento e oferece camadas para membros da eSF 28 explicitamente vinculados e posicionados localmente. Como o Cadastro Central não identifica a UBS de cada pessoa, a equipe deve confirmar o vínculo territorial antes de incluir alguém. Vínculos (`carisma_map_esf28_patient_ids`) e posições relativas à imagem (`carisma_map_croqui_coords`) ficam em chaves próprias incluídas no backup completo, sem alterar o cadastro. As posições são locais ao desenho, não coordenadas GPS; nomes e endereços não são enviados a serviços externos.
 
-Para abrir esta versão no checkout local, execute `npm run dev`, acesse o endereço local exibido pelo servidor e escolha **Mapa Inteligente** na navegação; a tela abre diretamente no **Croqui territorial**. O conteúdo só aparece em outra instalação, URL publicada ou cópia do sistema depois de aplicar e publicar os arquivos desta branch. A opção **Camadas antigas (ESF 26)** continua usando a base geográfica externa.
+POIs, microáreas, camadas importadas e cache do mapa antigo permanecem intactos e separados. **Camadas antigas (ESF 26)** mantém acessível o mapa Carisma por compatibilidade.
+
+Para abrir esta versão no checkout local, execute `npm run dev`, acesse o endereço local exibido pelo servidor e escolha **Mapa Inteligente** na navegação; a tela abre em **Google My Maps · ESF 28**. Se o mapa não renderizar nessa instalação, use **Croqui local · fallback**. O conteúdo só aparece em outra instalação ou URL publicada depois de aplicar e publicar os arquivos desta branch.
 
 ---
 
