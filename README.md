@@ -18,6 +18,16 @@ O sistema é construído totalmente através de **"Client-Side Storage"** puro c
 
 ---
 
+## 🗺️ Mapa Territorial Interativo (eSF 28)
+
+A visualização **Croqui territorial** usa a imagem local `assets/img/croqui-esf28.jpg`, derivada do croqui da UBS Vila Hilda. Ela permite zoom, deslocamento e camadas por etiquetas de pacientes vinculados localmente à eSF 28, sem geocodificar. O Cadastro Central deste sistema não informa a UBS de cada pessoa; por isso, nomes e perfis do cadastro compartilhado não entram no croqui automaticamente. A equipe deve confirmar explicitamente o vínculo territorial antes de incluir alguém.
+
+Os marcadores aparecem somente depois que a equipe confirma o vínculo de um paciente à eSF 28 e posiciona seu domicílio no desenho. Os vínculos (`carisma_map_esf28_patient_ids`) e posições relativas à imagem (`carisma_map_croqui_coords`) ficam em chaves próprias e são incluídos no backup completo, sem alterar o cadastro. Não são coordenadas GPS; nomes e endereços de pacientes não são enviados a serviços externos. POIs, microáreas, camadas importadas e cache do mapa antigo permanecem intactos e não são exibidos no croqui. A opção **Camadas antigas (ESF 26)** mantém acessível o mapa geográfico anterior.
+
+Para abrir esta versão no checkout local, execute `npm run dev`, acesse o endereço local exibido pelo servidor e escolha **Mapa Inteligente** na navegação; a tela abre diretamente no **Croqui territorial**. O conteúdo só aparece em outra instalação, URL publicada ou cópia do sistema depois de aplicar e publicar os arquivos desta branch. A opção **Camadas antigas (ESF 26)** continua usando a base geográfica externa.
+
+---
+
 ## 🗄 Bancos de Dados Atuais (Chaves LocalStorage)
 
 Para os backups funcionarem com maestria, eles copiam chaves com prefixo fixo. Caso um dia precise abrir o Console (F12) e analisar manualmente o banco, esses são os diretórios "virtuais" rodando no seu navegador:
