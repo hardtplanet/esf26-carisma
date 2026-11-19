@@ -20,7 +20,7 @@ O sistema é construído totalmente através de **"Client-Side Storage"** puro c
 
 ## 🗺️ Mapa Territorial Interativo (eSF 28)
 
-A visualização padrão **Google My Maps · ESF 28** incorpora o mapa compartilhado da UBS Vila Hilda. O app envia ao Google somente o identificador do mapa e não encaminha o Cadastro Central. O conteúdo incorporado é de outra origem e não permite que o app leia suas camadas ou desenhe marcadores de pacientes dentro dele; por isso, nenhum dado ou overlay de paciente é enviado ao Google.
+A visualização padrão **Google My Maps · ESF 28** incorpora o mapa compartilhado da UBS Vila Hilda e abre centralizada na localização pública identificada como **ESF VilaHilda**, Rua Independência, 1021. O app envia ao Google o ID do mapa e as coordenadas públicas da unidade para enquadramento; não encaminha dados do Cadastro Central. O conteúdo incorporado é de outra origem e não permite que o app leia suas camadas ou desenhe marcadores de pacientes dentro dele; por isso, nenhum dado ou overlay de paciente é enviado ao Google.
 
 Use **Croqui local · fallback** se o mapa incorporado não carregar ou pedir acesso. Essa visualização usa `assets/img/croqui-esf28.jpg`, permite zoom/deslocamento e oferece camadas para membros da eSF 28 explicitamente vinculados e posicionados localmente. Como o Cadastro Central não identifica a UBS de cada pessoa, a equipe deve confirmar o vínculo territorial antes de incluir alguém. Vínculos (`carisma_map_esf28_patient_ids`) e posições relativas à imagem (`carisma_map_croqui_coords`) ficam em chaves próprias incluídas no backup completo, sem alterar o cadastro. As posições são locais ao desenho, não coordenadas GPS; nomes e endereços não são enviados a serviços externos.
 
