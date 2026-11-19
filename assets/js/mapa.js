@@ -1,4 +1,4 @@
-/* Smart Map Logic - ESF 26 Carisma Manager */
+/* Interactive territorial map - ESF 28, with the ESF 26 map kept as legacy. */
 
 let map;
 let markersLayer = L.layerGroup(); // Individual markers for filtering
@@ -14,12 +14,52 @@ let importedLayersGroup = L.featureGroup();
 let editLayer = L.featureGroup();
 let drawControl;
 let editControl;
-let geocodingCache = JSON.parse(localStorage.getItem('carisma_map_geocache') || '{}');
 let microAreasData = JSON.parse(localStorage.getItem('carisma_map_microareas') || '[]');
 let importedLayers = JSON.parse(localStorage.getItem('carisma_map_imported_layers') || '[]');
 let currentEditingLayer = null;
 let currentEditingFeature = null;
 let editingMode = false;
+const CROQUI_COORDS_KEY = 'carisma_map_croqui_coords';
+const CROQUI_PATIENT_IDS_KEY = 'carisma_map_esf28_patient_ids';
+let croquiCoordinates = loadCroquiCoordinates();
+let croquiPatientIds = loadCroquiPatientIds();
+let croquiPatients = [];
+let croquiInitialized = false;
+let croquiScale = 1;
+let croquiTranslateX = 0;
+let croquiTranslateY = 0;
+let croquiPlacementPatientId = null;
+let croquiPointer = null;
+let currentMapView = 'google';
+
+function isValidCroquiCoordinate(position) {
+    return position && Number.isFinite(position.x) && Number.isFinite(position.y) &&
+        position.x >= 0 && position.x <= 1 && position.y >= 0 && position.y <= 1;
+}
+
+function loadCroquiCoordinates() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(CROQUI_COORDS_KEY) || '{}');
+        const coordinates = Object.create(null);
+        Object.entries(saved).forEach(([id, position]) => {
+            if (isValidCroquiCoordinate(position)) coordinates[id] = position;
+        });
+        return coordinates;
+    } catch (error) {
+        console.error('Could not read locally saved croqui positions:', error);
+        return Object.create(null);
+    }
+}
+
+function loadCroquiPatientIds() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(CROQUI_PATIENT_IDS_KEY) || '[]');
+        return Array.isArray(saved) ? Array.from(new Set(saved.map(String))) : [];
+    } catch (error) {
+        console.error('Could not read the local ESF 28 patient links:', error);
+        return [];
+    }
+}
 
 // Map Configuration
 const MAP_CENTER = [-22.1985, -54.7865];
@@ -110,218 +150,466 @@ function centerMap() {
     map.setView(MAP_CENTER, MAP_ZOOM);
 }
 
-// ── PATIENT DATA & MARKERS ───────────────────────────────────
+// ── LOCAL PATIENT POSITIONS & CROQUI ────────────────────────────
 
-let isGeocoding = false;
+function refreshMapData() {
+    croquiPatientIds = loadCroquiPatientIds();
+    croquiPatients = [];
+    if (croquiPatientIds.length) {
+        try {
+            const records = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+            const linkedIds = new Set(croquiPatientIds);
+            croquiPatients = Array.isArray(records)
+                ? records.filter(patient => patient && linkedIds.has(String(patient.id)))
+                : [];
+        } catch (error) {
+            console.error('Could not read linked local patient records for the ESF 28 map:', error);
+        }
+    }
 
-async function refreshMapData() {
-    if (isGeocoding) return;
-    const patients = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
-    const totalPatients = patients.length;
-
-    isGeocoding = true;
     markersLayer.clearLayers();
     markerClusterGroup.clearLayers();
-
-    document.getElementById('map-stat-geo').textContent = `Carregando...`;
-
-    const validPatients = patients.filter(p => p.rua);
-    let geoCount = 0;
-
-    // Mapa de agrupamento por endereço EXATO (rua + numero)
-    const addressGroups = new Map();
-
-    for (let i = 0; i < validPatients.length; i++) {
-        const p = validPatients[i];
-        
-        // Chave de agrupamento: rua + numero EXATOS (não agrupa se numero for diferente)
-        const addrKey = `${p.rua}, ${p.numero || ''}, ${p.bairro || 'Dourados'}, Dourados, MS, Brasil`;
-        const groupKey = `${p.rua.toLowerCase().trim()}|${(p.numero || '').toLowerCase().trim()}`;
-        
-        let coords = await getCoordinates(addrKey);
-
-        if (coords && coords !== 'NOT_FOUND') {
-            // Se já existe alguém com MESMO endereço (rua + numero), agrupa
-            if (addressGroups.has(groupKey)) {
-                const existing = addressGroups.get(groupKey);
-                existing.patients.push(p);
-            } else {
-                addressGroups.set(groupKey, {
-                    coords: coords,
-                    patients: [p],
-                    address: addrKey
-                });
-            }
-            geoCount++;
-        }
-    }
-
-    // Adiciona todos os grupos ao mapa
-    addressGroups.forEach((groupData, groupKey) => {
-        addGroupMarker(groupData.patients, groupData.coords, [groupData.address]);
-});
-
-    document.getElementById('map-stat-geo').textContent = `${geoCount}/${validPatients.length}`;
-
-    isGeocoding = false;
-    saveGeoCache();
+    renderCroquiPatientOptions();
+    renderCroquiTagFilters();
+    renderCroquiPatients();
 }
 
-function updateMarkerPopup(marker) {
-    const group = marker.patientDataGroup;
-    const addresses = Array.from(marker.addressSet || []);
-    
-    let color = '#8B5CF6';
-    const hasAtrasado = group.some(p => p.proximaDose && new Date(p.proximaDose) < new Date());
-    const hasGestante = group.some(p => (p.tags || []).includes('Gestante'));
-    const hasCronico = group.some(p => (p.tags || []).includes('Diabético') || (p.tags || []).includes('Hipertenso'));
-
-    if (hasAtrasado) color = '#EF4444';
-    else if (hasGestante) color = '#EC4899';
-    else if (hasCronico) color = '#3B82F6';
-
-    marker.setIcon(L.divIcon({
-        className: 'custom-div-icon',
-        html: `<div style="background-color:${color};" class="marker-pin"><i>${group.length}</i></div>`,
-        iconSize: [30, 42],
-        iconAnchor: [15, 42]
-    }));
-
-    const patientsListHtml = group.map(p => {
-        const pTags = p.tags || [];
-        const isAtrasado = p.proximaDose && new Date(p.proximaDose) < new Date();
-        const tagsHtml = pTags.map(t => {
-            let cls = '';
-            if (t === 'Gestante') cls = 'tag-gestante';
-            else if (t === 'Diabético' || t === 'Hipertenso') cls = 'tag-cronico';
-            return `<span class="map-popup-tag ${cls}">${t}</span>`;
-        }).join(' ');
-
-        return `
-            <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                <div style="font-weight:700; color:var(--primary);">${p.nome}</div>
-                <div style="font-size:0.75rem;">MA: ${p.microArea || '—'} | ${p.rua}, ${p.numero || 'SN'} | ${tagsHtml}</div>
-                ${isAtrasado ? '<div class="map-popup-tag tag-atrasado" style="font-size:0.65rem;">⚠️ Atrasado</div>' : ''}
-                <a href="#" style="font-size:0.7rem; color:var(--primary); text-decoration:underline;" onclick="abrirPerfilCC_Map('${p.id}')">Ver Perfil</a>
-            </div>
-        `;
-    }).join('');
-
-    const addrStr = addresses.length > 0 ? addresses.join(' / ') : (group[0].rua + ', ' + (group[0].numero || 'S/N'));
-
-    marker.bindPopup(`
-        <div class="map-popup-card" style="max-height: 300px; overflow-y: auto;">
-            <div style="font-size:0.75rem; color:#666; margin-bottom:8px;">🏠 ${addrStr}</div>
-            ${patientsListHtml}
-        </div>
-    `);
-}
-
-async function getCoordinates(address) {
-    const normAddr = address.toLowerCase().trim();
-    if (geocodingCache[normAddr]) return geocodingCache[normAddr];
-
-    // Delay maior para evitar rate limit (2 segundos)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+function openCroquiPatientAssignment() {
+    const panel = document.getElementById('croqui-patient-assignment');
+    const select = document.getElementById('croqui-candidate-select');
+    if (!panel || !select) return;
 
     try {
-        // Usar Nominatim com headers mais completos
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=br`;
-        const response = await fetch(url, {
-            headers: { 
-                'User-Agent': 'ESF26-Carisma-Manager/1.0 (UBS Dourados - Saúde)',
-                'Accept': 'application/json'
-            }
+        const records = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+        const linkedIds = new Set(croquiPatientIds);
+        select.replaceChildren(new Option('Selecione uma pessoa...', ''));
+        (Array.isArray(records) ? records : [])
+            .filter(patient => patient && patient.id !== undefined && patient.id !== null &&
+                !linkedIds.has(String(patient.id)))
+            .slice()
+            .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+            .forEach(patient => select.add(new Option(patient.nome || 'Pessoa sem nome', String(patient.id))));
+        panel.hidden = false;
+        select.focus();
+        setCroquiStatus('A lista vem do cadastro local compartilhado. Confirme que a pessoa pertence à UBS Vila Hilda, eSF 28 antes de vincular.');
+    } catch (error) {
+        console.error('Could not load local candidates for the ESF 28 map:', error);
+        setCroquiStatus('Não foi possível ler o Cadastro Central local.');
+    }
+}
+
+function closeCroquiPatientAssignment() {
+    document.getElementById('croqui-patient-assignment').hidden = true;
+}
+
+function linkCroquiPatientToESF28() {
+    const candidateId = document.getElementById('croqui-candidate-select')?.value;
+    if (!candidateId) {
+        setCroquiStatus('Selecione uma pessoa antes de confirmar o vínculo.');
+        return;
+    }
+
+    let records;
+    try {
+        records = JSON.parse(localStorage.getItem('carisma_pessoas') || '[]');
+    } catch (error) {
+        console.error('Could not read the local patient registry:', error);
+        setCroquiStatus('Não foi possível ler o Cadastro Central local.');
+        return;
+    }
+    const candidate = Array.isArray(records)
+        ? records.find(patient => patient && String(patient.id) === candidateId)
+        : null;
+    if (!candidate) {
+        setCroquiStatus('A pessoa selecionada não foi encontrada no Cadastro Central local.');
+        return;
+    }
+    if (!window.confirm(`Confirma que ${candidate.nome || 'esta pessoa'} pertence à UBS Vila Hilda, equipe eSF 28? O vínculo será salvo apenas neste navegador e não altera o cadastro.`)) {
+        return;
+    }
+
+    const nextIds = [...croquiPatientIds, candidateId];
+    try {
+        localStorage.setItem(CROQUI_PATIENT_IDS_KEY, JSON.stringify(nextIds));
+        croquiPatientIds = nextIds;
+        closeCroquiPatientAssignment();
+        refreshMapData();
+        document.getElementById('croqui-patient-select').value = candidateId;
+        renderCroquiPatients();
+        setCroquiStatus(`${candidate.nome || 'Pessoa'} vinculada localmente à equipe eSF 28. Marque uma posição somente após confirmar o endereço no território.`);
+    } catch (error) {
+        console.error('Could not save the local ESF 28 patient link:', error);
+        setCroquiStatus('Não foi possível salvar o vínculo neste navegador.');
+    }
+}
+
+function unlinkCroquiPatientFromESF28() {
+    const patientId = document.getElementById('croqui-patient-select')?.value;
+    if (!patientId || !croquiPatientIds.includes(patientId)) return;
+    const patient = croquiPatients.find(item => String(item.id) === patientId);
+    if (!window.confirm(`Desvincular ${patient?.nome || 'esta pessoa'} deste mapa da eSF 28? O cadastro central e a posição local serão preservados.`)) {
+        return;
+    }
+
+    const nextIds = croquiPatientIds.filter(id => id !== patientId);
+    try {
+        localStorage.setItem(CROQUI_PATIENT_IDS_KEY, JSON.stringify(nextIds));
+        croquiPatientIds = nextIds;
+        refreshMapData();
+        setCroquiStatus('Pessoa desvinculada deste mapa. O cadastro central e a posição salva foram preservados.');
+    } catch (error) {
+        console.error('Could not update local ESF 28 patient links:', error);
+        setCroquiStatus('Não foi possível atualizar os vínculos neste navegador.');
+    }
+}
+
+function renderCroquiPatientOptions() {
+    const select = document.getElementById('croqui-patient-select');
+    if (!select) return;
+    const selectedId = select.value;
+    select.replaceChildren(new Option('Nenhum paciente vinculado', ''));
+
+    croquiPatients
+        .filter(patient => patient && patient.id !== undefined && patient.id !== null)
+        .slice()
+        .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+        .forEach(patient => {
+            const option = new Option(patient.nome || 'Paciente sem nome', String(patient.id));
+            select.add(option);
         });
 
-        if (response.status === 403 || response.status === 429) {
-            console.warn('Nominatim rate limit hit or blocked.');
-            // Tenta buscar do cache local primeiro
-            return null;
-        }
-
-        const data = await response.json();
-
-        if (data && data.length > 0) {
-            const coords = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-            geocodingCache[normAddr] = coords;
-            saveGeoCache();
-            return coords;
-        } else {
-            geocodingCache[normAddr] = 'NOT_FOUND';
-            saveGeoCache();
-            return 'NOT_FOUND';
-        }
-    } catch (e) {
-        console.error('Geocoding error for:', address, e);
-    }
-    return null;
-}
-
-function saveGeoCache() {
-    try {
-        localStorage.setItem('carisma_map_geocache', JSON.stringify(geocodingCache));
-    } catch (e) {
-        console.error('Failed to save geocache to localStorage (likely quota full):', e);
-        // If quota is full, we might need to purge old/less used entries, 
-        // but for now we just log it.
+    if (selectedId && Array.from(select.options).some(option => option.value === selectedId)) {
+        select.value = selectedId;
     }
 }
 
-function addGroupMarker(groupPatients, coords, addresses = []) {
-    // Determine priority color based on the group
-    let color = '#8B5CF6'; // Default (Violet/Ruivo)
-    const hasAtrasado = groupPatients.some(p => p.proximaDose && new Date(p.proximaDose) < new Date());
-    const hasGestante = groupPatients.some(p => (p.tags || []).includes('Gestante'));
-    const hasCronico = groupPatients.some(p => (p.tags || []).includes('Diabético') || (p.tags || []).includes('Hipertenso'));
-
-    if (hasAtrasado) color = '#EF4444';
-    else if (hasGestante) color = '#EC4899';
-    else if (hasCronico) color = '#3B82F6';
-
-    const icon = L.divIcon({
-        className: 'custom-div-icon',
-        html: `<div style="background-color:${color};" class="marker-pin"><i>${groupPatients.length}</i></div>`,
-        iconSize: [30, 42],
-        iconAnchor: [15, 42]
+function renderCroquiTagFilters() {
+    const container = document.getElementById('croqui-tag-filters');
+    if (!container) return;
+    const previous = new Set(
+        Array.from(container.querySelectorAll('input[data-map-tag]:checked'))
+            .map(input => input.dataset.mapTag)
+    );
+    const tags = new Set();
+    croquiPatients.forEach(patient => {
+        if (patient && Array.isArray(patient.tags)) {
+            patient.tags.forEach(tag => {
+                if (typeof tag === 'string' && tag.trim()) tags.add(tag.trim());
+            });
+        }
     });
 
-    const marker = L.marker(coords, { icon });
+    container.replaceChildren();
+    Array.from(tags).sort((a, b) => a.localeCompare(b, 'pt-BR')).forEach(tag => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.mapTag = tag;
+        checkbox.checked = previous.has(tag);
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) document.getElementById('map-filter-all').checked = false;
+            renderCroquiPatients();
+        });
+        label.append(checkbox, document.createTextNode(` ${tag}`));
+        container.append(label);
+    });
+}
 
-    // Build popup with multiple patients
-    let patientsListHtml = groupPatients.map(p => {
-        const pTags = p.tags || [];
-        const isAtrasado = p.proximaDose && new Date(p.proximaDose) < new Date();
-        const tagsHtml = pTags.map(t => {
-            let cls = '';
-            if (t === 'Gestante') cls = 'tag-gestante';
-            else if (t === 'Diabético' || t === 'Hipertenso') cls = 'tag-cronico';
-            return `<span class="map-popup-tag ${cls}">${t}</span>`;
-        }).join(' ');
+function patientHasTag(patient, pattern) {
+    return (Array.isArray(patient.tags) ? patient.tags : [])
+        .some(tag => typeof tag === 'string' && pattern.test(tag));
+}
 
-        return `
-            <div style="margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                <div style="font-weight:700; color:var(--primary);">${p.nome}</div>
-                <div style="font-size:0.75rem;">MA: ${p.microArea || '—'} | ${p.rua}, ${p.numero || 'SN'} | ${tagsHtml}</div>
-                ${isAtrasado ? '<div class="map-popup-tag tag-atrasado" style="font-size:0.65rem;">⚠️ Atrasado</div>' : ''}
-                <a href="#" style="font-size:0.7rem; color:var(--primary); text-decoration:underline;" onclick="abrirPerfilCC_Map('${p.id}')">Ver Perfil</a>
-            </div>
-        `;
-    }).join('');
+function patientMatchesCroquiLayers(patient) {
+    if (document.getElementById('map-filter-all')?.checked) return true;
+    const selectedTags = Array.from(document.querySelectorAll('#croqui-tag-filters input[data-map-tag]:checked'))
+        .map(input => input.dataset.mapTag);
+    const selectedLayers = [
+        document.getElementById('map-filter-gestantes')?.checked && patientHasTag(patient, /gestante/i),
+        document.getElementById('map-filter-cronicos')?.checked && patientHasTag(patient, /diab[eé]tico|hipertenso/i),
+        document.getElementById('map-filter-risco')?.checked && patient.risco === 'Alto',
+        selectedTags.some(tag => (Array.isArray(patient.tags) ? patient.tags : []).includes(tag))
+    ];
+    return selectedLayers.some(Boolean);
+}
 
-    const addrStr = addresses.length > 0 ? addresses.join(' / ') : (groupPatients[0].rua + ', ' + (groupPatients[0].numero || 'S/N'));
+function renderCroquiPatients() {
+    const markerLayer = document.getElementById('croqui-markers');
+    if (!markerLayer) return;
+    markerLayer.replaceChildren();
 
-    marker.bindPopup(`
-        <div class="map-popup-card" style="max-height: 250px; overflow-y: auto;">
-            <div style="font-size:0.75rem; color:#666; margin-bottom:8px;">🏠 ${addrStr}</div>
-            ${patientsListHtml}
-        </div>
-    `);
+    const positioned = croquiPatients.filter(patient =>
+        patient && patient.id !== undefined && patient.id !== null &&
+        Object.prototype.hasOwnProperty.call(croquiCoordinates, String(patient.id)) &&
+        isValidCroquiCoordinate(croquiCoordinates[String(patient.id)])
+    );
 
-    marker.patientDataGroup = groupPatients;
-    marker.addressSet = new Set(addresses);
-    markersLayer.addLayer(marker);
-    markerClusterGroup.addLayer(marker);
+    positioned.filter(patientMatchesCroquiLayers).forEach(patient => {
+        const position = croquiCoordinates[String(patient.id)];
+        const tags = Array.isArray(patient.tags) ? patient.tags : [];
+        const marker = document.createElement('button');
+        marker.type = 'button';
+        marker.className = 'croqui-patient-marker';
+        if (tags.some(tag => /gestante/i.test(String(tag)))) marker.classList.add('tag-gestante');
+        else if (tags.some(tag => /diab[eé]tico|hipertenso/i.test(String(tag)))) marker.classList.add('tag-cronico');
+        else if (patient.risco === 'Alto') marker.classList.add('tag-risco');
+        marker.style.left = `${position.x * 100}%`;
+        marker.style.top = `${position.y * 100}%`;
+        marker.title = patient.nome || 'Paciente';
+        marker.setAttribute('aria-label', `Abrir cadastro local: ${patient.nome || 'paciente'}`);
+        const initial = document.createElement('span');
+        initial.textContent = String(patient.nome || '•').trim().charAt(0).toUpperCase() || '•';
+        marker.append(initial);
+        marker.addEventListener('click', () => window.abrirPerfilCC_Map(patient.id));
+        markerLayer.append(marker);
+    });
+
+    const stat = document.getElementById('map-stat-geo');
+    if (stat) stat.textContent = `${positioned.length}/${croquiPatients.length}`;
+    const unlocated = document.getElementById('map-stat-unlocated');
+    if (unlocated) unlocated.textContent = `${Math.max(0, croquiPatients.length - positioned.length)} sem posição`;
+    const removeButton = document.getElementById('btn-croqui-remove');
+    const selectedId = document.getElementById('croqui-patient-select')?.value;
+    if (removeButton) {
+        removeButton.disabled = !selectedId ||
+            !Object.prototype.hasOwnProperty.call(croquiCoordinates, selectedId);
+    }
+    const unlinkButton = document.getElementById('btn-croqui-unlink');
+    if (unlinkButton) unlinkButton.disabled = !selectedId || !croquiPatientIds.includes(selectedId);
+}
+
+function saveCroquiCoordinates() {
+    try {
+        localStorage.setItem(CROQUI_COORDS_KEY, JSON.stringify(croquiCoordinates));
+        renderCroquiPatients();
+        return true;
+    } catch (error) {
+        console.error('Could not save local croqui positions:', error);
+        setCroquiStatus('Não foi possível salvar neste computador. Verifique o espaço disponível no navegador.');
+        return false;
+    }
+}
+
+function setCroquiStatus(message) {
+    const status = document.getElementById('croqui-position-status');
+    if (status) status.textContent = message;
+}
+
+function startCroquiPlacement() {
+    const select = document.getElementById('croqui-patient-select');
+    const patient = croquiPatients.find(item => String(item.id) === select?.value);
+    if (!patient) {
+        setCroquiStatus('Selecione um paciente do cadastro local antes de marcar uma posição.');
+        select?.focus();
+        return;
+    }
+    croquiPlacementPatientId = String(patient.id);
+    document.getElementById('croqui-viewport')?.classList.add('is-placing');
+    document.getElementById('btn-croqui-cancel').hidden = false;
+    setCroquiStatus(`Clique no local confirmado de ${patient.nome || 'paciente'} no croqui.`);
+    document.getElementById('croqui-viewport')?.focus();
+}
+
+function cancelCroquiPlacement() {
+    croquiPlacementPatientId = null;
+    document.getElementById('croqui-viewport')?.classList.remove('is-placing');
+    document.getElementById('btn-croqui-cancel').hidden = true;
+    setCroquiStatus('Marcação cancelada. Nenhuma posição foi alterada.');
+}
+
+function removeCroquiPosition() {
+    const patientId = document.getElementById('croqui-patient-select')?.value;
+    if (!patientId || !Object.prototype.hasOwnProperty.call(croquiCoordinates, patientId)) return;
+    if (croquiPlacementPatientId === patientId) cancelCroquiPlacement();
+    delete croquiCoordinates[patientId];
+    if (saveCroquiCoordinates()) setCroquiStatus('Posição removida do armazenamento local.');
+}
+
+function placeCroquiPatientAt(clientX, clientY) {
+    if (!croquiPlacementPatientId) return;
+    const scene = document.getElementById('croqui-scene');
+    const bounds = scene?.getBoundingClientRect();
+    if (!bounds || !bounds.width || !bounds.height) return;
+    const x = (clientX - bounds.left) / bounds.width;
+    const y = (clientY - bounds.top) / bounds.height;
+    if (!isValidCroquiCoordinate({ x, y })) {
+        setCroquiStatus('Escolha um ponto dentro dos limites do croqui.');
+        return;
+    }
+
+    const patient = croquiPatients.find(item => String(item.id) === croquiPlacementPatientId);
+    croquiCoordinates[croquiPlacementPatientId] = { x, y };
+    if (saveCroquiCoordinates()) {
+        setCroquiStatus(`Posição local salva para ${patient?.nome || 'paciente'}.`);
+        croquiPlacementPatientId = null;
+        document.getElementById('croqui-viewport')?.classList.remove('is-placing');
+        document.getElementById('btn-croqui-cancel').hidden = true;
+    }
+}
+
+function updateCroquiTransform() {
+    const scene = document.getElementById('croqui-scene');
+    if (!scene) return;
+    scene.style.transform = `translate(${croquiTranslateX}px, ${croquiTranslateY}px) scale(${croquiScale})`;
+    const zoomLabel = document.getElementById('croqui-zoom-level');
+    if (zoomLabel) zoomLabel.textContent = `${Math.round(croquiScale * 100)}%`;
+}
+
+function fitCroquiScene(reset = true) {
+    const viewport = document.getElementById('croqui-viewport');
+    const image = document.getElementById('croqui-image');
+    const scene = document.getElementById('croqui-scene');
+    if (!viewport || !image || !scene || !image.naturalWidth || !image.naturalHeight) return;
+    const availableWidth = Math.max(100, viewport.clientWidth - 24);
+    const availableHeight = Math.max(100, viewport.clientHeight - 24);
+    const fitScale = Math.min(availableWidth / image.naturalWidth, availableHeight / image.naturalHeight);
+    const width = image.naturalWidth * fitScale;
+    const height = image.naturalHeight * fitScale;
+    scene.style.width = `${width}px`;
+    scene.style.height = `${height}px`;
+    if (reset) {
+        croquiScale = 1;
+        croquiTranslateX = (viewport.clientWidth - width) / 2;
+        croquiTranslateY = (viewport.clientHeight - height) / 2;
+    }
+    updateCroquiTransform();
+}
+
+function resetCroquiView() {
+    fitCroquiScene(true);
+}
+
+function zoomCroqui(factor, anchorX, anchorY) {
+    const viewport = document.getElementById('croqui-viewport');
+    if (!viewport) return;
+    const x = anchorX ?? viewport.clientWidth / 2;
+    const y = anchorY ?? viewport.clientHeight / 2;
+    const nextScale = Math.min(6, Math.max(1, croquiScale * factor));
+    const ratio = nextScale / croquiScale;
+    croquiTranslateX = x - (x - croquiTranslateX) * ratio;
+    croquiTranslateY = y - (y - croquiTranslateY) * ratio;
+    croquiScale = nextScale;
+    updateCroquiTransform();
+}
+
+function initCroquiMap() {
+    if (croquiInitialized) {
+        fitCroquiScene(false);
+        refreshMapData();
+        return;
+    }
+    const viewport = document.getElementById('croqui-viewport');
+    const image = document.getElementById('croqui-image');
+    if (!viewport || !image) return;
+    croquiInitialized = true;
+
+    if (image.complete) fitCroquiScene();
+    else image.addEventListener('load', () => fitCroquiScene(), { once: true });
+
+    viewport.addEventListener('wheel', event => {
+        event.preventDefault();
+        const bounds = viewport.getBoundingClientRect();
+        zoomCroqui(event.deltaY < 0 ? 1.15 : 0.87, event.clientX - bounds.left, event.clientY - bounds.top);
+    }, { passive: false });
+
+    viewport.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || event.target.closest('button')) return;
+        croquiPointer = {
+            id: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            translateX: croquiTranslateX,
+            translateY: croquiTranslateY,
+            moved: false
+        };
+        viewport.setPointerCapture(event.pointerId);
+    });
+
+    viewport.addEventListener('pointermove', event => {
+        if (!croquiPointer || croquiPointer.id !== event.pointerId) return;
+        const dx = event.clientX - croquiPointer.startX;
+        const dy = event.clientY - croquiPointer.startY;
+        if (Math.abs(dx) + Math.abs(dy) > 3) croquiPointer.moved = true;
+        if (croquiPointer.moved) {
+            croquiTranslateX = croquiPointer.translateX + dx;
+            croquiTranslateY = croquiPointer.translateY + dy;
+            updateCroquiTransform();
+        }
+    });
+
+    viewport.addEventListener('keydown', event => {
+        const panDistance = 40;
+        if (croquiPlacementPatientId && (event.key === 'Enter' || event.key === ' ')) {
+            const bounds = viewport.getBoundingClientRect();
+            placeCroquiPatientAt(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+            event.preventDefault();
+            return;
+        }
+        if (event.key === 'ArrowLeft') croquiTranslateX += panDistance;
+        else if (event.key === 'ArrowRight') croquiTranslateX -= panDistance;
+        else if (event.key === 'ArrowUp') croquiTranslateY += panDistance;
+        else if (event.key === 'ArrowDown') croquiTranslateY -= panDistance;
+        else if (event.key === '+' || event.key === '=') zoomCroqui(1.25);
+        else if (event.key === '-') zoomCroqui(0.8);
+        else if (event.key === 'Home') resetCroquiView();
+        else return;
+        event.preventDefault();
+        updateCroquiTransform();
+    });
+
+    const finishPointer = event => {
+        if (!croquiPointer || croquiPointer.id !== event.pointerId) return;
+        if (event.type === 'pointerup' && !croquiPointer.moved && croquiPlacementPatientId) {
+            placeCroquiPatientAt(event.clientX, event.clientY);
+        }
+        croquiPointer = null;
+    };
+    viewport.addEventListener('pointerup', finishPointer);
+    viewport.addEventListener('pointercancel', finishPointer);
+    window.addEventListener('resize', () => fitCroquiScene(false));
+    refreshMapData();
+}
+
+function setMapView(view) {
+    currentMapView = view === 'operacional'
+        ? 'operacional'
+        : view === 'croqui' ? 'croqui' : 'google';
+    const showGoogle = currentMapView === 'google';
+    const showCroqui = currentMapView === 'croqui';
+    const showLegacy = currentMapView === 'operacional';
+    document.getElementById('mymaps-panel').hidden = !showGoogle;
+    document.getElementById('croqui-panel').hidden = !showCroqui;
+    document.getElementById('map-container').hidden = !showLegacy;
+    document.getElementById('mymaps-map-sidebar-tools').hidden = !showGoogle;
+    document.getElementById('croqui-map-sidebar-tools').hidden = !showCroqui;
+    document.getElementById('operational-map-actions').hidden = !showLegacy;
+    document.getElementById('operational-map-sidebar-tools').hidden = !showLegacy;
+    document.getElementById('map-legacy-notice').hidden = !showLegacy;
+    document.getElementById('croqui-map-legend').hidden = !showCroqui;
+    document.getElementById('legacy-map-legend').hidden = !showLegacy;
+
+    [
+        ['google', 'btn-map-google'],
+        ['croqui', 'btn-map-croqui'],
+        ['operacional', 'btn-map-operacional']
+    ].forEach(([mapView, buttonId]) => {
+        const selected = currentMapView === mapView;
+        const button = document.getElementById(buttonId);
+        button.setAttribute('aria-pressed', String(selected));
+        button.classList.toggle('btn-primary', selected);
+        button.classList.toggle('btn-outline', !selected);
+    });
+
+    if (showCroqui) {
+        initCroquiMap();
+        refreshMapData();
+    } else if (showLegacy) {
+        setTimeout(() => {
+            if (currentMapView !== 'operacional') return;
+            initMap();
+            map.invalidateSize();
+        }, 50);
+    }
 }
 
 // Global function to open profile from map
@@ -335,7 +623,15 @@ window.abrirPerfilCC_Map = (id) => {
 
 // ── LAYERS & FILTERS ──────────────────────────────────────────
 
-function toggleLayer() {
+function toggleLayer(layer) {
+    const showAll = document.getElementById('map-filter-all');
+    if (layer === 'domicilios' && showAll?.checked) {
+        document.querySelectorAll('#map-filter-gestantes, #map-filter-cronicos, #map-filter-risco, #croqui-tag-filters input')
+            .forEach(input => { input.checked = false; });
+    } else if (layer !== 'domicilios' && document.getElementById(`map-filter-${layer}`)?.checked) {
+        if (showAll) showAll.checked = false;
+    }
+
     const checkGestantes = document.querySelector('input[onchange*="gestantes"]')?.checked;
     const checkCronicos = document.querySelector('input[onchange*="cronicos"]')?.checked;
     const checkRisco = document.querySelector('input[onchange*="risco"]')?.checked;
@@ -356,6 +652,7 @@ function toggleLayer() {
             markerClusterGroup.addLayer(marker);
         }
     });
+    renderCroquiPatients();
 }
 
 // ── MICRO-AREAS & POIs ──────────────────────────────────────
@@ -827,10 +1124,15 @@ function renderMicroAreas() {
 
 // Integration with navigation
 const originalNavTo = window.navTo;
+window.addEventListener('dadosSincronizados', () => {
+    if (currentMapView === 'croqui') refreshMapData();
+});
 window.navTo = function (pg) {
     if (typeof originalNavTo === 'function') originalNavTo(pg);
     if (pg === 'mapa') {
-        setTimeout(initMap, 100);
+        setTimeout(() => {
+            setMapView(currentMapView);
+        }, 100);
     }
 };
 

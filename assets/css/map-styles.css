@@ -54,6 +54,13 @@
     padding-bottom: 5px;
 }
 
+.map-filter-help {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
 .map-filter-group label {
     display: flex;
     align-items: center;
@@ -282,4 +289,268 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.map-canvas-stack {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
+
+.map-legacy-notice {
+    margin: -8px 0 12px;
+    padding: 8px 12px;
+    border-left: 4px solid #d97706;
+    border-radius: 6px;
+    background: #fffbeb;
+    color: #78350f;
+    font-size: 0.8rem;
+}
+
+#pg-mapa [hidden] {
+    display: none !important;
+}
+
+.map-canvas-stack > #map-container,
+.mymaps-panel,
+.croqui-panel {
+    position: absolute;
+    inset: 0;
+}
+
+.map-canvas-stack > #map-container[hidden],
+.croqui-panel[hidden] {
+    display: none;
+}
+
+.mymaps-panel,
+.croqui-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #e8edf1;
+}
+
+.mymaps-panel iframe {
+    display: block;
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: #e8edf1;
+}
+
+.mymaps-caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+    margin: 0;
+    padding: 8px 12px;
+    color: #334155;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.mymaps-caption a {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.mymaps-panel[hidden] {
+    display: none;
+}
+
+.croqui-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+}
+
+.croqui-toolbar button {
+    min-width: 38px;
+}
+
+#croqui-zoom-level {
+    min-width: 48px;
+    color: var(--text2);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+#croqui-viewport {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    outline-offset: -3px;
+}
+
+#croqui-viewport:active {
+    cursor: grabbing;
+}
+
+#croqui-viewport.is-placing {
+    cursor: crosshair;
+}
+
+#croqui-scene {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+#croqui-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    pointer-events: none;
+}
+
+#croqui-markers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.croqui-patient-marker {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    transform: translate(-50%, -90%) rotate(-45deg);
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.croqui-patient-marker span {
+    display: block;
+    transform: rotate(45deg);
+}
+
+.croqui-patient-marker.tag-gestante {
+    background: #db2777;
+}
+
+.croqui-patient-marker.tag-cronico {
+    background: #2563eb;
+}
+
+.croqui-patient-marker.tag-risco {
+    background: #dc2626;
+}
+
+.croqui-caption {
+    margin: 0;
+    padding: 8px 12px;
+    color: #334155;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.croqui-position-tools select {
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 6px;
+    background: #fff;
+    color: #172554;
+}
+
+.croqui-position-tools button {
+    width: 100%;
+    justify-content: center;
+    margin: 4px 0;
+}
+
+.croqui-position-tools p {
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.croqui-position-tools #croqui-patient-assignment {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.croqui-position-tools #croqui-patient-assignment label {
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.croqui-position-tools button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+#croqui-tag-filters {
+    max-height: 170px;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    .map-layout {
+        height: auto;
+        min-height: 70vh;
+        flex-direction: column;
+    }
+
+    .map-canvas-stack {
+        flex: none;
+        height: min(68vh, 620px);
+        min-height: 340px;
+    }
+
+    .map-sidebar {
+        width: auto;
+        max-height: 40vh;
+    }
+}
+
+@media (max-width: 560px) {
+    .map-layout {
+        padding: 8px;
+        gap: 10px;
+    }
+
+    .map-canvas-stack {
+        height: 58vh;
+        min-height: 300px;
+    }
+
+    .croqui-toolbar {
+        gap: 5px;
+        padding: 6px;
+    }
+
+    .croqui-caption {
+        font-size: 0.68rem;
+    }
 }

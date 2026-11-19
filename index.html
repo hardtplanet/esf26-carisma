@@ -2149,8 +2149,13 @@
         <!-- ======== MAPA INTELIGENTE ======== -->
         <div id="pg-mapa" class="page-section">
           <div class="sec-header">
-            <h2>🗺️ Mapa Inteligente ESF 26</h2>
-            <div class="btn-group">
+            <h2>🗺️ Mapa Inteligente — UBS Vila Hilda · ESF 28</h2>
+            <div class="btn-group map-view-switch" role="group" aria-label="Visualização do mapa">
+              <button class="btn btn-primary" id="btn-map-google" aria-pressed="true" onclick="setMapView('google')">Google My Maps · ESF 28</button>
+              <button class="btn btn-outline" id="btn-map-croqui" aria-pressed="false" onclick="setMapView('croqui')">Croqui local · fallback</button>
+              <button class="btn btn-outline" id="btn-map-operacional" aria-pressed="false" onclick="setMapView('operacional')">Camadas antigas (ESF 26)</button>
+            </div>
+            <div class="btn-group" id="operational-map-actions" hidden>
               <button class="btn btn-primary" onclick="toggleDrawingTool()">✏️ Microáreas</button>
               <button class="btn btn-mulher" onclick="togglePOIEditor()">📍 Adicionar Ponto</button>
               <button class="btn btn-success" onclick="importKML()">📥 Importar KML</button>
@@ -2160,29 +2165,90 @@
               <button class="btn btn-outline" onclick="centerMap()">🏠 Centralizar</button>
             </div>
           </div>
+          <p id="map-legacy-notice" class="map-legacy-notice" hidden>Mapa geográfico anterior (ESF 26 / Jardim Carisma), mantido por compatibilidade. Para o território ESF 28, use o croqui.</p>
 
           <div class="map-layout">
-            <div id="map-container"></div>
+            <div class="map-canvas-stack">
+              <section id="mymaps-panel" class="mymaps-panel" aria-label="Google My Maps da UBS Vila Hilda, eSF 28">
+                <iframe id="mymaps-frame" title="Mapa territorial da UBS Vila Hilda, eSF 28, no Google My Maps"
+                  src="https://www.google.com/maps/d/embed?mid=125TLKIVPB6cDlLnkXEyCfWoSxGFo2Xk&amp;ll=-22.2422027%2C-54.8169381&amp;z=17"
+                  loading="eager" allowfullscreen></iframe>
+                <p class="mymaps-caption">Mapa territorial ESF 28 · UBS Vila Hilda (Rua Independência, 1021). Se o mapa não carregar ou pedir acesso, use o croqui local como alternativa ou abra o mapa no Google.
+                  <a href="https://www.google.com/maps/d/viewer?mid=125TLKIVPB6cDlLnkXEyCfWoSxGFo2Xk&amp;ll=-22.2422027%2C-54.8169381&amp;z=17" target="_blank" rel="noopener noreferrer">Abrir Google My Maps</a>
+                </p>
+              </section>
+              <section id="croqui-panel" class="croqui-panel" aria-label="Croqui territorial interativo" hidden>
+                <div class="croqui-toolbar" role="group" aria-label="Controles do croqui">
+                  <button type="button" class="btn btn-sm btn-outline" onclick="zoomCroqui(0.8)" aria-label="Diminuir zoom">−</button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="zoomCroqui(1.25)" aria-label="Aumentar zoom">+</button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="resetCroquiView()">Ajustar ao quadro</button>
+                  <span id="croqui-zoom-level" aria-live="polite">100%</span>
+                </div>
+                <div id="croqui-viewport" tabindex="0" role="application" aria-label="Croqui ESF 28. Arraste ou use as setas para deslocar; use a roda do mouse, os botões ou mais e menos para ampliar.">
+                  <div id="croqui-scene">
+                    <img id="croqui-image" src="assets/img/croqui-esf28.jpg" alt="Mapa territorial da eSF 28 e UBS Vila Hilda, com limites da área, vias, unidades de saúde, escala e legenda." draggable="false">
+                    <div id="croqui-markers" aria-label="Posições de pacientes vinculados à eSF 28"></div>
+                  </div>
+                </div>
+                <p class="croqui-caption">O croqui mostra os limites e as vias, mas não individualiza domicílios nem microáreas. Dados e camadas da antiga UBS Carisma não são importados. Vincule somente pacientes confirmados da Vila Hilda; posições ficam neste navegador, sem envio externo.</p>
+              </section>
+              <div id="map-container" hidden></div>
+            </div>
             <div class="map-sidebar">
+              <div id="mymaps-map-sidebar-tools">
+                <div class="map-filter-group">
+                  <h4>Mapa territorial ESF 28</h4>
+                  <p>Este mapa do Google é incorporado sem enviar dados do Cadastro Central.</p>
+                  <p>O Google My Maps incorporado não permite que o app sobreponha marcadores técnicos de pacientes. Para posições confirmadas e armazenadas localmente, use o croqui de fallback.</p>
+                </div>
+              </div>
+              <div id="croqui-map-sidebar-tools" hidden>
               <div class="map-filter-group">
                 <h4>Filtrar Camadas</h4>
-                <label><input type="checkbox" checked onchange="toggleLayer('domicilios')"> Domicílios (Geral)</label>
-                <label><input type="checkbox" onchange="toggleLayer('gestantes')"> Gestantes</label>
-                <label><input type="checkbox" onchange="toggleLayer('cronicos')"> Crônicos (HAS/DM)</label>
-                <label><input type="checkbox" onchange="toggleLayer('risco')"> Alto Risco Social</label>
+                <label><input type="checkbox" id="map-filter-all" checked onchange="toggleLayer('domicilios')"> Todos os pacientes vinculados à eSF 28</label>
+                <label><input type="checkbox" id="map-filter-gestantes" onchange="toggleLayer('gestantes')"> Gestantes</label>
+                <label><input type="checkbox" id="map-filter-cronicos" onchange="toggleLayer('cronicos')"> Crônicos (HAS/DM)</label>
+                <label><input type="checkbox" id="map-filter-risco" onchange="toggleLayer('risco')"> Alto Risco Social</label>
+                <div id="croqui-tag-filters" aria-label="Camadas por etiqueta"></div>
+                <p class="map-filter-help">Ao selecionar uma camada, a exibição muda para apenas os filtros marcados.</p>
               </div>
+              <div class="map-filter-group croqui-position-tools">
+                <h4>Pacientes da equipe eSF 28</h4>
+                <p>O Cadastro Central atual não identifica a UBS de cada pessoa. Nenhum cadastro é incluído automaticamente neste croqui.</p>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-croqui-add-patient" onclick="openCroquiPatientAssignment()">Adicionar paciente confirmado da UBS Vila Hilda</button>
+                <div id="croqui-patient-assignment" hidden>
+                  <label for="croqui-candidate-select">Cadastro Central local — confirme a equipe antes de vincular</label>
+                  <select id="croqui-candidate-select">
+                    <option value="">Selecione uma pessoa...</option>
+                  </select>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="linkCroquiPatientToESF28()">Confirmar vínculo à equipe eSF 28</button>
+                  <button type="button" class="btn btn-sm btn-outline" onclick="closeCroquiPatientAssignment()">Cancelar</button>
+                </div>
+                <label for="croqui-patient-select">Paciente já vinculado ao croqui da eSF 28</label>
+                <select id="croqui-patient-select" aria-describedby="croqui-position-status" onchange="renderCroquiPatients()">
+                  <option value="">Nenhum paciente vinculado</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-croqui-place" onclick="startCroquiPlacement()">Marcar posição confirmada</button>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-croqui-cancel" onclick="cancelCroquiPlacement()" hidden>Cancelar marcação</button>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-croqui-remove" onclick="removeCroquiPosition()">Remover posição</button>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-croqui-unlink" onclick="unlinkCroquiPatientFromESF28()">Desvincular deste mapa</button>
+                <p id="croqui-position-status" role="status" aria-live="polite">Vínculos e posições do croqui são locais e independentes do cadastro compartilhado.</p>
+              </div>
+              <div class="map-stats-mini">
+                <div class="m-stat"
+                  style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                  <span class="m-lbl" style="display:block; font-size: 0.7rem; opacity: 0.8;">Pacientes vinculados / posicionados no croqui ESF 28</span>
+                  <span class="m-val" id="map-stat-geo" style="font-size: 1.1rem; font-weight: 700;">--/--</span>
+                  <span class="m-lbl" id="map-stat-unlocated" style="display:block; font-size: 0.7rem; opacity: 0.8;">-- vinculados sem posição</span>
+                </div>
+              </div>
+              </div>
+              <div id="operational-map-sidebar-tools" hidden>
               <div class="map-filter-group" id="imported-layers-panel" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                 <h4>📥 Camadas do Mapa</h4>
                 <p style="font-size: 0.7rem; color: #666; margin-bottom: 10px;">Importe do Google My Maps ou crie novas camadas para desenhar suas microáreas.</p>
                 <button class="btn btn-sm btn-primary" onclick="createNewLayer()" style="margin-bottom:10px;">➕ Nova Camada</button>
                 <div id="imported-layers-list"></div>
-              </div>
-              <div class="map-stats-mini">
-                <div class="m-stat"
-                  style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                  <span class="m-lbl" style="display:block; font-size: 0.7rem; opacity: 0.8;">Geocodificados</span>
-                  <span class="m-val" id="map-stat-geo" style="font-size: 1.1rem; font-weight: 700;">--/--</span>
-                </div>
               </div>
               <div id="drawing-controls"
                 style="display:none; margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
@@ -2218,21 +2284,6 @@
                   <button class="btn btn-sm btn-outline" onclick="cancelEditPolygon()">❌ Cancelar</button>
                 </div>
               </div>
-
-              <div class="map-legend" id="map-legend">
-                <h4>Legenda</h4>
-                <div class="legend-items">
-                  <div class="leg-item"><span class="leg-dot color-ubs"></span> UBS Carisma</div>
-                  <div class="leg-item"><span class="leg-dot color-ruivo"></span> Domicílio (Geral)</div>
-                  <div class="leg-item"><span class="leg-dot color-pink"></span> Gestante</div>
-                  <div class="leg-item"><span class="leg-dot color-danger"></span> Atendimento Pendente</div>
-                  <div class="leg-item"><span class="leg-dot color-blue"></span> Crônico (HAS/DM)</div>
-                  <div class="leg-item"><span>🏫</span> Escola / Creche</div>
-                  <div class="leg-item"><span>⛪</span> Igreja</div>
-                  <div class="leg-item"><span>🏬</span> Comércio</div>
-                </div>
-              </div>
-
               <div
                 style="margin-top:20px; padding:12px; background:rgba(0,0,0,0.15); border-radius:10px; border:1px dashed rgba(255,255,255,0.2);">
                 <h4 style="color:#fff; font-size:0.8rem; margin-bottom:8px;">Transporte de Dados</h4>
@@ -2244,6 +2295,33 @@
                     onchange="importarSistemaCompleto(this.files[0])" style="display:none">
                 </label>
               </div>
+              </div>
+
+              <div class="map-legend" id="croqui-map-legend">
+                <h4>Legenda — UBS Vila Hilda · eSF 28</h4>
+                <div class="legend-items">
+                  <div class="leg-item"><span class="leg-dot" style="background:#df4f35"></span> Limite da eSF 28</div>
+                  <div class="leg-item"><span class="leg-dot" style="background:#2c5078"></span> Limite da UBS Vila Hilda</div>
+                  <div class="leg-item"><span class="leg-dot color-ruivo"></span> Paciente vinculado e posicionado</div>
+                  <div class="leg-item"><span class="leg-dot color-pink"></span> Gestante</div>
+                  <div class="leg-item"><span class="leg-dot color-danger"></span> Alto risco social</div>
+                  <div class="leg-item"><span class="leg-dot color-blue"></span> Crônico (HAS/DM)</div>
+                </div>
+              </div>
+              <div class="map-legend" id="legacy-map-legend" hidden>
+                <h4>Legenda — mapa antigo ESF 26 / Carisma</h4>
+                <div class="legend-items">
+                  <div class="leg-item"><span class="leg-dot color-ubs"></span> UBS Jardim Carisma (legado)</div>
+                  <div class="leg-item"><span class="leg-dot color-ruivo"></span> Paciente posicionado (legado)</div>
+                  <div class="leg-item"><span class="leg-dot color-pink"></span> Gestante (legado)</div>
+                  <div class="leg-item"><span class="leg-dot color-danger"></span> Atendimento pendente (legado)</div>
+                  <div class="leg-item"><span class="leg-dot color-blue"></span> Crônico (legado)</div>
+                  <div class="leg-item"><span>🏫</span> Escola / Creche</div>
+                  <div class="leg-item"><span>⛪</span> Igreja</div>
+                  <div class="leg-item"><span>🏬</span> Comércio</div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
